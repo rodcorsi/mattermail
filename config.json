@@ -1,0 +1,14 @@
+[
+	{
+		"Name":          "Orcamento",
+		"Server":        "https://chat.scheelita.com.br",
+		"Team":          "scheelita",
+		"ChannelId":     "euw63bh5ybyaixinrqxjme3enw",
+		"MattermostUser":"orcamento@scheelita.com.br",
+		"MattermostPass":"$orcamento$0360",
+		"ImapServer":    "imap.scheelita.com.br:143",
+		"Email":         "orcamento@scheelita.com.br",
+		"EmailPass":     "$orcamento$0360",
+		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v"
+	}
+]
