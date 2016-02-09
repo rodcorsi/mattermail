@@ -1,6 +1,6 @@
 # MatterMail #
 
-*MatterMail* is a integration service for [Mattermost](http://www.mattermost.org/), *MatterMail* listen a email box and publish all received emails in a channel or private group in Mattermost.
+*MatterMail* is an integration service for [Mattermost](http://www.mattermost.org/), *MatterMail* listen an email box and publish all received emails in a channel or private group in Mattermost.
 
 ## Building
 You need [Go](http://golang.org) to build this project
