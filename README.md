@@ -4,19 +4,20 @@
 
 ## Building
 You need [Go](http://golang.org) to build this project
-```
-$ cd $GOPATH
-$ go get https://github.com/rodrigocorsi2/mattermail
-$ cd mattermail
-$ go build
-```
 
+```
+$ go get github.com/jhillyerd/go.enmime
+$ go get github.com/mattermost/platform/model
+$ go get github.com/mxk/go-imap/imap
+$ go get github.com/paulrosania/go-charset/charset
+$ go get github.com/paulrosania/go-charset/data
+$ go get github.com/rodrigocorsi2/mattermail
+```
+	
 ## Usage
 1. You need to create a user in Mattermost server
 2. Get channel id click on channel name > View Info 
 3. Edit the file conf.json, e.g.:
-
->
 ```
 [
 	{
@@ -35,4 +36,9 @@ $ go build
 		.... other if you want ....
 	}
 ]
+```
+
+4. Execute the command to put in background
+```
+$ ./mattermail > /var/log/mattermail.log 2>&1 &
 ```
