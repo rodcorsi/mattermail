@@ -18,7 +18,7 @@ $ go get github.com/rodrigocorsi2/mattermail
 	
 ## Usage
 1. You need to create a user in Mattermost server
-2. Get channel id click on channel name > View Info 
+2. Get channel name and check if the user has permission to post in this channel  
 3. Edit the file conf.json, e.g.:
 ```
 [
@@ -26,8 +26,8 @@ $ go get github.com/rodrigocorsi2/mattermail
 		"Name":          "Orders",
 		"Server":        "https://mattermost.example.com",
 		"Team":          "team1",
-		"ChannelId":     "euw6fsafdasybyaixinrqxjme3enw",
-		"MattermostUser":"orders@example.com",
+		"Channel":       "orders",
+		"MattermostUser":"mattermail@example.com",
 		"MattermostPass":"password",
 		"ImapServer":    "imap.example.com:143",
 		"Email":         "orders@example.com",

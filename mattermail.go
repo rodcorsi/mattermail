@@ -184,8 +184,8 @@ func addPart(client *model.Client, filename string, content *[]byte, writer *mul
 }
 
 //Create a post in Mattermost
-func (m *MatterMail) postMessage(client *model.Client, message string, filenames *[]string) error {
-	post := &model.Post{ChannelId: m.cfg.ChannelId, Message: message}
+func (m *MatterMail) postMessage(client *model.Client, channel_id string, message string, filenames *[]string) error {
+	post := &model.Post{ChannelId: channel_id, Message: message}
 
 	if len(*filenames) > 0 {
 		post.Filenames = *filenames
@@ -212,8 +212,26 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 
 	defer client.Logout()
 
+	//Discover channel id by channel name
+	var channel_id string
+
+	rget := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
+
+	nameMatch := false
+	for _, c := range rget.Channels {
+		if c.Name == m.cfg.Channel {
+			channel_id = c.Id
+			nameMatch = true
+			break
+		}
+	}
+
+	if !nameMatch {
+		return fmt.Errorf("Did not find channel with name %v", m.cfg.Channel)
+	}
+
 	if len(*attach) == 0 && len(emailname) == 0 {
-		return m.postMessage(client, message, nil)
+		return m.postMessage(client, channel_id, message, nil)
 	}
 
 	buf := &bytes.Buffer{}
@@ -239,7 +257,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	_, err = field.Write([]byte(m.cfg.ChannelId))
+	_, err = field.Write([]byte(channel_id))
 	if err != nil {
 		return err
 	}
@@ -254,7 +272,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	return m.postMessage(client, message, &resp.Data.(*model.FileUploadResponse).Filenames)
+	return m.postMessage(client, channel_id, message, &resp.Data.(*model.FileUploadResponse).Filenames)
 }
 
 //Read number of lines of string
