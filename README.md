@@ -17,8 +17,11 @@ $ go get github.com/rodrigocorsi2/mattermail
 ```
 	
 ## Usage
-1. You need to create a user in Mattermost server
-2. Get channel name and check if the user has permission to post in this channel  
+1. You need to create a user in Mattermost server, you can use MatterMail icon as profile picture.
+
+2. Get the *Channel Handle* of the channel and check if the user has permission to post in this channel
+![mattermail channel_handle](https://github.com/rodrigocorsi2/mattermail/raw/master/img/channel_handle.png)
+
 3. Edit the file conf.json, e.g.:
 ```
 [
