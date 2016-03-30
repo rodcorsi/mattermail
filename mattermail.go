@@ -352,9 +352,9 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	mime, _ := enmime.ParseMIMEBody(msg) // Parse message body with enmime
 
 	var emailname, emailbody string
-	if len(mime.Html) > 0 {
+	if len(mime.HTML) > 0 {
 		emailname = "email.html"
-		emailbody = mime.Html
+		emailbody = mime.HTML
 		for _, p := range mime.Inlines {
 			emailbody = replaceCID(&emailbody, &p)
 		}
