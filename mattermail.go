@@ -47,8 +47,13 @@ func (m *MatterMail) CheckImapConnection() error {
 	}
 
 	var err error
+
 	//Start connection with server
-	m.imapClient, err = imap.Dial(m.cfg.ImapServer)
+	if strings.HasSuffix(m.cfg.ImapServer, ":993") {
+		m.imapClient, err = imap.DialTLS(m.cfg.ImapServer, nil)
+	} else {
+		m.imapClient, err = imap.Dial(m.cfg.ImapServer)
+	}
 
 	if err != nil {
 		m.logE.Println("Unable to connect:", err)

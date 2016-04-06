@@ -23,7 +23,8 @@ $ go get github.com/rodrigocorsi2/mattermail
 ![mattermail channel_handle](https://github.com/rodrigocorsi2/mattermail/raw/master/img/channel_handle.png)
 
 3. Edit the file conf.json, e.g.:
-```
+
+```json
 [
 	{
 		"Name":          "Orders",
@@ -34,6 +35,18 @@ $ go get github.com/rodrigocorsi2/mattermail
 		"MattermostPass":"password",
 		"ImapServer":    "imap.example.com:143",
 		"Email":         "orders@example.com",
+		"EmailPass":     "password",
+		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v"
+	},
+	{
+		"Name":          "Bugs",
+		"Server":        "https://mattermost.example.com",
+		"Team":          "team1",
+		"Channel":       "bugs",
+		"MattermostUser":"mattermail@example.com",
+		"MattermostPass":"password",
+		"ImapServer":    "imap.gmail.com:993",
+		"Email":         "bugs@gmail.com",
 		"EmailPass":     "password",
 		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v"
 	},
