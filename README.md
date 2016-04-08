@@ -24,7 +24,7 @@ $ go get github.com/rodrigocorsi2/mattermail
 
 3. Edit the file conf.json, e.g.:
 
-```json
+```
 [
 	{
 		"Name":          "Orders",
@@ -36,7 +36,8 @@ $ go get github.com/rodrigocorsi2/mattermail
 		"ImapServer":    "imap.example.com:143",
 		"Email":         "orders@example.com",
 		"EmailPass":     "password",
-		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v"
+		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v",
+		"Debug":         false
 	},
 	{
 		"Name":          "Bugs",
@@ -48,7 +49,8 @@ $ go get github.com/rodrigocorsi2/mattermail
 		"ImapServer":    "imap.gmail.com:993",
 		"Email":         "bugs@gmail.com",
 		"EmailPass":     "password",
-		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v"
+		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v",
+		"Debug":         true
 	},
 	{
 		.... other if you want ....
@@ -57,6 +59,7 @@ $ go get github.com/rodrigocorsi2/mattermail
 ```
 
 4. Execute the command to put in background
+
 ```
 $ ./mattermail > /var/log/mattermail.log 2>&1 &
 ```
