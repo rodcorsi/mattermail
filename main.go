@@ -8,7 +8,17 @@ import (
 )
 
 type config struct {
-	Name, Server, Team, Channel, MattermostUser, MattermostPass, ImapServer, Email, EmailPass, MailTemplate string
+	Name           string
+	Server         string
+	Team           string
+	Channel        string
+	MattermostUser string
+	MattermostPass string
+	ImapServer     string
+	Email          string
+	EmailPass      string
+	MailTemplate   string
+	Debug          bool
 }
 
 func loadconfig() []config {

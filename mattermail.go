@@ -23,13 +23,14 @@ import (
 type MatterMail struct {
 	cfg        *config
 	imapClient *imap.Client
-	logI       *log.Logger
-	logE       *log.Logger
+	info       *log.Logger
+	eror       *log.Logger
+	debg       *log.Logger
 }
 
 func (m *MatterMail) tryTime(message string, fn func() error) {
 	if err := fn(); err != nil {
-		m.logI.Println(message, err, "\n", "Try again in 30s")
+		m.info.Println(message, err, "\n", "Try again in 30s")
 		time.Sleep(30 * time.Second)
 		fn()
 	}
@@ -43,6 +44,7 @@ func (m *MatterMail) LogoutImapClient() {
 
 func (m *MatterMail) CheckImapConnection() error {
 	if m.imapClient != nil && (m.imapClient.State() == imap.Auth || m.imapClient.State() == imap.Selected) {
+		m.debg.Println("CheckImapConnection: Connection alive")
 		return nil
 	}
 
@@ -50,21 +52,23 @@ func (m *MatterMail) CheckImapConnection() error {
 
 	//Start connection with server
 	if strings.HasSuffix(m.cfg.ImapServer, ":993") {
+		m.debg.Println("CheckImapConnection: DialTLS")
 		m.imapClient, err = imap.DialTLS(m.cfg.ImapServer, nil)
 	} else {
+		m.debg.Println("CheckImapConnection: Dial")
 		m.imapClient, err = imap.Dial(m.cfg.ImapServer)
 	}
 
 	if err != nil {
-		m.logE.Println("Unable to connect:", err)
+		m.eror.Println("Unable to connect:", err)
 		return err
 	}
 
-	m.logI.Printf("Connected with %q\n", m.cfg.ImapServer)
+	m.info.Printf("Connected with %q\n", m.cfg.ImapServer)
 
 	_, err = m.imapClient.Login(m.cfg.Email, m.cfg.EmailPass)
 	if err != nil {
-		m.logE.Println("Unable to login:", m.cfg.Email)
+		m.eror.Println("Unable to login:", m.cfg.Email)
 		return err
 	}
 
@@ -73,6 +77,7 @@ func (m *MatterMail) CheckImapConnection() error {
 
 //Check if exist a new mail and post it
 func (m *MatterMail) CheckNewMails() error {
+	m.debg.Println("CheckNewMails")
 
 	if err := m.CheckImapConnection(); err != nil {
 		return err
@@ -93,26 +98,30 @@ func (m *MatterMail) CheckNewMails() error {
 	// get headers and UID for UnSeen message in src inbox...
 	cmd, err := imap.Wait(m.imapClient.UIDSearch(specs...))
 	if err != nil {
-		m.logE.Println("UIDSearch:")
+		m.eror.Println("UIDSearch:")
 		return err
 	}
 
 	for _, rsp := range cmd.Data {
 		for _, uid := range rsp.SearchResults() {
+			m.debg.Println("CheckNewMails:AddNum ", uid)
 			seq.AddNum(uid)
 		}
 	}
 
 	// no new messages
 	if seq.Empty() {
+		m.debg.Println("CheckNewMails: No new messages")
 		return nil
 	}
 
 	cmd, _ = m.imapClient.Fetch(seq, "FLAGS", "INTERNALDATE", "UID", "RFC822.HEADER", "BODY[]")
 
 	for cmd.InProgress() {
+		m.debg.Println("CheckNewMails: cmd in Progress")
 		// Wait for the next response (no timeout)
 		m.imapClient.Recv(-1)
+		m.debg.Println("CheckNewMails: cmd Terminated")
 
 		// Process command data
 		for _, rsp = range cmd.Data {
@@ -130,10 +139,10 @@ func (m *MatterMail) CheckNewMails() error {
 	// Check command completion status
 	if rsp, err := cmd.Result(imap.OK); err != nil {
 		if err == imap.ErrAborted {
-			m.logE.Println("Fetch command aborted")
+			m.eror.Println("Fetch command aborted")
 			return err
 		} else {
-			m.logE.Println("Fetch error:", rsp.Info)
+			m.eror.Println("Fetch error:", rsp.Info)
 			return err
 		}
 	}
@@ -141,9 +150,10 @@ func (m *MatterMail) CheckNewMails() error {
 	cmd.Data = nil
 
 	//Mark all messages seen
+	m.debg.Println("CheckNewMails: Mark all messages with flag \\Seen")
 	_, err = imap.Wait(m.imapClient.UIDStore(seq, "+FLAGS.SILENT", `\Seen`))
 	if err != nil {
-		m.logE.Printf("Error UIDStore \\Seen")
+		m.eror.Printf("Error UIDStore \\Seen")
 		return err
 	}
 	return nil
@@ -151,6 +161,7 @@ func (m *MatterMail) CheckNewMails() error {
 
 //Change to state idle in imap server
 func (m *MatterMail) IdleMailBox() error {
+	m.debg.Println("IdleMailBox")
 
 	if err := m.CheckImapConnection(); err != nil {
 		return err
@@ -213,7 +224,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	m.logI.Println("Post new message")
+	m.info.Println("Post new message")
 
 	defer client.Logout()
 
@@ -385,21 +396,33 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	return m.PostFile(message, emailname, &emailbody, &mime.Attachments)
 }
 
-func InitMatterMail(cfg *config) {
-	//imap.DefaultLogger = log.New(os.Stdout, "", 0)
-	//imap.DefaultLogMask = imap.LogConn | imap.LogRaw
+type devNull int
 
+func (devNull) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
+func InitMatterMail(cfg *config) {
 	m := &MatterMail{
 		cfg:  cfg,
-		logI: log.New(os.Stdout, "INFO  "+cfg.Name+"\t", log.Ltime),
-		logE: log.New(os.Stderr, "ERROR "+cfg.Name+"\t", log.Ltime),
+		info: log.New(os.Stdout, "INFO "+cfg.Name+"\t", log.Ltime),
+		eror: log.New(os.Stderr, "EROR "+cfg.Name+"\t", log.Ltime),
+	}
+
+	if cfg.Debug {
+		m.debg = log.New(os.Stdout, "DEBG "+cfg.Name+"\t", log.Ltime)
+		imap.DefaultLogger = log.New(os.Stdout, "IMAP "+cfg.Name+"\t", log.Ltime)
+		imap.DefaultLogMask = imap.LogConn | imap.LogRaw
+	} else {
+		m.debg = log.New(devNull(0), "", 0)
 	}
 
 	defer m.LogoutImapClient()
 
-	m.logI.Println("Checking new emails")
+	m.debg.Println("Debug mode on")
+	m.info.Println("Checking new emails")
 	m.tryTime("Error on check new email:", m.CheckNewMails)
-	m.logI.Println("Waiting new messages")
+	m.info.Println("Waiting new messages")
 
 	for {
 		m.tryTime("Error Idle:", m.IdleMailBox)
