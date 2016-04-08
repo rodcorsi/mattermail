@@ -64,6 +64,11 @@ func (m *MatterMail) CheckImapConnection() error {
 		return err
 	}
 
+	//Check if server support IDLE mode
+	if !m.imapClient.Caps["IDLE"] {
+		return fmt.Errorf("The server %q does not support IDLE\n", m.cfg.ImapServer)
+	}
+
 	m.info.Printf("Connected with %q\n", m.cfg.ImapServer)
 
 	_, err = m.imapClient.Login(m.cfg.Email, m.cfg.EmailPass)
