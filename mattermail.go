@@ -120,19 +120,19 @@ func (m *MatterMail) CheckNewMails() error {
 		return nil
 	}
 
-	cmd, _ = m.imapClient.Fetch(seq, "FLAGS", "INTERNALDATE", "UID", "RFC822.HEADER", "BODY[]")
+	cmd, _ = m.imapClient.UIDFetch(seq, "FLAGS", "INTERNALDATE", "UID", "RFC822.HEADER", "BODY[]")
 
 	for cmd.InProgress() {
 		m.debg.Println("CheckNewMails: cmd in Progress")
 		// Wait for the next response (no timeout)
 		m.imapClient.Recv(-1)
-		m.debg.Println("CheckNewMails: cmd Terminated")
 
 		// Process command data
 		for _, rsp = range cmd.Data {
 			msgFields := rsp.MessageInfo().Attrs
 			header := imap.AsBytes(msgFields["BODY[]"])
 			if msg, _ := mail.ReadMessage(bytes.NewReader(header)); msg != nil {
+				m.debg.Println("CheckNewMails:PostMail")
 				if err := m.PostMail(msg); err != nil {
 					return err
 				}
