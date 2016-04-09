@@ -9,6 +9,6 @@
 		"ImapServer":    "imap.example.com:143",
 		"Email":         "orders@example.com",
 		"EmailPass":     "password",
-		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v"
+		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v"
 	}
 ]

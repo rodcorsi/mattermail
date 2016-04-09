@@ -24,7 +24,7 @@ $ go get github.com/rodrigocorsi2/mattermail
 
 3. Edit the file conf.json, e.g.:
 
-```
+```javascript
 [
 	{
 		"Name":          "Orders",
@@ -36,8 +36,10 @@ $ go get github.com/rodrigocorsi2/mattermail
 		"ImapServer":    "imap.example.com:143",
 		"Email":         "orders@example.com",
 		"EmailPass":     "password",
-		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v",
-		"Debug":         false
+		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
+		"StartTLS":      true,   /*Optional default false*/
+		"Disabled":      false,  /*Optional default false*/
+		"Debug":         false   /*Optional default false*/
 	},
 	{
 		"Name":          "Bugs",
@@ -49,11 +51,13 @@ $ go get github.com/rodrigocorsi2/mattermail
 		"ImapServer":    "imap.gmail.com:993",
 		"Email":         "bugs@gmail.com",
 		"EmailPass":     "password",
-		"MailTemplate":  ">:incoming_envelope: _From:_ **%v**\n_%v_\n\n%v",
-		"Debug":         true
+		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
+		"StartTLS":      false,  /*Optional default false*/
+		"Disabled":      false,  /*Optional default false*/
+		"Debug":         true    /*Optional default false*/
 	},
 	{
-		.... other if you want ....
+		/*.... other if you want ....*/
 	}
 ]
 ```
