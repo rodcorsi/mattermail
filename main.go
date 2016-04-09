@@ -20,6 +20,7 @@ type config struct {
 	EmailPass      string
 	MailTemplate   string
 	Debug          bool
+	Disabled       bool
 }
 
 func loadconfig() []config {
@@ -41,9 +42,15 @@ func loadconfig() []config {
 func main() {
 
 	cfgs := loadconfig()
+	hasconfig := false
 
 	var wg sync.WaitGroup
 	for _, cfg := range cfgs {
+		if cfg.Disabled {
+			continue
+		}
+		hasconfig = true
+
 		wg.Add(1)
 		c := cfg
 		go func() {
@@ -53,4 +60,8 @@ func main() {
 	}
 
 	wg.Wait()
+
+	if !hasconfig {
+		log.Println(`There is no enabled profile. Check "Disabled" field in config.json`)
+	}
 }
