@@ -128,7 +128,8 @@ func (m *MatterMail) CheckNewMails() error {
 		return nil
 	}
 
-	cmd, _ = m.imapClient.UIDFetch(seq, "FLAGS", "INTERNALDATE", "UID", "RFC822.HEADER", "BODY[]")
+	cmd, _ = m.imapClient.UIDFetch(seq, "BODY[]")
+	postmail := false
 
 	for cmd.InProgress() {
 		m.debg.Println("CheckNewMails: cmd in Progress")
@@ -144,6 +145,7 @@ func (m *MatterMail) CheckNewMails() error {
 				if err := m.PostMail(msg); err != nil {
 					return err
 				}
+				postmail = true
 			}
 		}
 		cmd.Data = nil
@@ -162,13 +164,17 @@ func (m *MatterMail) CheckNewMails() error {
 
 	cmd.Data = nil
 
-	//Mark all messages seen
-	m.debg.Println("CheckNewMails: Mark all messages with flag \\Seen")
-	_, err = imap.Wait(m.imapClient.UIDStore(seq, "+FLAGS.SILENT", `\Seen`))
-	if err != nil {
-		m.eror.Printf("Error UIDStore \\Seen")
-		return err
+	if postmail {
+		m.debg.Println("CheckNewMails: Mark all messages with flag \\Seen")
+
+		//Mark all messages seen
+		_, err = imap.Wait(m.imapClient.UIDStore(seq, "+FLAGS.SILENT", `\Seen`))
+		if err != nil {
+			m.eror.Printf("Error UIDStore \\Seen")
+			return err
+		}
 	}
+
 	return nil
 }
 
