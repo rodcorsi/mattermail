@@ -20,6 +20,9 @@ import (
 	"time"
 )
 
+//Number of lines of email to show in post
+const linestopreview = 10
+
 type MatterMail struct {
 	cfg        *config
 	imapClient *imap.Client
@@ -404,7 +407,7 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	}
 
 	// read only some lines of text
-	partmessage := readLines(mime.Text, 5)
+	partmessage := readLines(mime.Text, linestopreview)
 
 	if partmessage != mime.Text && len(partmessage) > 0 {
 		partmessage += " ..."
