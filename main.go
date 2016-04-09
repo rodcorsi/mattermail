@@ -45,8 +45,9 @@ func main() {
 	var wg sync.WaitGroup
 	for _, cfg := range cfgs {
 		wg.Add(1)
+		c := cfg
 		go func() {
-			InitMatterMail(&cfg)
+			InitMatterMail(&c)
 			wg.Done()
 		}()
 	}
