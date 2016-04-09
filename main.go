@@ -15,6 +15,7 @@ type config struct {
 	MattermostUser string
 	MattermostPass string
 	ImapServer     string
+	StartTLS       bool
 	Email          string
 	EmailPass      string
 	MailTemplate   string
