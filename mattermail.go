@@ -250,6 +250,22 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 
 	defer client.Logout()
 
+	// Get Team
+	teams := client.Must(client.GetAllTeams()).Data.(map[string]*model.Team)
+
+	teamMatch := false
+	for _, t := range teams {
+		if t.Name == m.cfg.Team {
+			client.SetTeamId(t.Id)
+			teamMatch = true
+			break
+		}
+	}
+
+	if !teamMatch {
+		return fmt.Errorf("Did not find team with name %v", m.cfg.Team)
+	}
+
 	//Discover channel id by channel name
 	var channel_id string
 
@@ -305,7 +321,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	resp, err := client.UploadFile("/files/upload", buf.Bytes(), writer.FormDataContentType())
+	resp, err := client.UploadPostAttachment(buf.Bytes(), writer.FormDataContentType())
 	if resp == nil {
 		return err
 	}
