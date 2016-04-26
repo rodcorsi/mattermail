@@ -67,3 +67,9 @@ $ go get github.com/rodrigocorsi2/mattermail
 ```
 $ ./mattermail > /var/log/mattermail.log 2>&1 &
 ```
+
+## Compatibility
+
+If you want to build MatterMail for Mattermost release 2.1 or 2.2 you need to use MatterMail branch `release-2.2`
+
+
