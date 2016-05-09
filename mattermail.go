@@ -242,7 +242,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 
 	client := model.NewClient(m.cfg.Server)
 
-	if _, err := client.LoginByEmail(m.cfg.Team, m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
+	if _, err := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
 		return err
 	}
 
