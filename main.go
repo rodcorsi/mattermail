@@ -23,6 +23,8 @@ type config struct {
 	Disabled       bool
 }
 
+const Version = "3.0"
+
 func loadconfig() []config {
 	file, err := ioutil.ReadFile("./config.json")
 	if err != nil {

@@ -7,15 +7,11 @@
 ## Building
 You need [Go](http://golang.org) to build this project
 
-```
-$ go get github.com/jhillyerd/go.enmime
-$ go get github.com/mattermost/platform/model
-$ go get github.com/mxk/go-imap/imap
-$ go get github.com/paulrosania/go-charset/charset
-$ go get github.com/paulrosania/go-charset/data
+```bash
+$ go get github.com/tools/godep
 $ go get github.com/rodrigocorsi2/mattermail
 ```
-	
+
 ## Usage
 1. You need to create a user in Mattermost server, you can use MatterMail icon as profile picture.
 
@@ -67,9 +63,3 @@ $ go get github.com/rodrigocorsi2/mattermail
 ```
 $ ./mattermail > /var/log/mattermail.log 2>&1 &
 ```
-
-## Compatibility
-
-If you want to build MatterMail for Mattermost release 2.1 or 2.2 you need to use MatterMail branch `release-2.2`
-
-

@@ -4,11 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/jhillyerd/go.enmime"
-	"github.com/mattermost/platform/model"
-	"github.com/mxk/go-imap/imap"
-	"github.com/paulrosania/go-charset/charset"
-	_ "github.com/paulrosania/go-charset/data"
 	"io/ioutil"
 	"log"
 	"mime/multipart"
@@ -18,6 +13,12 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/jhillyerd/go.enmime"
+	"github.com/mattermost/platform/model"
+	"github.com/mxk/go-imap/imap"
+	"github.com/paulrosania/go-charset/charset"
+	_ "github.com/paulrosania/go-charset/data"
 )
 
 //Number of lines of email to show in post
@@ -242,6 +243,8 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 
 	client := model.NewClient(m.cfg.Server)
 
+	m.debg.Println("Login %v on %v", m.cfg.MattermostUser, m.cfg.Team)
+
 	if _, err := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
 		return err
 	}
@@ -457,6 +460,7 @@ func InitMatterMail(cfg *config) {
 
 	defer m.LogoutImapClient()
 
+	m.info.Println("MatterMail version:", Version)
 	m.debg.Println("Debug mode on")
 	m.info.Println("Checking new emails")
 	m.tryTime("Error on check new email:", m.CheckNewMails)
