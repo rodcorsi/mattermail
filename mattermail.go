@@ -243,31 +243,15 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 
 	client := model.NewClient(m.cfg.Server)
 
-	m.debg.Println("Login %v on %v", m.cfg.MattermostUser, m.cfg.Team)
+	m.debg.Println("LoginByEmail %v on %v", m.cfg.MattermostUser, m.cfg.Team)
 
-	if _, err := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
+	if _, err := client.LoginByEmail(m.cfg.Team, m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
 		return err
 	}
 
 	m.info.Println("Post new message")
 
 	defer client.Logout()
-
-	// Get Team
-	teams := client.Must(client.GetAllTeams()).Data.(map[string]*model.Team)
-
-	teamMatch := false
-	for _, t := range teams {
-		if t.Name == m.cfg.Team {
-			client.SetTeamId(t.Id)
-			teamMatch = true
-			break
-		}
-	}
-
-	if !teamMatch {
-		return fmt.Errorf("Did not find team with name %v", m.cfg.Team)
-	}
 
 	//Discover channel id by channel name
 	var channel_id string
@@ -324,7 +308,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	resp, err := client.UploadPostAttachment(buf.Bytes(), writer.FormDataContentType())
+	resp, err := client.UploadFile("/files/upload", buf.Bytes(), writer.FormDataContentType())
 	if resp == nil {
 		return err
 	}
