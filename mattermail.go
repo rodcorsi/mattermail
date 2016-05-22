@@ -77,10 +77,11 @@ func (m *MatterMail) CheckImapConnection() error {
 	}
 
 	//Check if server support IDLE mode
-	if !m.imapClient.Caps["IDLE"] {
-		return fmt.Errorf("The server %q does not support IDLE\n", m.cfg.ImapServer)
-	}
-
+	/*
+		if !m.imapClient.Caps["IDLE"] {
+			return fmt.Errorf("The server %q does not support IDLE\n", m.cfg.ImapServer)
+		}
+	*/
 	m.info.Printf("Connected with %q\n", m.cfg.ImapServer)
 
 	_, err = m.imapClient.Login(m.cfg.Email, m.cfg.EmailPass)
@@ -115,8 +116,16 @@ func (m *MatterMail) CheckNewMails() error {
 	// get headers and UID for UnSeen message in src inbox...
 	cmd, err := imap.Wait(m.imapClient.UIDSearch(specs...))
 	if err != nil {
-		m.eror.Println("UIDSearch:")
-		return err
+		m.debg.Println("Error UIDSearch UTF-8:")
+		m.debg.Println(err)
+		m.debg.Println("Try with US-ASCII")
+
+		// try again with US-ASCII
+		cmd, err = imap.Wait(m.imapClient.Send("UID SEARCH", append([]imap.Field{"CHARSET", "US-ASCII"}, specs...)...))
+		if err != nil {
+			m.eror.Println("UID SEARCH US-ASCII")
+			return err
+		}
 	}
 
 	for _, rsp := range cmd.Data {
@@ -160,10 +169,9 @@ func (m *MatterMail) CheckNewMails() error {
 		if err == imap.ErrAborted {
 			m.eror.Println("Fetch command aborted")
 			return err
-		} else {
-			m.eror.Println("Fetch error:", rsp.Info)
-			return err
 		}
+		m.eror.Println("Fetch error:", rsp.Info)
+		return err
 	}
 
 	cmd.Data = nil
