@@ -65,6 +65,16 @@
 ```
 $ ./mattermail > /var/log/mattermail.log 2>&1 &
 ```
+## Options
+
+```bash
+$ ./mattermail --help
+Options:
+    -c, --config  Sets the file location for config.json
+                  Default: ./config.json 
+    -h, --help    Show this help
+    -v, --version Print current version
+```
 
 ## Building
 You need [Go](http://golang.org) to build this project
