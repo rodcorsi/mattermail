@@ -251,7 +251,9 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 
 	client := model.NewClient(m.cfg.Server)
 
-	m.debg.Println("Login %v on %v", m.cfg.MattermostUser, m.cfg.Team)
+	m.debg.Println(client)
+
+	m.debg.Printf("Login user:%v team:%v url:%v", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
 
 	if _, err := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
 		return err
