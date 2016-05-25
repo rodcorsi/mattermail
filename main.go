@@ -23,6 +23,7 @@ type config struct {
 	MailTemplate   string
 	Debug          bool
 	Disabled       bool
+        LinesToPreview int
 }
 
 var Version = "3.0-dev"
