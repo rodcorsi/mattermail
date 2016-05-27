@@ -247,7 +247,7 @@ func (m *MatterMail) postMessage(client *model.Client, channel_id string, messag
 }
 
 //Post files and message in Mattermost server
-func (m *MatterMail) PostFile(message string, emailname string, emailbody *string, attach *[]enmime.MIMEPart) error {
+func (m *MatterMail) PostFile(message string, emailname string, emailbody *string, attach *[]enmime.MIMEPart, subjectChannel string) error {
 
 	client := model.NewClient(m.cfg.Server)
 
@@ -286,7 +286,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 
 	nameMatch := false
 	for _, c := range rget.Channels {
-		if c.Name == m.cfg.Channel {
+		if c.Name == subjectChannel {
 			channel_id = c.Id
 			nameMatch = true
 			break
@@ -294,7 +294,30 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 	}
 
 	if !nameMatch {
-		return fmt.Errorf("Did not find channel with name %v", m.cfg.Channel)
+		fmt.Errorf("Did not find channel from Email Subject. Look for channel %v", m.cfg.Channel)
+		for _, c := range rget.Channels {
+			if c.Name == m.cfg.Channel {
+				channel_id = c.Id
+				nameMatch = true
+				break
+			}
+
+		}
+	}
+
+	if !nameMatch {
+		fmt.Errorf("Did not find channel with name %v. Trying channel town-square", m.cfg.Channel)
+		for _, c := range rget.Channels {
+			if c.Name == "town-square" {
+				channel_id = c.Id
+				nameMatch = true
+				break
+			}
+		}
+	}
+
+	if !nameMatch {
+		return fmt.Errorf("Did not find channel with name town-square")
 	}
 
 	if len(*attach) == 0 && len(emailname) == 0 {
@@ -436,7 +459,8 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	}
 
 	// read only some lines of text
-	partmessage := readLines(mime.Text, linestopreview)
+	var preview = m.cfg.LinesToPreview
+	partmessage := readLines(mime.Text, preview)
 
 	if partmessage != mime.Text && len(partmessage) > 0 {
 		partmessage += " ..."
@@ -444,7 +468,14 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 
 	message := fmt.Sprintf(m.cfg.MailTemplate, NonASCII(msg.Header.Get("From")), mime.GetHeader("Subject"), partmessage)
 
-	return m.PostFile(message, emailname, &emailbody, &mime.Attachments)
+	var subject = mime.GetHeader("Subject")
+	if strings.Contains(subject, "[#") && strings.Contains(subject, "]") {
+		subject = strings.Split(strings.Split(subject, "[#")[1], "]")[0]
+		m.info.Println("Email channel from subject is " + subject)
+	} else {
+		subject = ""
+	}
+	return m.PostFile(message, emailname, &emailbody, &mime.Attachments, subject)
 }
 
 type devNull int

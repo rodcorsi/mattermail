@@ -12,6 +12,7 @@
 		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
         "StartTLS":      false,
 		"Disabled":      false,
-		"Debug":         true
+		"Debug":         true,
+		"LinesToPreview":10
 	}
 ]
