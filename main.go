@@ -6,25 +6,29 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 	"sync"
 )
 
 type config struct {
-	Name           string
-	Server         string
-	Team           string
-	Channel        string
-	MattermostUser string
-	MattermostPass string
-	ImapServer     string
-	StartTLS       bool
-	Email          string
-	EmailPass      string
-	MailTemplate   string
-	Debug          bool
-	Disabled       bool
-        LinesToPreview int
+	Name              string
+	Server            string
+	Team              string
+	Channel           string
+	MattermostUser    string
+	MattermostPass    string
+	ImapServer        string
+	StartTLS          bool
+	Email             string
+	EmailPass         string
+	MailTemplate      string
+	Debug             bool
+	Disabled          bool
+	LinesToPreview    int
+	NoRedirectChannel bool
 }
+
+const defLinesToPreview = 10
 
 var Version = "3.0-dev"
 var configFile string
@@ -67,6 +71,14 @@ func loadconfig() []config {
 
 	if err != nil {
 		log.Fatal("Could not parse: ", err)
+	}
+
+	// Set default value
+	for _, c := range cfg {
+		if c.LinesToPreview <= 0 {
+			c.LinesToPreview = defLinesToPreview
+		}
+		c.Channel = strings.ToLower(c.Channel)
 	}
 
 	return cfg

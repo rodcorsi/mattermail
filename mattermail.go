@@ -21,9 +21,6 @@ import (
 	_ "github.com/paulrosania/go-charset/data"
 )
 
-//Number of lines of email to show in post
-const linestopreview = 10
-
 type MatterMail struct {
 	cfg        *config
 	imapClient *imap.Client
@@ -280,48 +277,31 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 	}
 
 	//Discover channel id by channel name
-	var channel_id string
+	var channelID string
 
-	rget := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
+	channelList := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
 
-	nameMatch := false
-	for _, c := range rget.Channels {
-		if c.Name == subjectChannel {
-			channel_id = c.Id
-			nameMatch = true
-			break
-		}
+	if subjectChannel != "" && !m.cfg.NoRedirectChannel {
+		m.debg.Printf("Try do find channel %v", subjectChannel)
+		channelID = getChannelIDByName(channelList, subjectChannel)
 	}
 
-	if !nameMatch {
-		fmt.Errorf("Did not find channel from Email Subject. Look for channel %v", m.cfg.Channel)
-		for _, c := range rget.Channels {
-			if c.Name == m.cfg.Channel {
-				channel_id = c.Id
-				nameMatch = true
-				break
-			}
-
-		}
+	if channelID == "" {
+		m.debg.Printf("Did not find channel from Email Subject. Look for channel %v", m.cfg.Channel)
+		channelID = getChannelIDByName(channelList, m.cfg.Channel)
 	}
 
-	if !nameMatch {
-		fmt.Errorf("Did not find channel with name %v. Trying channel town-square", m.cfg.Channel)
-		for _, c := range rget.Channels {
-			if c.Name == "town-square" {
-				channel_id = c.Id
-				nameMatch = true
-				break
-			}
-		}
+	if channelID == "" && !m.cfg.NoRedirectChannel {
+		m.debg.Printf("Did not find channel with name %v. Trying channel town-square", m.cfg.Channel)
+		channelID = getChannelIDByName(channelList, "town-square")
 	}
 
-	if !nameMatch {
-		return fmt.Errorf("Did not find channel with name town-square")
+	if channelID == "" {
+		return fmt.Errorf("Did not find any channel to post")
 	}
 
 	if len(*attach) == 0 && len(emailname) == 0 {
-		return m.postMessage(client, channel_id, message, nil)
+		return m.postMessage(client, channelID, message, nil)
 	}
 
 	buf := &bytes.Buffer{}
@@ -347,7 +327,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	_, err = field.Write([]byte(channel_id))
+	_, err = field.Write([]byte(channelID))
 	if err != nil {
 		return err
 	}
@@ -362,7 +342,28 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	return m.postMessage(client, channel_id, message, &resp.Data.(*model.FileUploadResponse).Filenames)
+	return m.postMessage(client, channelID, message, &resp.Data.(*model.FileUploadResponse).Filenames)
+}
+
+func getChannelIDByName(channelList *model.ChannelList, channelName string) string {
+	for _, c := range channelList.Channels {
+		if c.Name == channelName {
+			return c.Id
+		}
+	}
+	return ""
+}
+
+var channelRegex = regexp.MustCompile(`^\s*?\[\s*?#\s*?([A-Za-z0-9\-_]*)\s*?\]`)
+
+// getChannelFromSubject extract channel from subject ex:
+// getChannelFromSubject([#mychannel] blablanla) => mychannel
+func getChannelFromSubject(subject string) string {
+	ret := channelRegex.FindStringSubmatch(subject)
+	if len(ret) < 2 {
+		return ""
+	}
+	return strings.ToLower(ret[1])
 }
 
 //Read number of lines of string
@@ -459,22 +460,19 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	}
 
 	// read only some lines of text
-	var preview = m.cfg.LinesToPreview
-	partmessage := readLines(mime.Text, preview)
+	partmessage := readLines(mime.Text, m.cfg.LinesToPreview)
 
 	if partmessage != mime.Text && len(partmessage) > 0 {
 		partmessage += " ..."
 	}
 
 	message := fmt.Sprintf(m.cfg.MailTemplate, NonASCII(msg.Header.Get("From")), mime.GetHeader("Subject"), partmessage)
+	var subject string
 
-	var subject = mime.GetHeader("Subject")
-	if strings.Contains(subject, "[#") && strings.Contains(subject, "]") {
-		subject = strings.Split(strings.Split(subject, "[#")[1], "]")[0]
-		m.info.Println("Email channel from subject is " + subject)
-	} else {
-		subject = ""
+	if !m.cfg.NoRedirectChannel {
+		subject = getChannelFromSubject(mime.GetHeader("Subject"))
 	}
+
 	return m.PostFile(message, emailname, &emailbody, &mime.Attachments, subject)
 }
 

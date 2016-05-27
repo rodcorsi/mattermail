@@ -4,6 +4,16 @@
 
 ![mattermail screenshot](https://github.com/rodrigocorsi2/mattermail/raw/master/img/screenshot.png)
 
+## Redirect to the channel by subject
+
+Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
+
+1 - If the email subject contains "`[#anychannelname] blablabla`", Mattermail will try to post in "`anychannelname`"
+
+2 - If the email subject doesn't contain channel name, Mattermail will try to post the channel defined in `config.json`
+
+3 - If Mattermail can not post the email will try to post in "Town Square"
+
 
 ## Install
   * For Mattermost 3.0:
@@ -35,24 +45,23 @@
 		"Email":         "orders@example.com",
 		"EmailPass":     "password",
 		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
-		"StartTLS":      true,   /*Optional default false*/
-		"Disabled":      false,  /*Optional default false*/
-		"Debug":         false   /*Optional default false*/
 	},
 	{
-		"Name":          "Bugs",
-		"Server":        "https://mattermost.example.com",
-		"Team":          "team1",
-		"Channel":       "bugs",
-		"MattermostUser":"mattermail@example.com",
-		"MattermostPass":"password",
-		"ImapServer":    "imap.gmail.com:993",
-		"Email":         "bugs@gmail.com",
-		"EmailPass":     "password",
-		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
-		"StartTLS":      false,  /*Optional default false*/
-		"Disabled":      false,  /*Optional default false*/
-		"Debug":         true    /*Optional default false*/
+		"Name":              "Bugs",
+		"Server":            "https://mattermost.example.com",
+		"Team":              "team1",
+		"Channel":           "bugs",
+		"MattermostUser":    "mattermail@example.com",
+		"MattermostPass":    "password",
+		"ImapServer":        "imap.gmail.com:993",
+		"Email":             "bugs@gmail.com",
+		"EmailPass":         "password",
+		"MailTemplate":      ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
+		"StartTLS":          false,  /*Optional default false*/
+		"Disabled":          false,  /*Optional default false*/
+		"Debug":             true    /*Optional default false*/
+        "LinesToPreview":    20, /*Optional default 10*/
+		"NoRedirectChannel": true /*Optional default false*/
 	},
 	{
 		/*.... other if you want ....*/
