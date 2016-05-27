@@ -1,4 +1,12 @@
-.PHONY: all build-linux build-osx package
+.PHONY: \
+	all \
+	build-linux \
+	build-osx \
+	package \
+	govet \
+	golint \
+	gofmt \
+	lint
 
 export GO15VENDOREXPERIMENT=1
 
@@ -28,3 +36,24 @@ package:
 	@echo Create OSX package
 	cp config.json $(DIST)/osx/mattermail/
 	tar -C $(DIST)/osx -czf $(DIST)/mattermail-$(VERSION).osx.am64.tar.gz mattermail
+
+govet:
+	@echo GOVET
+	$(shell go vet ./*.go)
+
+golint:
+	@echo GOLINT
+	@golint ./*.go | grep -v 'comment or be unexported' | grep -v 'ALL_CAPS' || exit 0
+
+gofmt:
+	@echo GOFMT
+	$(eval GOFMT_OUTPUT := $(shell gofmt -d -s *.go 2>&1))
+	@echo "$(GOFMT_OUTPUT)"
+	@if [ ! "$(GOFMT_OUTPUT)" ]; then \
+		echo "gofmt sucess"; \
+	else \
+		echo "gofmt failure"; \
+		exit 1; \
+	fi
+
+lint: govet golint gofmt

@@ -91,7 +91,7 @@ func (m *MatterMail) CheckImapConnection() error {
 	return nil
 }
 
-//Check if exist a new mail and post it
+// CheckNewMails Check if exist a new mail and post it
 func (m *MatterMail) CheckNewMails() error {
 	m.debg.Println("CheckNewMails")
 
@@ -188,7 +188,7 @@ func (m *MatterMail) CheckNewMails() error {
 	return nil
 }
 
-//Change to state idle in imap server
+// IdleMailBox Change to state idle in imap server
 func (m *MatterMail) IdleMailBox() error {
 	m.debg.Println("IdleMailBox")
 
@@ -228,9 +228,9 @@ func addPart(client *model.Client, filename string, content *[]byte, writer *mul
 	return nil
 }
 
-//Create a post in Mattermost
-func (m *MatterMail) postMessage(client *model.Client, channel_id string, message string, filenames *[]string) error {
-	post := &model.Post{ChannelId: channel_id, Message: message}
+// postMessage Create a post in Mattermost
+func (m *MatterMail) postMessage(client *model.Client, channelID string, message string, filenames *[]string) error {
+	post := &model.Post{ChannelId: channelID, Message: message}
 
 	if len(*filenames) > 0 {
 		post.Filenames = *filenames
@@ -244,7 +244,7 @@ func (m *MatterMail) postMessage(client *model.Client, channel_id string, messag
 	return nil
 }
 
-//Post files and message in Mattermost server
+// PostFile Post files and message in Mattermost server
 func (m *MatterMail) PostFile(message, emailname string, emailbody *string, attach *[]enmime.MIMEPart, subjectChannel, subjectUser string) error {
 
 	client := model.NewClient(m.cfg.Server)
@@ -464,13 +464,13 @@ func replaceCID(html *string, part *enmime.MIMEPart) string {
 	return strings.Replace(*html, "cid:"+cid, b64, -1)
 }
 
-//Decode non ASCII header string RFC 1342
-//encoded-word = "=?" charset "?" encoding "?" encoded-text "?="
+// NonASCII Decode non ASCII header string RFC 1342
+// encoded-word = "=?" charset "?" encoding "?" encoded-text "?="
 func NonASCII(encoded string) string {
 
-	regex_rfc1342, _ := regexp.Compile(`=\?[^\?]*\?.\?[^\?]*\?=`)
+	regexRFC1342, _ := regexp.Compile(`=\?[^\?]*\?.\?[^\?]*\?=`)
 
-	result := regex_rfc1342.ReplaceAllStringFunc(encoded, func(encoded string) string {
+	result := regexRFC1342.ReplaceAllStringFunc(encoded, func(encoded string) string {
 		//0 utf 1 B/Q 2 code
 		v := strings.Split(encoded, "?")[1:4]
 		var decoded string
@@ -512,7 +512,7 @@ func NonASCII(encoded string) string {
 	return result
 }
 
-//Post an email in Mattermost
+// PostMail Post an email in Mattermost
 func (m *MatterMail) PostMail(msg *mail.Message) error {
 	mime, _ := enmime.ParseMIMEBody(msg) // Parse message body with enmime
 
