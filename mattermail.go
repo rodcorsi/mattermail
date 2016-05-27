@@ -27,6 +27,7 @@ type MatterMail struct {
 	info       *log.Logger
 	eror       *log.Logger
 	debg       *log.Logger
+	user       *model.User
 }
 
 func (m *MatterMail) tryTime(message string, fn func() error) {
@@ -179,7 +180,7 @@ func (m *MatterMail) CheckNewMails() error {
 		//Mark all messages seen
 		_, err = imap.Wait(m.imapClient.UIDStore(seq, "+FLAGS.SILENT", `\Seen`))
 		if err != nil {
-			m.eror.Printf("Error UIDStore \\Seen")
+			m.eror.Println("Error UIDStore \\Seen")
 			return err
 		}
 	}
@@ -244,17 +245,20 @@ func (m *MatterMail) postMessage(client *model.Client, channel_id string, messag
 }
 
 //Post files and message in Mattermost server
-func (m *MatterMail) PostFile(message string, emailname string, emailbody *string, attach *[]enmime.MIMEPart, subjectChannel string) error {
+func (m *MatterMail) PostFile(message, emailname string, emailbody *string, attach *[]enmime.MIMEPart, subjectChannel, subjectUser string) error {
 
 	client := model.NewClient(m.cfg.Server)
 
 	m.debg.Println(client)
 
-	m.debg.Printf("Login user:%v team:%v url:%v", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
+	m.debg.Printf("Login user:%v team:%v url:%v\n", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
 
-	if _, err := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
-		return err
+	result, apperr := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass)
+	if apperr != nil {
+		return apperr
 	}
+
+	m.user = result.Data.(*model.User)
 
 	m.info.Println("Post new message")
 
@@ -282,17 +286,22 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 	channelList := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
 
 	if subjectChannel != "" && !m.cfg.NoRedirectChannel {
-		m.debg.Printf("Try do find channel %v", subjectChannel)
+		m.debg.Printf("Try to find channel %v\n", subjectChannel)
 		channelID = getChannelIDByName(channelList, subjectChannel)
 	}
 
+	if subjectUser != "" && !m.cfg.NoRedirectChannel {
+		m.debg.Printf("Try to find user %v\n", subjectUser)
+		channelID = m.getDirectChannelIDByName(client, channelList, subjectUser)
+	}
+
 	if channelID == "" {
-		m.debg.Printf("Did not find channel from Email Subject. Look for channel %v", m.cfg.Channel)
+		m.debg.Printf("Did not find channel/user from Email Subject. Look for channel %v\n", m.cfg.Channel)
 		channelID = getChannelIDByName(channelList, m.cfg.Channel)
 	}
 
 	if channelID == "" && !m.cfg.NoRedirectChannel {
-		m.debg.Printf("Did not find channel with name %v. Trying channel town-square", m.cfg.Channel)
+		m.debg.Printf("Did not find channel with name %v. Trying channel town-square\n", m.cfg.Channel)
 		channelID = getChannelIDByName(channelList, "town-square")
 	}
 
@@ -354,12 +363,66 @@ func getChannelIDByName(channelList *model.ChannelList, channelName string) stri
 	return ""
 }
 
+func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList *model.ChannelList, userName string) string {
+	result, err := client.GetProfilesForDirectMessageList(client.GetTeamId())
+
+	if err != nil {
+		m.eror.Println("Error on GetProfilesForDirectMessageList: ", err.Error())
+		return ""
+	}
+
+	profiles := result.Data.(map[string]*model.User)
+	var userID string
+
+	for k, p := range profiles {
+		if p.Username == userName {
+			userID = k
+			break
+		}
+	}
+
+	if userID == "" {
+		m.debg.Println("Did not find the username:", userName)
+		return ""
+	}
+
+	dmName := model.GetDMNameFromIds(m.user.Id, userID)
+	dmID := getChannelIDByName(channelList, dmName)
+
+	if dmID != "" {
+		return dmID
+	}
+
+	m.debg.Println("Create direct channel to user:", userName)
+
+	result, err = client.CreateDirectChannel(userID)
+	if err != nil {
+		m.eror.Println("Error on CreateDirectChannel: ", err.Error())
+		return ""
+	}
+
+	directChannel := result.Data.(*model.Channel)
+	return directChannel.Id
+}
+
 var channelRegex = regexp.MustCompile(`^\s*?\[\s*?#\s*?([A-Za-z0-9\-_]*)\s*?\]`)
 
 // getChannelFromSubject extract channel from subject ex:
 // getChannelFromSubject([#mychannel] blablanla) => mychannel
 func getChannelFromSubject(subject string) string {
 	ret := channelRegex.FindStringSubmatch(subject)
+	if len(ret) < 2 {
+		return ""
+	}
+	return strings.ToLower(ret[1])
+}
+
+var userRegex = regexp.MustCompile(`^\s*?\[\s*?@\s*?([A-Za-z0-9\-_]*)\s*?\]`)
+
+// getChannelFromSubject extract channel from subject ex:
+// getChannelFromSubject([#mychannel] blablanla) => mychannel
+func getUserFromSubject(subject string) string {
+	ret := userRegex.FindStringSubmatch(subject)
 	if len(ret) < 2 {
 		return ""
 	}
@@ -466,14 +529,19 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 		partmessage += " ..."
 	}
 
-	message := fmt.Sprintf(m.cfg.MailTemplate, NonASCII(msg.Header.Get("From")), mime.GetHeader("Subject"), partmessage)
-	var subject string
+	subject := mime.GetHeader("Subject")
+	message := fmt.Sprintf(m.cfg.MailTemplate, NonASCII(msg.Header.Get("From")), subject, partmessage)
+	var subjectChannel, subjectUser string
 
 	if !m.cfg.NoRedirectChannel {
-		subject = getChannelFromSubject(mime.GetHeader("Subject"))
+		subjectChannel = getChannelFromSubject(subject)
+
+		if subjectChannel == "" {
+			subjectUser = getUserFromSubject(subject)
+		}
 	}
 
-	return m.PostFile(message, emailname, &emailbody, &mime.Attachments, subject)
+	return m.PostFile(message, emailname, &emailbody, &mime.Attachments, subjectChannel, subjectUser)
 }
 
 type devNull int

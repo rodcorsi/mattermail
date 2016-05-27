@@ -8,9 +8,9 @@
 
 Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 
-1 - If the email subject contains "`[#anychannelname] blablabla`", Mattermail will try to post in "`anychannelname`"
+1 - If the email subject contains "`[#anychannelname] blablabla`" or "`[@usertosend] xxxxxx`", Mattermail will try to post in channel or to usename
 
-2 - If the email subject doesn't contain channel name, Mattermail will try to post the channel defined in `config.json`
+2 - If the email subject doesn't contain channel or username, Mattermail will try to post the channel defined in `config.json`
 
 3 - If Mattermail can not post the email will try to post in "Town Square"
 
