@@ -3,7 +3,7 @@
 		"Name":              "Orders",
 		"Server":            "https://mattermost.example.com",
 		"Team":              "Team1",
-		"Channel":           "orders",
+		"Channel":           "#orders",
 		"MattermostUser":    "mattermail@example.com",
 		"MattermostPass":    "password",
 		"ImapServer":        "imap.example.com:143",

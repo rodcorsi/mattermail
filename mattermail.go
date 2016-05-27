@@ -297,11 +297,16 @@ func (m *MatterMail) PostFile(message, emailname string, emailbody *string, atta
 
 	if channelID == "" {
 		m.debg.Printf("Did not find channel/user from Email Subject. Look for channel %v\n", m.cfg.Channel)
-		channelID = getChannelIDByName(channelList, m.cfg.Channel)
+
+		if strings.HasPrefix(m.cfg.Channel, "#") {
+			channelID = getChannelIDByName(channelList, strings.TrimPrefix(m.cfg.Channel, "#"))
+		} else if strings.HasPrefix(m.cfg.Channel, "@") {
+			channelID = m.getDirectChannelIDByName(client, channelList, strings.TrimPrefix(m.cfg.Channel, "@"))
+		}
 	}
 
 	if channelID == "" && !m.cfg.NoRedirectChannel {
-		m.debg.Printf("Did not find channel with name %v. Trying channel town-square\n", m.cfg.Channel)
+		m.debg.Printf("Did not find channel/user with name %v. Trying channel town-square\n", m.cfg.Channel)
 		channelID = getChannelIDByName(channelList, "town-square")
 	}
 
@@ -364,6 +369,12 @@ func getChannelIDByName(channelList *model.ChannelList, channelName string) stri
 }
 
 func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList *model.ChannelList, userName string) string {
+
+	if m.user.Username == userName {
+		m.eror.Printf("Impossible create a Direct channel, Mattermail user (%v) equals destination user (%v)\n", m.user.Username, userName)
+		return ""
+	}
+
 	result, err := client.GetProfilesForDirectMessageList(client.GetTeamId())
 
 	if err != nil {

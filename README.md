@@ -8,7 +8,7 @@
 
 Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 
-1 - If the email subject contains "`[#anychannelname] blablabla`" or "`[@usertosend] xxxxxx`", Mattermail will try to post in channel or to usename
+1 - If the email subject contains "`[#anychannelname] blablabla`" or "`[@usertosend] xxxxxx`", Mattermail will try to post to the channel or to the username
 
 2 - If the email subject doesn't contain channel or username, Mattermail will try to post the channel defined in `config.json`
 
@@ -38,7 +38,7 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"Name":          "Orders",
 		"Server":        "https://mattermost.example.com",
 		"Team":          "team1",
-		"Channel":       "orders",
+		"Channel":       "#orders",
 		"MattermostUser":"mattermail@example.com",
 		"MattermostPass":"password",
 		"ImapServer":    "imap.example.com:143",
@@ -50,7 +50,7 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"Name":              "Bugs",
 		"Server":            "https://mattermost.example.com",
 		"Team":              "team1",
-		"Channel":           "bugs",
+		"Channel":           "@user123",
 		"MattermostUser":    "mattermail@example.com",
 		"MattermostPass":    "password",
 		"ImapServer":        "imap.gmail.com:993",
@@ -60,8 +60,8 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"StartTLS":          false,  /*Optional default false*/
 		"Disabled":          false,  /*Optional default false*/
 		"Debug":             true    /*Optional default false*/
-        "LinesToPreview":    20, /*Optional default 10*/
-		"NoRedirectChannel": true /*Optional default false*/
+        "LinesToPreview":    20,     /*Optional default 10*/
+		"NoRedirectChannel": true    /*Optional default false*/
 	},
 	{
 		/*.... other if you want ....*/

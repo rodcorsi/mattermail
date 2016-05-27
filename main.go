@@ -58,7 +58,7 @@ Options:
     -v, --version Print current version
 `
 
-func loadconfig() []config {
+func loadconfig() []*config {
 	log.Println("Loading ", configFile)
 
 	file, err := ioutil.ReadFile(configFile)
@@ -66,7 +66,7 @@ func loadconfig() []config {
 		log.Fatal("Could not load: ", err)
 	}
 
-	var cfg []config
+	var cfg []*config
 	err = json.Unmarshal(file, &cfg)
 
 	if err != nil {
@@ -78,7 +78,15 @@ func loadconfig() []config {
 		if c.LinesToPreview <= 0 {
 			c.LinesToPreview = defLinesToPreview
 		}
+
+		c.Channel = strings.TrimSpace(c.Channel)
 		c.Channel = strings.ToLower(c.Channel)
+
+		if len(c.Channel) > 0 {
+			if !strings.HasPrefix(c.Channel, "#") && !strings.HasPrefix(c.Channel, "@") {
+				c.Channel = "#" + c.Channel
+			}
+		}
 	}
 
 	return cfg
@@ -112,7 +120,7 @@ func main() {
 		wg.Add(1)
 		c := cfg
 		go func() {
-			InitMatterMail(&c)
+			InitMatterMail(c)
 			wg.Done()
 		}()
 	}
