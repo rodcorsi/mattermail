@@ -44,7 +44,7 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"ImapServer":    "imap.example.com:143",
 		"Email":         "orders@example.com",
 		"EmailPass":     "password",
-		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
+		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v"
 	},
 	{
 		"Name":              "Bugs",
@@ -61,7 +61,17 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"Disabled":          false,  /*Optional default false*/
 		"Debug":             true    /*Optional default false*/
         "LinesToPreview":    20,     /*Optional default 10*/
-		"NoRedirectChannel": true    /*Optional default false*/
+		"NoRedirectChannel": true,   /*Optional default false*/
+        "Filter":            [
+            /* if subject contains 'Feature' redirect to #feature */
+            {"Subject":"Feature", "Channel":"#feature"},
+            
+            /* if from contains 'test@gmail.com' and subject contains 'to me' redirect to @test2*/
+            {"From":"test@gmail.com", "Subject":"To Me", "Channel":"@test2"},
+            
+            /* if from contains '@companyb.com' redirect to #companyb */
+			{"From":"@companyb.com", "Channel":"#companyb"} /**/
+        ]
 	},
 	{
 		/*.... other if you want ....*/
