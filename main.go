@@ -6,27 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"strings"
 	"sync"
-)
 
-type config struct {
-	Name              string
-	Server            string
-	Team              string
-	Channel           string
-	MattermostUser    string
-	MattermostPass    string
-	ImapServer        string
-	StartTLS          bool
-	Email             string
-	EmailPass         string
-	MailTemplate      string
-	Debug             bool
-	Disabled          bool
-	LinesToPreview    int
-	NoRedirectChannel bool
-}
+	"github.com/rodrigocorsi2/mattermail/mmail"
+)
 
 const defLinesToPreview = 10
 
@@ -59,7 +42,7 @@ Options:
     -v, --version Print current version
 `
 
-func loadconfig() []*config {
+func loadconfig() []*mmail.Config {
 	log.Println("Loading ", configFile)
 
 	file, err := ioutil.ReadFile(configFile)
@@ -67,7 +50,7 @@ func loadconfig() []*config {
 		log.Fatal("Could not load: ", err)
 	}
 
-	var cfg []*config
+	var cfg []*mmail.Config
 	err = json.Unmarshal(file, &cfg)
 
 	if err != nil {
@@ -76,17 +59,8 @@ func loadconfig() []*config {
 
 	// Set default value
 	for _, c := range cfg {
-		if c.LinesToPreview <= 0 {
-			c.LinesToPreview = defLinesToPreview
-		}
-
-		c.Channel = strings.TrimSpace(c.Channel)
-		c.Channel = strings.ToLower(c.Channel)
-
-		if len(c.Channel) > 0 {
-			if !strings.HasPrefix(c.Channel, "#") && !strings.HasPrefix(c.Channel, "@") {
-				c.Channel = "#" + c.Channel
-			}
+		if err := c.Valid(); err != nil {
+			log.Fatal(err)
 		}
 	}
 
@@ -110,6 +84,7 @@ func main() {
 
 	cfgs := loadconfig()
 	hasconfig := false
+	log.Println("MatterMail version:", Version)
 
 	var wg sync.WaitGroup
 	for _, cfg := range cfgs {
@@ -121,7 +96,7 @@ func main() {
 		wg.Add(1)
 		c := cfg
 		go func() {
-			InitMatterMail(c)
+			mmail.InitMatterMail(c)
 			wg.Done()
 		}()
 	}

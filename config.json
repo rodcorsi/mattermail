@@ -10,10 +10,11 @@
 		"Email":             "orders@example.com",
 		"EmailPass":         "password",
 		"MailTemplate":      ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
-        "StartTLS":          false,
+		"StartTLS":          false,
 		"Disabled":          false,
 		"Debug":             true,
 		"LinesToPreview":    10,
-		"NoRedirectChannel": false
+		"NoRedirectChannel": false,
+		"Filter":            []
 	}
 ]

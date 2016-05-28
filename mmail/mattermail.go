@@ -1,4 +1,4 @@
-package main
+package mmail
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ import (
 
 // MatterMail struct with configurations, loggers and Mattemost user
 type MatterMail struct {
-	cfg        *config
+	cfg        *Config
 	imapClient *imap.Client
 	info       *log.Logger
 	eror       *log.Logger
@@ -236,7 +236,7 @@ func (m *MatterMail) postMessage(client *model.Client, channelID string, message
 }
 
 // PostFile Post files and message in Mattermost server
-func (m *MatterMail) PostFile(message, emailname string, emailbody *string, attach *[]enmime.MIMEPart, subjectChannel, subjectUser string) error {
+func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbody *string, attach *[]enmime.MIMEPart) error {
 
 	client := model.NewClient(m.cfg.Server)
 
@@ -272,38 +272,41 @@ func (m *MatterMail) PostFile(message, emailname string, emailbody *string, atta
 	}
 
 	//Discover channel id by channel name
-	var channelID string
-
+	var channelID, channelName string
 	channelList := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
 
-	if subjectChannel != "" && !m.cfg.NoRedirectChannel {
-		m.debg.Printf("Try to find channel %v\n", subjectChannel)
-		channelID = getChannelIDByName(channelList, subjectChannel)
+	// redirect email by the subject
+	if !m.cfg.NoRedirectChannel {
+		m.debg.Println("Try to find channel/user by subject")
+		channelName = getChannelFromSubject(subject)
+		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
-	if subjectUser != "" && !m.cfg.NoRedirectChannel {
-		m.debg.Printf("Try to find user %v\n", subjectUser)
-		channelID = m.getDirectChannelIDByName(client, channelList, subjectUser)
+	// check filters
+	if channelID == "" && m.cfg.Filter != nil {
+		m.debg.Println("Did not find channel/user from Email Subject. Look for filter")
+		channelName = m.cfg.Filter.GetChannel(from, subject)
+		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
+	// get default Channel config
 	if channelID == "" {
-		m.debg.Printf("Did not find channel/user from Email Subject. Look for channel %v\n", m.cfg.Channel)
-
-		if strings.HasPrefix(m.cfg.Channel, "#") {
-			channelID = getChannelIDByName(channelList, strings.TrimPrefix(m.cfg.Channel, "#"))
-		} else if strings.HasPrefix(m.cfg.Channel, "@") {
-			channelID = m.getDirectChannelIDByName(client, channelList, strings.TrimPrefix(m.cfg.Channel, "@"))
-		}
+		m.debg.Printf("Did not find channel/user in filters. Look for channel '%v'\n", m.cfg.Channel)
+		channelName = m.cfg.Channel
+		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
 	if channelID == "" && !m.cfg.NoRedirectChannel {
-		m.debg.Printf("Did not find channel/user with name %v. Trying channel town-square\n", m.cfg.Channel)
-		channelID = getChannelIDByName(channelList, "town-square")
+		m.debg.Printf("Did not find channel/user with name '%v'. Trying channel town-square\n", m.cfg.Channel)
+		channelName = "town-square"
+		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
 	if channelID == "" {
 		return fmt.Errorf("Did not find any channel to post")
 	}
+
+	m.debg.Printf("Post email in %v", channelName)
 
 	if len(*attach) == 0 && len(emailname) == 0 {
 		return m.postMessage(client, channelID, message, nil)
@@ -360,6 +363,15 @@ func (m *MatterMail) PostFile(message, emailname string, emailbody *string, atta
 	}
 
 	return m.postMessage(client, channelID, message, &resp.Data.(*model.FileUploadResponse).Filenames)
+}
+
+func (m *MatterMail) getChannelID(client *model.Client, channelList *model.ChannelList, channelName string) string {
+	if strings.HasPrefix(channelName, "#") {
+		return getChannelIDByName(channelList, strings.TrimPrefix(channelName, "#"))
+	} else if strings.HasPrefix(channelName, "@") {
+		return m.getDirectChannelIDByName(client, channelList, strings.TrimPrefix(channelName, "@"))
+	}
+	return ""
 }
 
 func getChannelIDByName(channelList *model.ChannelList, channelName string) string {
@@ -419,24 +431,12 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 	return directChannel.Id
 }
 
-var channelRegex = regexp.MustCompile(`^\s*?\[\s*?#\s*?([A-Za-z0-9\-_]*)\s*?\]`)
+var channelRegex = regexp.MustCompile(`^\s*?\[\s*?([#@][A-Za-z0-9\-_]*)\s*?\]`)
 
 // getChannelFromSubject extract channel from subject ex:
-// getChannelFromSubject([#mychannel] blablanla) => mychannel
+// getChannelFromSubject([#mychannel] blablanla) => #mychannel
 func getChannelFromSubject(subject string) string {
 	ret := channelRegex.FindStringSubmatch(subject)
-	if len(ret) < 2 {
-		return ""
-	}
-	return strings.ToLower(ret[1])
-}
-
-var userRegex = regexp.MustCompile(`^\s*?\[\s*?@\s*?([A-Za-z0-9\-_]*)\s*?\]`)
-
-// getChannelFromSubject extract channel from subject ex:
-// getChannelFromSubject([#mychannel] blablanla) => mychannel
-func getUserFromSubject(subject string) string {
-	ret := userRegex.FindStringSubmatch(subject)
 	if len(ret) < 2 {
 		return ""
 	}
@@ -569,18 +569,10 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	}
 
 	subject := mime.GetHeader("Subject")
-	message := fmt.Sprintf(m.cfg.MailTemplate, NonASCII(msg.Header.Get("From")), subject, partmessage)
-	var subjectChannel, subjectUser string
+	from := NonASCII(msg.Header.Get("From"))
+	message := fmt.Sprintf(m.cfg.MailTemplate, from, subject, partmessage)
 
-	if !m.cfg.NoRedirectChannel {
-		subjectChannel = getChannelFromSubject(subject)
-
-		if subjectChannel == "" {
-			subjectUser = getUserFromSubject(subject)
-		}
-	}
-
-	return m.PostFile(message, emailname, &emailbody, &mime.Attachments, subjectChannel, subjectUser)
+	return m.PostFile(from, subject, message, emailname, &emailbody, &mime.Attachments)
 }
 
 type devNull int
@@ -590,7 +582,7 @@ func (devNull) Write(p []byte) (int, error) {
 }
 
 // InitMatterMail init MatterMail server
-func InitMatterMail(cfg *config) {
+func InitMatterMail(cfg *Config) {
 	m := &MatterMail{
 		cfg:  cfg,
 		info: log.New(os.Stdout, "INFO "+cfg.Name+"\t", log.Ltime),
@@ -607,7 +599,6 @@ func InitMatterMail(cfg *config) {
 
 	defer m.LogoutImapClient()
 
-	m.info.Println("MatterMail version:", Version)
 	m.debg.Println("Debug mode on")
 	m.info.Println("Checking new emails")
 	m.tryTime("Error on check new email:", m.CheckNewMails)
