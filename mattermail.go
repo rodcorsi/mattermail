@@ -215,24 +215,11 @@ func (m *MatterMail) IdleMailBox() error {
 	return nil
 }
 
-func addPart(client *model.Client, filename string, content *[]byte, writer *multipart.Writer) error {
-	part, err := writer.CreateFormFile("files", filename)
-	if err != nil {
-		return err
-	}
-
-	_, err = part.Write(*content)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // postMessage Create a post in Mattermost
 func (m *MatterMail) postMessage(client *model.Client, channelID string, message string, filenames *[]string) error {
 	post := &model.Post{ChannelId: channelID, Message: message}
 
-	if len(*filenames) > 0 {
+	if filenames != nil && len(*filenames) > 0 {
 		post.Filenames = *filenames
 	}
 
@@ -320,18 +307,30 @@ func (m *MatterMail) PostFile(message, emailname string, emailbody *string, atta
 
 	buf := &bytes.Buffer{}
 	writer := multipart.NewWriter(buf)
-
 	var email []byte
+
+	addPart := func(filename string) error {
+		part, err := writer.CreateFormFile("files", filename)
+		if err != nil {
+			return err
+		}
+
+		if _, err = part.Write(email); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	if len(emailname) > 0 {
 		email = []byte(*emailbody)
-		if err := addPart(client, emailname, &email, writer); err != nil {
+		if err := addPart(emailname); err != nil {
 			return err
 		}
 	}
 
 	for _, a := range *attach {
 		email = a.Content()
-		if err := addPart(client, a.FileName(), &email, writer); err != nil {
+		if err := addPart(a.FileName()); err != nil {
 			return err
 		}
 	}
@@ -442,12 +441,33 @@ func getUserFromSubject(subject string) string {
 
 //Read number of lines of string
 func readLines(s string, nmax int) string {
-	lines := regexp.MustCompile("\r\n|\n").Split(s, nmax+1)
-
-	if nmax < len(lines) {
-		return strings.Join(lines[:nmax], "\n")
+	if nmax <= 0 {
+		return ""
 	}
-	return strings.Join(lines[:], "\n")
+
+	var rxlines string
+	if strings.Contains(s, "\r\n") {
+		rxlines = "\r\n"
+	} else {
+		rxlines = "\n"
+	}
+
+	lines := regexp.MustCompile(rxlines).Split(s, nmax+1)
+
+	ret := ""
+	for i, l := range lines {
+		if i >= nmax {
+			break
+		}
+		if i > 0 {
+			ret += rxlines
+		}
+		ret += l
+	}
+	if nmax+1 == len(lines) && strings.HasSuffix(s, rxlines) {
+		ret += rxlines
+	}
+	return ret
 }
 
 //Replace cid:**** by embedded base64 image
@@ -516,6 +536,17 @@ func NonASCII(encoded string) string {
 func (m *MatterMail) PostMail(msg *mail.Message) error {
 	mime, _ := enmime.ParseMIMEBody(msg) // Parse message body with enmime
 
+	// read only some lines of text
+	partmessage := readLines(mime.Text, m.cfg.LinesToPreview)
+
+	postedfullmessage := false
+
+	if partmessage != mime.Text && len(partmessage) > 0 {
+		partmessage += " ..."
+	} else if partmessage == mime.Text {
+		postedfullmessage = true
+	}
+
 	var emailname, emailbody string
 	if len(mime.HTML) > 0 {
 		emailname = "email.html"
@@ -528,16 +559,9 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 			emailbody = replaceCID(&emailbody, &p)
 		}
 
-	} else if len(mime.Text) > 0 {
+	} else if len(mime.Text) > 0 && !postedfullmessage {
 		emailname = "email.txt"
 		emailbody = mime.Text
-	}
-
-	// read only some lines of text
-	partmessage := readLines(mime.Text, m.cfg.LinesToPreview)
-
-	if partmessage != mime.Text && len(partmessage) > 0 {
-		partmessage += " ..."
 	}
 
 	subject := mime.GetHeader("Subject")
