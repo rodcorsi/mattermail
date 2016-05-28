@@ -208,10 +208,11 @@ func (m *MatterMail) IdleMailBox() error {
 	}
 
 	defer m.imapClient.IdleTerm()
-
+	timeout := 0
 	for {
 		err := m.imapClient.Recv(time.Second)
-		if err == nil {
+		timeout++
+		if err == nil || timeout > 180 {
 			break
 		}
 	}
