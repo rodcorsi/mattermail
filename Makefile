@@ -43,7 +43,7 @@ govet:
 
 golint:
 	@echo GOLINT
-	@golint ./*.go | grep -v 'comment or be unexported' | grep -v 'ALL_CAPS' || exit 0
+	@golint ./*.go
 
 gofmt:
 	@echo GOFMT

@@ -21,6 +21,7 @@ import (
 	_ "github.com/paulrosania/go-charset/data"
 )
 
+// MatterMail struct with configurations, loggers and Mattemost user
 type MatterMail struct {
 	cfg        *config
 	imapClient *imap.Client
@@ -38,12 +39,14 @@ func (m *MatterMail) tryTime(message string, fn func() error) {
 	}
 }
 
+// LogoutImapClient logout imap connection after 5 seconds
 func (m *MatterMail) LogoutImapClient() {
 	if m.imapClient != nil {
 		m.imapClient.Logout(time.Second * 5)
 	}
 }
 
+// CheckImapConnection if is connected return nil or try to connect
 func (m *MatterMail) CheckImapConnection() error {
 	if m.imapClient != nil && (m.imapClient.State() == imap.Auth || m.imapClient.State() == imap.Selected) {
 		m.debg.Println("CheckImapConnection: Connection alive")
@@ -585,6 +588,7 @@ func (devNull) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// InitMatterMail init MatterMail server
 func InitMatterMail(cfg *config) {
 	m := &MatterMail{
 		cfg:  cfg,

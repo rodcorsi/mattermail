@@ -30,6 +30,7 @@ type config struct {
 
 const defLinesToPreview = 10
 
+// Version show the current version, changed during the make build
 var Version = "3.0-dev"
 var configFile string
 var help bool
