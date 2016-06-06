@@ -4,7 +4,7 @@
 
 ![mattermail screenshot](https://github.com/rodrigocorsi2/mattermail/raw/master/img/screenshot.png)
 
-## Redirect to the channel by subject
+## Redirect to the channel by subject (Version 3.0 or later)
 
 Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 
@@ -22,7 +22,7 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 
   * For Mattermost 2.2:
   
-  [Linux](https://github.com/rodrigocorsi2/mattermail/releases/download/v2.2/mattermail-2.2.linux.am64.tar.gz) / [OSX](https://github.com/rodrigocorsi2/mattermail/releases/download/v2.2/mattermail-2.2.osx.am64.tar.gz)
+  [Linux](https://github.com/rodrigocorsi2/mattermail/releases/download/v2.2/mattermail-2.2.linux.am64.tar.gz)
 
 ## Usage
 1. You need to create a user in Mattermost server, you can use MatterMail icon as profile picture.
@@ -62,6 +62,8 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"Debug":             true    /*Optional default false*/
         "LinesToPreview":    20,     /*Optional default 10*/
 		"NoRedirectChannel": true,   /*Optional default false*/
+
+        /*Filter works only (Version 3.0 or later)*/
         "Filter":            [
             /* if subject contains 'Feature' redirect to #feature */
             {"Subject":"Feature", "Channel":"#feature"},
