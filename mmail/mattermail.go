@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"crypto/tls"
 
 	"github.com/jhillyerd/go.enmime"
 	"github.com/mattermost/platform/model"
@@ -71,7 +72,11 @@ func (m *MatterMail) CheckImapConnection() error {
 
 	if m.cfg.StartTLS && m.imapClient.Caps["STARTTLS"] {
 		m.debg.Println("CheckImapConnection:StartTLS")
-		_, err = m.imapClient.StartTLS(nil)
+		var tconfig tls.Config
+		if m.cfg.TLSAcceptAllCerts {
+			tconfig.InsecureSkipVerify = true
+		}
+		_, err = m.imapClient.StartTLS(&tconfig)
 		if err != nil {
 			return err
 		}
