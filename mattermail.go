@@ -24,12 +24,16 @@ import (
 //Number of lines of email to show in post
 const linestopreview = 10
 
+// TeamID needed later to search for user
+var teamID = "gn6mz3don7d9mqo3i875yg16ca"
+
 type MatterMail struct {
 	cfg        *config
 	imapClient *imap.Client
 	info       *log.Logger
 	eror       *log.Logger
 	debg       *log.Logger
+	user       *model.User
 }
 
 func (m *MatterMail) tryTime(message string, fn func() error) {
@@ -113,7 +117,8 @@ func (m *MatterMail) CheckNewMails() error {
 	seq := &imap.SeqSet{}
 
 	// get headers and UID for UnSeen message in src inbox...
-	cmd, err := imap.Wait(m.imapClient.UIDSearch(specs...))
+	//cmd, err := imap.Wait(m.imapClient.UIDSearch(specs...))
+	cmd, err := imap.Wait(m.imapClient.Send("UID SEARCH", append([]imap.Field{"CHARSET", "US-ASCII"}, specs...)...))
 	if err != nil {
 		m.eror.Println("UIDSearch:")
 		return err
@@ -160,10 +165,9 @@ func (m *MatterMail) CheckNewMails() error {
 		if err == imap.ErrAborted {
 			m.eror.Println("Fetch command aborted")
 			return err
-		} else {
-			m.eror.Println("Fetch error:", rsp.Info)
-			return err
 		}
+		m.eror.Println("Fetch error:", rsp.Info)
+		return err
 	}
 
 	cmd.Data = nil
@@ -199,10 +203,11 @@ func (m *MatterMail) IdleMailBox() error {
 	}
 
 	defer m.imapClient.IdleTerm()
-
+	timeout := 0
 	for {
 		err := m.imapClient.Recv(time.Second)
-		if err == nil {
+		timeout++
+		if err == nil || timeout > 180 {
 			break
 		}
 	}
@@ -225,6 +230,10 @@ func addPart(client *model.Client, filename string, content *[]byte, writer *mul
 //Create a post in Mattermost
 func (m *MatterMail) postMessage(client *model.Client, channel_id string, message string, filenames *[]string) error {
 	post := &model.Post{ChannelId: channel_id, Message: message}
+        
+        if filenames == nil {
+		return nil
+	}
 
 	if len(*filenames) > 0 {
 		post.Filenames = *filenames
@@ -239,46 +248,66 @@ func (m *MatterMail) postMessage(client *model.Client, channel_id string, messag
 }
 
 //Post files and message in Mattermost server
-func (m *MatterMail) PostFile(message string, emailname string, emailbody *string, attach *[]enmime.MIMEPart) error {
+func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbody *string, attach *[]enmime.MIMEPart) error {
 
 	client := model.NewClient(m.cfg.Server)
 
 	m.debg.Println("LoginByEmail %v on %v", m.cfg.MattermostUser, m.cfg.Team)
 
-	if _, err := client.LoginByEmail(m.cfg.Team, m.cfg.MattermostUser, m.cfg.MattermostPass); err != nil {
-		return err
+	result, apperr := client.LoginByEmail(m.cfg.Team, m.cfg.MattermostUser, m.cfg.MattermostPass)
+	if apperr != nil {
+		return apperr
 	}
+
+	m.user = result.Data.(*model.User)
 
 	m.info.Println("Post new message")
 
 	defer client.Logout()
 
 	//Discover channel id by channel name
-	var channel_id string
+	var channelID, channelName string
+	channelList := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
 
-	rget := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
+        m.info.Println("Discover channels")
+	
+	m.debg.Println("Subject %v", subject)
 
-	nameMatch := false
-	for _, c := range rget.Channels {
-		if c.Name == m.cfg.Channel {
-			channel_id = c.Id
-			nameMatch = true
-			break
-		}
+	// redirect email by the subject
+	if !m.cfg.NoRedirectChannel {
+		m.debg.Println("Try to find channel/user by subject")
+		channelName = getChannelFromSubject(subject)
+		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
-	if !nameMatch {
-		return fmt.Errorf("Did not find channel with name %v", m.cfg.Channel)
+
+	// get default Channel config
+	if channelID == "" {
+		m.debg.Printf("Did not find channel/user in filters. Look for channel '%v'\n", m.cfg.Channel)
+		channelName = m.cfg.Channel
+		channelID = m.getChannelID(client, channelList, channelName)
 	}
+
+	if channelID == "" && !m.cfg.NoRedirectChannel {
+		m.debg.Printf("Did not find channel/user with name '%v'. Trying channel town-square\n", m.cfg.Channel)
+		channelName = "town-square"
+		channelID = m.getChannelID(client, channelList, channelName)
+	}
+
+	if channelID == "" {
+		return fmt.Errorf("Did not find any channel to post")
+	}
+
+	m.debg.Printf("Post email in %v", channelName)
 
 	if len(*attach) == 0 && len(emailname) == 0 {
-		return m.postMessage(client, channel_id, message, nil)
+		return m.postMessage(client, channelID, message, nil)
 	}
 
 	buf := &bytes.Buffer{}
 	writer := multipart.NewWriter(buf)
-
 	var email []byte
+
 	if len(emailname) > 0 {
 		email = []byte(*emailbody)
 		if err := addPart(client, emailname, &email, writer); err != nil {
@@ -298,7 +327,7 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 		return err
 	}
 
-	_, err = field.Write([]byte(channel_id))
+	_, err = field.Write([]byte(channelID))
 	if err != nil {
 		return err
 	}
@@ -311,19 +340,127 @@ func (m *MatterMail) PostFile(message string, emailname string, emailbody *strin
 	resp, err := client.UploadFile("/files/upload", buf.Bytes(), writer.FormDataContentType())
 	if resp == nil {
 		return err
+	} else {
+		return m.postMessage(client, channelID, message, &resp.Data.(*model.FileUploadResponse).Filenames)
+	}
+}
+
+func (m *MatterMail) getChannelID(client *model.Client, channelList *model.ChannelList, channelName string) string {
+	if strings.HasPrefix(channelName, "#") {
+		return m.getChannelIDByName(channelList, strings.TrimPrefix(channelName, "#"))
+	} else if strings.HasPrefix(channelName, "@") {
+		return m.getDirectChannelIDByName(client, channelList, strings.TrimPrefix(channelName, "@"))
+	}
+	return ""
+}
+
+func (m *MatterMail) getChannelIDByName(channelList *model.ChannelList, channelName string) string {
+	for _, c := range channelList.Channels {
+		if c.Name == channelName {
+			m.debg.Println("Channelname %v, channelID on %v", c.Name, c.Id)
+			return c.Id
+		}
+	}
+	return ""
+}
+
+func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList *model.ChannelList, userName string) string {
+
+	if m.user.Username == userName {
+		m.eror.Printf("Impossible create a Direct channel, Mattermail user (%v) equals destination user (%v)\n", m.user.Username, userName)
+		return ""
 	}
 
-	return m.postMessage(client, channel_id, message, &resp.Data.(*model.FileUploadResponse).Filenames)
+	m.debg.Println("In getDirectChannelIDByName")
+
+	result, err := client.GetProfiles(teamID, "")
+
+	if err != nil {
+		m.eror.Println("Error on GetProfiles: ", err.Error())
+		return ""
+	}
+
+	m.debg.Println("Result of getProfiles, teamID %v ", teamID)
+	
+
+	profiles := result.Data.(map[string]*model.User)
+	var userID string
+
+	for k, p := range profiles {
+		if p.Username == userName {
+			userID = k
+			break
+		}
+	}
+
+	if userID == "" {
+		m.debg.Println("Did not find the username:", userName)
+		return ""
+	}
+
+	dmName := model.GetDMNameFromIds(m.user.Id, userID)
+	dmID := m.getChannelIDByName(channelList, dmName)
+
+	if dmID != "" {
+		return dmID
+	}
+
+	m.debg.Println("Create direct channel to user:", userName)
+
+	userIDdata := make(map[string]string)
+	userIDdata["user_id"] = userID
+
+	result, err = client.CreateDirectChannel(userIDdata)
+	if err != nil {
+		m.eror.Println("Error on CreateDirectChannel: ", err.Error())
+		return ""
+	}
+
+	directChannel := result.Data.(*model.Channel)
+	return directChannel.Id
+}
+
+var channelRegex = regexp.MustCompile(`^\s*?\[\s*?([#@][A-Za-z0-9\-_]*)\s*?\]`)
+
+// getChannelFromSubject extract channel from subject ex:
+// getChannelFromSubject([#mychannel] blablanla) => #mychannel
+func getChannelFromSubject(subject string) string {
+	ret := channelRegex.FindStringSubmatch(subject)
+	if len(ret) < 2 {
+		return ""
+	}
+	return strings.ToLower(ret[1])
 }
 
 //Read number of lines of string
 func readLines(s string, nmax int) string {
-	lines := regexp.MustCompile("\r\n|\n").Split(s, nmax+1)
-
-	if nmax < len(lines) {
-		return strings.Join(lines[:nmax], "\n")
+	if nmax <= 0 {
+		return ""
 	}
-	return strings.Join(lines[:], "\n")
+
+	var rxlines string
+	if strings.Contains(s, "\r\n") {
+		rxlines = "\r\n"
+	} else {
+		rxlines = "\n"
+	}
+
+	lines := regexp.MustCompile(rxlines).Split(s, nmax+1)
+
+	ret := ""
+	for i, l := range lines {
+		if i >= nmax {
+			break
+		}
+		if i > 0 {
+			ret += rxlines
+		}
+		ret += l
+	}
+	if nmax+1 == len(lines) && strings.HasSuffix(s, rxlines) {
+		ret += rxlines
+	}
+	return ret
 }
 
 //Replace cid:**** by embedded base64 image
@@ -416,9 +553,11 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 		partmessage += " ..."
 	}
 
-	message := fmt.Sprintf(m.cfg.MailTemplate, NonASCII(msg.Header.Get("From")), mime.GetHeader("Subject"), partmessage)
+	subject := mime.GetHeader("Subject")
+	from := NonASCII(msg.Header.Get("From"))
+	message := fmt.Sprintf(m.cfg.MailTemplate, from, subject, partmessage)
 
-	return m.PostFile(message, emailname, &emailbody, &mime.Attachments)
+	return m.PostFile(from, subject, message, emailname, &emailbody, &mime.Attachments)
 }
 
 type devNull int
@@ -427,6 +566,7 @@ func (devNull) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// InitMatterMail init MatterMail server
 func InitMatterMail(cfg *config) {
 	m := &MatterMail{
 		cfg:  cfg,
