@@ -8,7 +8,7 @@ imports:
 - name: github.com/jhillyerd/go.enmime
   version: 3ea281bf3e00864f4afe2f9a6911af164438b581
 - name: github.com/mattermost/platform
-  version: 9d94869cc6a0fb9f051879437c104ccd76094380
+  version: 8e883ad2f516820942cc0131241268c1ea909ff3
   subpackages:
   - model
 - name: github.com/mxk/go-imap

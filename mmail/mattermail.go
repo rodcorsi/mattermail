@@ -2,6 +2,7 @@ package mmail
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
@@ -13,7 +14,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"crypto/tls"
 
 	"github.com/jhillyerd/go.enmime"
 	"github.com/mattermost/platform/model"
@@ -249,7 +249,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 
 	m.debg.Printf("Login user:%v team:%v url:%v\n", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
 
-	result, apperr := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass)
+	result, apperr := client.LoginByEmail(m.cfg.Team, m.cfg.MattermostUser, m.cfg.MattermostPass)
 	if apperr != nil {
 		return apperr
 	}
@@ -259,22 +259,6 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 	m.info.Println("Post new message")
 
 	defer client.Logout()
-
-	// Get Team
-	teams := client.Must(client.GetAllTeams()).Data.(map[string]*model.Team)
-
-	teamMatch := false
-	for _, t := range teams {
-		if t.Name == m.cfg.Team {
-			client.SetTeamId(t.Id)
-			teamMatch = true
-			break
-		}
-	}
-
-	if !teamMatch {
-		return fmt.Errorf("Did not find team with name %v", m.cfg.Team)
-	}
 
 	//Discover channel id by channel name
 	var channelID, channelName string
@@ -362,7 +346,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 		return err
 	}
 
-	resp, err := client.UploadPostAttachment(buf.Bytes(), writer.FormDataContentType())
+	resp, err := client.UploadFile("/files/upload", buf.Bytes(), writer.FormDataContentType())
 	if resp == nil {
 		return err
 	}
@@ -395,10 +379,10 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 		return ""
 	}
 
-	result, err := client.GetProfilesForDirectMessageList(client.GetTeamId())
+	result, err := client.GetProfiles(m.user.TeamId, "")
 
 	if err != nil {
-		m.eror.Println("Error on GetProfilesForDirectMessageList: ", err.Error())
+		m.eror.Println("Error on GetProfiles: ", err.Error())
 		return ""
 	}
 
@@ -426,7 +410,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 
 	m.debg.Println("Create direct channel to user:", userName)
 
-	result, err = client.CreateDirectChannel(userID)
+	result, err = client.CreateDirectChannel(map[string]string{"user_id": userID})
 	if err != nil {
 		m.eror.Println("Error on CreateDirectChannel: ", err.Error())
 		return ""
