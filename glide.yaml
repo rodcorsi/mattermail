@@ -1,57 +1,13 @@
 package: github.com/rodrigocorsi2/mattermail
 import:
-- package: github.com/alecthomas/log4go
-  version: e5dc62318d9bd58682f1dceb53a4b24e8253682f
-- package: github.com/jaytaylor/html2text
-  version: 4936b6c2ae7f89f5eeba2473c31fd27ea8f11068
 - package: github.com/jhillyerd/go.enmime
-  version: 3ea281bf3e00864f4afe2f9a6911af164438b581
 - package: github.com/mattermost/platform
-  version: 9d94869cc6a0fb9f051879437c104ccd76094380
   subpackages:
   - model
 - package: github.com/mxk/go-imap
-  version: 531c36c3f12d6a03ea766b07a77314aa51ec17f3
   subpackages:
   - imap
-- package: github.com/nicksnyder/go-i18n
-  version: 37e5c2de3e03e4b82693e3fcb4a6aa2cc4eb07e3
-  subpackages:
-  - i18n
-  - i18n/bundle
-  - i18n/language
-  - i18n/translation
 - package: github.com/paulrosania/go-charset
-  version: 621bb39fcc835dce592e682f5073025d0169587b
   subpackages:
   - charset
   - data
-- package: github.com/pborman/uuid
-  version: c55201b036063326c5b1b89ccfe45a184973d073
-- package: golang.org/x/crypto
-  version: 1e61df8d9ea476e2e1504cd9a32b40280c7c6c7e
-  subpackages:
-  - bcrypt
-  - blowfish
-- package: golang.org/x/net
-  version: 96dbb961a39ddccf16860cdd355bfa639c497f23
-  subpackages:
-  - html
-  - html/atom
-- package: golang.org/x/text
-  version: f773ec03ce334298742df7f3108fc0d402646d22
-  subpackages:
-  - encoding
-  - encoding/charmap
-  - encoding/internal
-  - encoding/internal/identifier
-  - encoding/japanese
-  - encoding/korean
-  - encoding/simplifiedchinese
-  - encoding/traditionalchinese
-  - encoding/unicode
-  - internal/utf8internal
-  - runes
-  - transform
-- package: gopkg.in/yaml.v2
-  version: a83829b6f1293c91addabc89d0571c246397bbf4
