@@ -14,6 +14,7 @@ type Config struct {
 	MattermostPass    string
 	ImapServer        string
 	StartTLS          bool
+	TLSAcceptAllCerts bool
 	Email             string
 	EmailPass         string
 	MailTemplate      string

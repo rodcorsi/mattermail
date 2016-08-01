@@ -1,8 +1,8 @@
-hash: 44c17f48c69843533c1f25a7f11b8a9e34005ba63410a367e70abec3dfbf6083
-updated: 2016-05-15T07:28:20.176273029-03:00
+hash: b8f73ea9201df49b7bcb2446c1e4f9c1974135fc8c50f26cee0cb6a2c90d8824
+updated: 2016-06-12T09:47:30.037818306-03:00
 imports:
 - name: github.com/alecthomas/log4go
-  version: e5dc62318d9bd58682f1dceb53a4b24e8253682f
+  version: 8e9057c3b25c409a34c0b9737cdc82cbcafeabce
 - name: github.com/jaytaylor/html2text
   version: 4936b6c2ae7f89f5eeba2473c31fd27ea8f11068
 - name: github.com/jhillyerd/go.enmime
@@ -28,9 +28,9 @@ imports:
   - charset
   - data
 - name: github.com/pborman/uuid
-  version: c55201b036063326c5b1b89ccfe45a184973d073
+  version: dee7705ef7b324f27ceb85a121c61f2c2e8ce988
 - name: golang.org/x/crypto
-  version: 1e61df8d9ea476e2e1504cd9a32b40280c7c6c7e
+  version: f18420efc3b4f8e9f3d51f6bd2476e92c46260e9
   subpackages:
   - bcrypt
   - blowfish
@@ -44,16 +44,16 @@ imports:
   subpackages:
   - encoding
   - encoding/charmap
-  - encoding/internal
-  - encoding/internal/identifier
   - encoding/japanese
   - encoding/korean
   - encoding/simplifiedchinese
   - encoding/traditionalchinese
   - encoding/unicode
+  - transform
+  - encoding/internal/identifier
+  - encoding/internal
   - internal/utf8internal
   - runes
-  - transform
 - name: gopkg.in/yaml.v2
-  version: a83829b6f1293c91addabc89d0571c246397bbf4
+  version: f7716cbe52baa25d2e9b0d0da546fcf909fc16b4
 devImports: []
