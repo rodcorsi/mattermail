@@ -572,6 +572,12 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 		emailname = "email.txt"
 		emailbody = mime.Text
 	}
+	
+	regexp.Compile(m.cfg.ReplyDelimiter)
+	rIndex := r.FindStringIndex(emailbody)
+	if  rIndex != nil {
+		emailbody = emailbody[:rIndex]
+	}
 
 	subject := mime.GetHeader("Subject")
 	from := NonASCII(msg.Header.Get("From"))
