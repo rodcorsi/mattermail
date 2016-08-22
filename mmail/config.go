@@ -23,6 +23,7 @@ type Config struct {
 	LinesToPreview    int
 	NoRedirectChannel bool
 	Filter            *Filter
+	NoAttachments	  bool
 }
 
 const defLinesToPreview = 10
