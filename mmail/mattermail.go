@@ -573,7 +573,7 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 		emailbody = mime.Text
 	}
 	
-	regexp.Compile(m.cfg.ReplyDelimiter)
+	regexp.MusCompile(m.cfg.ReplyDelimiter)
 	rIndex := r.FindStringIndex(emailbody)
 	if  rIndex != nil {
 		emailbody = emailbody[:rIndex]
