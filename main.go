@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"sync"
+	"./mmail"
 
-	"github.com/rodrigocorsi2/mattermail/mmail"
 )
 
 const defLinesToPreview = 10
