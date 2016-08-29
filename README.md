@@ -16,13 +16,9 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 
 
 ## Install
-  * For Mattermost 3.0:
-  
-  [Linux](https://github.com/rodrigocorsi2/mattermail/releases/download/v3.0/mattermail-3.0.linux.am64.tar.gz) / [OSX](https://github.com/rodrigocorsi2/mattermail/releases/download/v3.0/mattermail-3.0.osx.am64.tar.gz)
+  * For Mattermost 3.0 or later: [Latest Version](https://github.com/rodrigocorsi2/mattermail/releases/latest)
 
-  * For Mattermost 2.2:
-  
-  [Linux](https://github.com/rodrigocorsi2/mattermail/releases/download/v2.2/mattermail-2.2.linux.am64.tar.gz)
+  * For Mattermost 2.2: [Version 2.2](https://github.com/rodrigocorsi2/mattermail/releases/tag/v2.2)
 
 ## Usage
 1. You need to create a user in Mattermost server, you can use MatterMail icon as profile picture.
