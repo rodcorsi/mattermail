@@ -24,6 +24,8 @@ type Config struct {
 	NoRedirectChannel bool
 	NoAttachment      bool
 	Filter            *Filter
+	NoAttachments	  bool
+	ReplyDelimiter	  string
 }
 
 const defLinesToPreview = 10

@@ -44,7 +44,9 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"ImapServer":    "imap.example.com:143",
 		"Email":         "orders@example.com",
 		"EmailPass":     "password",
-		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v"
+		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
+                "NoAttachments":        true,
+                "ReplyDelimiter":       "From:\\s+"
 	},
 	{
 		"Name":              "Bugs",

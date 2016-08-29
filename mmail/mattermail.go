@@ -228,7 +228,7 @@ func (m *MatterMail) IdleMailBox() error {
 func (m *MatterMail) postMessage(client *model.Client, channelID string, message string, filenames *[]string) error {
 	post := &model.Post{ChannelId: channelID, Message: message}
 
-	if filenames != nil && len(*filenames) > 0 {
+	if filenames != nil && len(*filenames) > 0 && m.cfg.NoAttachments != true {
 		post.Filenames = *filenames
 	}
 
@@ -572,6 +572,14 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 		emailname = "email.txt"
 		emailbody = mime.Text
 	}
+	
+	re := regexp.MustCompile(m.cfg.ReplyDelimiter)
+	locs := re.FindStringIndex(partmessage)
+	if  locs != nil {
+		rIndex := locs[0]
+		partmessage = partmessage[:rIndex]
+	}
+	
 
 	subject := mime.GetHeader("Subject")
 	from := NonASCII(msg.Header.Get("From"))
