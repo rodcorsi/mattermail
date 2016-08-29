@@ -436,7 +436,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 	return directChannel.Id
 }
 
-var channelRegex = regexp.MustCompile(`^\s*?\[\s*?([#@][A-Za-z0-9\-_]*)\s*?\]`)
+var channelRegex = regexp.MustCompile(`^([a-zA-Z]*:)?\s*?\[\s*?([#@][A-Za-z0-9\-_]*)\s*?\]`)
 
 // getChannelFromSubject extract channel from subject ex:
 // getChannelFromSubject([#mychannel] blablanla) => #mychannel
@@ -445,7 +445,7 @@ func getChannelFromSubject(subject string) string {
 	if len(ret) < 2 {
 		return ""
 	}
-	return strings.ToLower(ret[1])
+	return strings.ToLower(ret[len(ret)-1])
 }
 
 //Read number of lines of string

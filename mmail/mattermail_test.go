@@ -10,31 +10,22 @@ func TestGetChannelFromSubject(t *testing.T) {
 		}
 	}
 
+	assert("", "")
 	assert("[#test]", "#test")
-	assert("[#TeSt]", "#test")
-	assert(" [#test]", "#test")
-	assert("   [#test]", "#test")
-	assert("[ #test]", "#test")
-	assert("[   #test]", "#test")
-	assert("[#test ]", "#test")
-	assert("[#test    ]", "#test")
-	assert("[#test] kjshdfsdh [#kjshdf]", "#test")
-	assert("   [  #  test   ]  kjshdfsdh [#kjshdf]", "")
-	assert("   [  #t-e_st   ]  kjshdfsdh [#kjshdf]", "#t-e_st")
-	assert("[#test fsd   ]", "")
-
-	assert("[@test]", "@test")
 	assert("[@TeSt]", "@test")
-	assert(" [@test]", "@test")
+	assert(" [#test]", "#test")
 	assert("   [@test]", "@test")
-	assert("[ @test]", "@test")
+	assert("[ #test]", "#test")
 	assert("[   @test]", "@test")
-	assert("[@test ]", "@test")
+	assert("[#test ]", "#test")
 	assert("[@test    ]", "@test")
 	assert("[@test] kjshdfsdh [#kjshdf]", "@test")
-	assert("   [  @  test   ]  kjshdfsdh [@kjshdf]", "")
-	assert("   [  @t-e_st   ]  kjshdfsdh [@kjshdf]", "@t-e_st")
-	assert("[@test fsd   ]", "")
+	assert("   [  #  sadfkj   ]  kjshdfsdh [#test]", "")
+	assert("   [  @t-e_st   ]  kjshdfsdh [#kjshdf]", "@t-e_st")
+	assert("[#test fsd   ]", "")
+	assert("From:[@test]", "@test")
+	assert("fwd:  [#test]", "#test")
+	assert("foo baz  [@test]", "")
 }
 
 func TestReadLines(t *testing.T) {
