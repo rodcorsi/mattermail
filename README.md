@@ -62,6 +62,7 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"Debug":             true    /*Optional default false*/
         "LinesToPreview":    20,     /*Optional default 10*/
 		"NoRedirectChannel": true,   /*Optional default false*/
+        "NoAttachment":      true,   /*Optional leave out attachments*/
 
         /*Filter works only (Version 3.0 or later)*/
         "Filter":            [

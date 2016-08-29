@@ -2,6 +2,7 @@ package mmail
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
@@ -13,7 +14,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"crypto/tls"
 
 	"github.com/jhillyerd/go.enmime"
 	"github.com/mattermost/platform/model"
@@ -313,7 +313,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 
 	m.debg.Printf("Post email in %v", channelName)
 
-	if len(*attach) == 0 && len(emailname) == 0 {
+	if m.cfg.NoAttachment || (len(*attach) == 0 && len(emailname) == 0) {
 		return m.postMessage(client, channelID, message, nil)
 	}
 

@@ -15,6 +15,7 @@
 		"Debug":             true,
 		"LinesToPreview":    10,
 		"NoRedirectChannel": false,
+		"NoAttachment":      false,
 		"Filter":            []
 	}
 ]

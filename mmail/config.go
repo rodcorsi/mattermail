@@ -22,6 +22,7 @@ type Config struct {
 	Disabled          bool
 	LinesToPreview    int
 	NoRedirectChannel bool
+	NoAttachment      bool
 	Filter            *Filter
 }
 
