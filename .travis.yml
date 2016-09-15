@@ -1,0 +1,21 @@
+language: go
+go:
+  - 1.6
+  - tip
+
+before_install:
+  - go get -v github.com/wadey/gocovmerge
+  - go get -v github.com/golang/lint/golint
+  - go get -v golang.org/x/tools/cmd/vet
+  - go get -v golang.org/x/tools/cmd/cover
+  - go get -v github.com/mattn/goveralls
+
+install:
+  - go get -t -v ./...
+
+script:
+  - make lint
+  - make test
+
+after_script:
+  - $HOME/gopath/bin/goveralls -coverprofile=cover.out -service=travis-ci
