@@ -6,7 +6,8 @@
 	govet \
 	golint \
 	gofmt \
-	lint
+	lint \
+	test
 
 export GO15VENDOREXPERIMENT=1
 
@@ -39,21 +40,28 @@ package:
 
 govet:
 	@echo GOVET
-	$(shell go vet ./*.go)
+	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
+	@$(GO) vet $(PKGS)
 
 golint:
 	@echo GOLINT
-	@golint ./*.go
+	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
+	@for pkg in $(PKGS) ; do \
+		golint -set_exit_status $$pkg; \
+	done
 
 gofmt:
 	@echo GOFMT
-	$(eval GOFMT_OUTPUT := $(shell gofmt -d -s *.go 2>&1))
-	@echo "$(GOFMT_OUTPUT)"
-	@if [ ! "$(GOFMT_OUTPUT)" ]; then \
-		echo "gofmt sucess"; \
-	else \
-		echo "gofmt failure"; \
-		exit 1; \
-	fi
+	$(eval PKGS := $(shell find . -type f -name '*.go' -not -path "./vendor/*"))
+	@gofmt -d -s $(PKGS)
+	@! gofmt -d $(PKGS) 2>&1 | read || exit 1
 
 lint: govet golint gofmt
+
+test:
+	@echo Running tests
+	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
+	$(eval PKGS_DELIM := $(shell echo $(PKGS) | sed -e 's/ /,/g'))
+	$(GO) list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}$(GO) test -run=$(TESTS) -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -I {} bash -c {}
+	gocovmerge `ls *.coverprofile` > cover.out
+	rm *.coverprofile
