@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Config type to parse config.json
 type Config struct {
 	Name              string
 	Server            string

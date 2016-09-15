@@ -20,7 +20,7 @@ import (
 	"github.com/mattermost/platform/model"
 	"github.com/mxk/go-imap/imap"
 	"github.com/paulrosania/go-charset/charset"
-	_ "github.com/paulrosania/go-charset/data"
+	_ "github.com/paulrosania/go-charset/data" //initiate go-charset data
 )
 
 // MatterMail struct with configurations, loggers and Mattemost user
