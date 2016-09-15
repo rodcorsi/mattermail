@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jhillyerd/go.enmime"
 	"github.com/mattermost/platform/model"
@@ -576,6 +577,12 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	subject := mime.GetHeader("Subject")
 	from := NonASCII(msg.Header.Get("From"))
 	message := fmt.Sprintf(m.cfg.MailTemplate, from, subject, partmessage)
+
+	// Mattermost post limit
+	if utf8.RuneCountInString(message) > 4000 {
+		message = string([]rune(message)[:3995]) + " ..."
+		m.info.Println("Email has been cut because is larger than 4000 characters")
+	}
 
 	return m.PostFile(from, subject, message, emailname, &emailbody, &mime.Attachments)
 }
