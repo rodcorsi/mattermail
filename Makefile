@@ -6,6 +6,7 @@
 	govet \
 	golint \
 	gofmt \
+	format \
 	lint \
 	test
 
@@ -52,9 +53,12 @@ golint:
 
 gofmt:
 	@echo GOFMT
-	$(eval PKGS := $(shell find . -type f -name '*.go' -not -path "./vendor/*"))
-	@gofmt -d -s $(PKGS)
-	@! gofmt -d $(PKGS) 2>&1 | read || exit 1
+	@mkdir -p $(DIST)
+	@find ./ -type f -name "*.go" -not -path "./vendor/*" -exec gofmt -s -d {} \; | tee $(DIST)/format.diff
+	@test ! -s $(DIST)/format.diff || { echo "ERROR: the source code has not been formatted - please use 'make format' or 'gofmt'"; exit 1; }
+
+format:
+	@find ./ -type f -name "*.go" -not -path "./vendor/*" -exec gofmt -w {} \;
 
 lint: govet golint gofmt
 
