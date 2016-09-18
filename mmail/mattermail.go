@@ -5,10 +5,9 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"mime"
 	"mime/multipart"
-	"mime/quotedprintable"
 	"net/mail"
 	"os"
 	"regexp"
@@ -495,48 +494,19 @@ func replaceCID(html *string, part *enmime.MIMEPart) string {
 }
 
 // NonASCII Decode non ASCII header string RFC 1342
-// encoded-word = "=?" charset "?" encoding "?" encoded-text "?="
 func NonASCII(encoded string) string {
 
-	regexRFC1342, _ := regexp.Compile(`=\?[^\?]*\?.\?[^\?]*\?=`)
+	regexRFC1342, _ := regexp.Compile(`=\?.*?\?=`)
+	dec := new(mime.WordDecoder)
+	dec.CharsetReader = charset.NewReader
 
 	result := regexRFC1342.ReplaceAllStringFunc(encoded, func(encoded string) string {
-		//0 utf 1 B/Q 2 code
-		v := strings.Split(encoded, "?")[1:4]
-		var decoded string
-		switch strings.ToLower(v[1]) {
-		case "b": //Base64
-			data, err := base64.StdEncoding.DecodeString(v[2])
-			if err != nil {
-				log.Println("Error decode Base64", err)
-				return encoded
-			}
-
-			decoded = string(data)
-
-		case "q": //Quoted-Printable
-			data, err := ioutil.ReadAll(quotedprintable.NewReader(strings.NewReader(v[2])))
-			if err != nil {
-				log.Println("Error decode Quoted-Printable", err)
-				return encoded
-			}
-			decoded = string(data)
-
-		default:
-			log.Println("Unknow encoding " + v[1])
-			return encoded
-		}
-
-		//Decode charset
-		r, err := charset.NewReader(strings.ToLower(v[0]), strings.NewReader(decoded))
+		decoded, err := dec.Decode(encoded)
 		if err != nil {
-			log.Println("Error decode charset", err)
+			log.Println("Error decode NonASCII", encoded, err)
 			return encoded
 		}
-
-		result, _ := ioutil.ReadAll(r)
-
-		return string(result)
+		return decoded
 	})
 
 	return result
