@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"mime"
-	"mime/multipart"
 	"net/mail"
 	"os"
 	"regexp"
@@ -225,11 +224,11 @@ func (m *MatterMail) IdleMailBox() error {
 }
 
 // postMessage Create a post in Mattermost
-func (m *MatterMail) postMessage(client *model.Client, channelID string, message string, filenames *[]string) error {
+func (m *MatterMail) postMessage(client *model.Client, channelID string, message string, fileIds []string) error {
 	post := &model.Post{ChannelId: channelID, Message: message}
 
-	if filenames != nil && len(*filenames) > 0 {
-		post.Filenames = *filenames
+	if len(fileIds) > 0 {
+		post.FileIds = fileIds
 	}
 
 	res, err := client.CreatePost(post)
@@ -317,57 +316,39 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 		return m.postMessage(client, channelID, message, nil)
 	}
 
-	buf := &bytes.Buffer{}
-	writer := multipart.NewWriter(buf)
-	var email []byte
+	var fileIds []string
 
-	addPart := func(filename string) error {
-		part, err := writer.CreateFormFile("files", filename)
-		if err != nil {
+	uploadFile := func(filename string, data []byte) error {
+		if len(data) == 0 {
+			return nil
+		}
+
+		resp, err := client.UploadPostAttachment(data, channelID, filename)
+		if resp == nil {
 			return err
 		}
 
-		if _, err = part.Write(email); err != nil {
-			return err
+		if len(resp.FileInfos) != 1 {
+			return fmt.Errorf("error on upload file - fileinfos len different of one %v", resp.FileInfos)
 		}
+
+		fileIds = append(fileIds, resp.FileInfos[0].Id)
 		return nil
 	}
 
 	if len(emailname) > 0 {
-		email = []byte(*emailbody)
-		if err := addPart(emailname); err != nil {
+		if err := uploadFile(emailname, []byte(*emailbody)); err != nil {
 			return err
 		}
 	}
 
 	for _, a := range *attach {
-		email = a.Content()
-		if err := addPart(a.FileName()); err != nil {
+		if err := uploadFile(a.FileName(), a.Content()); err != nil {
 			return err
 		}
 	}
 
-	field, err := writer.CreateFormField("channel_id")
-	if err != nil {
-		return err
-	}
-
-	_, err = field.Write([]byte(channelID))
-	if err != nil {
-		return err
-	}
-
-	err = writer.Close()
-	if err != nil {
-		return err
-	}
-
-	resp, err := client.UploadPostAttachment(buf.Bytes(), writer.FormDataContentType())
-	if resp == nil {
-		return err
-	}
-
-	return m.postMessage(client, channelID, message, &resp.Data.(*model.FileUploadResponse).Filenames)
+	return m.postMessage(client, channelID, message, fileIds)
 }
 
 func (m *MatterMail) getChannelID(client *model.Client, channelList *model.ChannelList, channelName string) string {
@@ -380,7 +361,7 @@ func (m *MatterMail) getChannelID(client *model.Client, channelList *model.Chann
 }
 
 func getChannelIDByName(channelList *model.ChannelList, channelName string) string {
-	for _, c := range channelList.Channels {
+	for _, c := range *channelList {
 		if c.Name == channelName {
 			return c.Id
 		}
@@ -395,19 +376,24 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 		return ""
 	}
 
-	result, err := client.GetProfilesForDirectMessageList(client.GetTeamId())
+	//result, err := client.GetProfilesForDirectMessageList(client.GetTeamId())
+	result, err := client.SearchUsers(model.UserSearch{
+		AllowInactive: false,
+		TeamId:        client.GetTeamId(),
+		Term:          userName,
+	})
 
 	if err != nil {
-		m.eror.Println("Error on GetProfilesForDirectMessageList: ", err.Error())
+		m.eror.Println("Error on SearchUsers: ", err.Error())
 		return ""
 	}
 
-	profiles := result.Data.(map[string]*model.User)
+	profiles := result.Data.([]*model.User)
 	var userID string
 
-	for k, p := range profiles {
+	for _, p := range profiles {
 		if p.Username == userName {
-			userID = k
+			userID = p.Id
 			break
 		}
 	}

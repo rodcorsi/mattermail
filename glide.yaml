@@ -2,6 +2,7 @@ package: github.com/rodrigocorsi2/mattermail
 import:
 - package: github.com/jhillyerd/go.enmime
 - package: github.com/mattermost/platform
+  version: v3.5.0
   subpackages:
   - model
 - package: github.com/mxk/go-imap

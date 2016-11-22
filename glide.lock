@@ -1,14 +1,16 @@
-hash: b8f73ea9201df49b7bcb2446c1e4f9c1974135fc8c50f26cee0cb6a2c90d8824
-updated: 2016-06-12T09:47:30.037818306-03:00
+hash: 494eeddb11c294674d572e4267fc11ea5e03880ced7b07d51eb53a21b898c289
+updated: 2016-11-21T22:26:22.153403095-02:00
 imports:
 - name: github.com/alecthomas/log4go
-  version: 8e9057c3b25c409a34c0b9737cdc82cbcafeabce
+  version: e5dc62318d9bd58682f1dceb53a4b24e8253682f
+- name: github.com/gorilla/websocket
+  version: 1f512fc3f05332ba7117626cdfb4e07474e58e60
 - name: github.com/jaytaylor/html2text
-  version: 4936b6c2ae7f89f5eeba2473c31fd27ea8f11068
+  version: 4b9124c9b0a2279e2092c4a9aaf1c83bbd2dcffc
 - name: github.com/jhillyerd/go.enmime
-  version: 3ea281bf3e00864f4afe2f9a6911af164438b581
+  version: 1b38e76723aa41be23ca88adbb21df1972c10b7f
 - name: github.com/mattermost/platform
-  version: 9d94869cc6a0fb9f051879437c104ccd76094380
+  version: 3f19ccf1b1a6efdcc990cf8a0270ec4ffc0c6e22
   subpackages:
   - model
 - name: github.com/mxk/go-imap
@@ -28,32 +30,32 @@ imports:
   - charset
   - data
 - name: github.com/pborman/uuid
-  version: dee7705ef7b324f27ceb85a121c61f2c2e8ce988
+  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
 - name: golang.org/x/crypto
-  version: f18420efc3b4f8e9f3d51f6bd2476e92c46260e9
+  version: 6ab629be5e31660579425a738ba8870beb5b7404
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: 96dbb961a39ddccf16860cdd355bfa639c497f23
+  version: 4971afdc2f162e82d185353533d3cf16188a9f4e
   subpackages:
   - html
   - html/atom
 - name: golang.org/x/text
-  version: f773ec03ce334298742df7f3108fc0d402646d22
+  version: a263ba8db058568bb9beba166777d9c9dbe75d68
   subpackages:
   - encoding
   - encoding/charmap
+  - encoding/internal
+  - encoding/internal/identifier
   - encoding/japanese
   - encoding/korean
   - encoding/simplifiedchinese
   - encoding/traditionalchinese
   - encoding/unicode
-  - transform
-  - encoding/internal/identifier
-  - encoding/internal
   - internal/utf8internal
   - runes
+  - transform
 - name: gopkg.in/yaml.v2
-  version: f7716cbe52baa25d2e9b0d0da546fcf909fc16b4
-devImports: []
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports: []
