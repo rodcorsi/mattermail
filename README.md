@@ -29,7 +29,7 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 2. Get the *Channel Handle* of the channel and check if the user has permission to post in this channel
 ![mattermail channel_handle](https://github.com/rodrigocorsi2/mattermail/raw/master/img/channel_handle.png)
 
-3. Edit the file conf.json, e.g.:
+3. Edit the file config.json, e.g.:
 
 ```javascript
 [
