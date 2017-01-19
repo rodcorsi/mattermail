@@ -118,7 +118,7 @@ func LoadConfigArray(configFile string) ([]*Config, error) {
 	err = json.Unmarshal(file, &cfg)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse: %v", err.Error())
+		return nil, fmt.Errorf("Could not parse config.json it does not to be a valid json file: %v", err.Error())
 	}
 
 	// Set default value
