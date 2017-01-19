@@ -272,7 +272,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 	}
 
 	if !teamMatch {
-		return fmt.Errorf("Did not find team with name %v", m.cfg.Team)
+		return fmt.Errorf("Did not find team with name '%v'. Check if the team exist or if you are not using display name instead team name", m.cfg.Team)
 	}
 
 	//Discover channel id by channel name
