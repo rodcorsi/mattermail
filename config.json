@@ -2,7 +2,7 @@
 	{
 		"Name":              "Orders",
 		"Server":            "https://mattermost.example.com",
-		"Team":              "Team1",
+		"Team":              "team1",
 		"Channel":           "#orders",
 		"MattermostUser":    "mattermail@example.com",
 		"MattermostPass":    "password",
