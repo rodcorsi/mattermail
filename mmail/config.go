@@ -3,8 +3,6 @@ package mmail
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"regexp"
 	"strings"
 )
@@ -100,20 +98,12 @@ func (c *Config) IsValid() error {
 	return nil
 }
 
-// LoadConfigArray load json file and returns an array of config
-func LoadConfigArray(configFile string) ([]*Config, error) {
-	log.Println("Loading ", configFile)
-
-	file, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, fmt.Errorf("Could not load: %v", err.Error())
-	}
+// ParseConfigList read data and parse a Config list
+func ParseConfigList(data []byte) ([]*Config, error) {
 
 	var cfg []*Config
-	err = json.Unmarshal(file, &cfg)
-
-	if err != nil {
-		return nil, fmt.Errorf("Could not parse config.json it does not to be a valid json file: %v", err.Error())
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("Could not parse data it does not to be a valid json file: %v", err.Error())
 	}
 
 	// Set default value

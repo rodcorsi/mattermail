@@ -64,9 +64,49 @@ func TestConfigIsValid(t *testing.T) {
 	}
 }
 
-func TestLoadConfigArray(t *testing.T) {
-	if _, err := LoadConfigArray(""); err == nil {
-		t.Fatal("allow to load empty filename")
+func TestParseConfigList(t *testing.T) {
+	if _, err := ParseConfigList([]byte("")); err == nil {
+		t.Fatal("allow to load empty data")
+	}
+
+	if _, err := ParseConfigList([]byte("balalala")); err == nil {
+		t.Fatal("allow to load invalid data")
+	}
+
+	config := `
+[
+	{
+		"Name":              "Orders",
+	}
+]`
+	if _, err := ParseConfigList([]byte(config)); err == nil {
+		t.Fatal("allow to load incomplete data")
+	}
+
+	config = `
+[
+	{
+		"Name":              "Orders",
+		"Server":            "https://mattermost.example.com",
+		"Team":              "team1",
+		"Channel":           "#orders",
+		"MattermostUser":    "mattermail@example.com",
+		"MattermostPass":    "password",
+		"ImapServer":        "imap.example.com:143",
+		"Email":             "orders@example.com",
+		"EmailPass":         "password",
+		"MailTemplate":      ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
+		"StartTLS":          false,
+		"Disabled":          false,
+		"Debug":             true,
+		"LinesToPreview":    10,
+		"NoRedirectChannel": false,
+		"NoAttachment":      false,
+		"Filter":            []
+	}
+]`
+	if _, err := ParseConfigList([]byte(config)); err != nil {
+		t.Fatalf("not allow to load valid data: %v", err.Error())
 	}
 }
 

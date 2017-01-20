@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"sync"
 
@@ -55,7 +56,14 @@ func main() {
 		return
 	}
 
-	cfgs, err := mmail.LoadConfigArray(configFile)
+	log.Println("Loading ", configFile)
+
+	file, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		log.Fatalf("Could not load: %v\n%v", configFile, err.Error())
+	}
+
+	cfgs, err := mmail.ParseConfigList(file)
 	if err != nil {
 		log.Fatal(err)
 	}
