@@ -8,7 +8,8 @@
 	gofmt \
 	format \
 	lint \
-	test
+	test \
+	cover
 
 export GO15VENDOREXPERIMENT=1
 
@@ -69,3 +70,9 @@ test:
 	$(GO) list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}$(GO) test -run=$(TESTS) -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -I {} bash -c {}
 	gocovmerge `ls *.coverprofile` > cover.out
 	rm *.coverprofile
+
+cover:
+	@echo Opening coverage info on browser. If this failed run make test first
+
+	$(GO) tool cover -html=cover.out
+	$(GO) tool cover -func=cover.out
