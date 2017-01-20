@@ -44,7 +44,7 @@ func (c *Config) IsValid() error {
 	}
 
 	if !validateURL(c.Server) {
-		return fmt.Errorf("Field 'Server' in config.json need to start with http:// or https:// and be a valid url")
+		return fmt.Errorf("Field 'Server' in config.json need to start with http:// or https:// and be a valid url: %v", c.Server)
 	}
 
 	if c.Team == "" {
@@ -52,7 +52,11 @@ func (c *Config) IsValid() error {
 	}
 
 	if !validateTeam(c.Team) {
-		return fmt.Errorf("Field 'Team' in config.json contains invalid chars, make sure if you are using url team name")
+		return fmt.Errorf("Field 'Team' in config.json contains invalid chars, make sure if you are using url team name: %v", c.Team)
+	}
+
+	if c.Channel != "" && !validateChannel(c.Channel) {
+		return fmt.Errorf("Field 'Channel' in config.json contains invalid chars, make sure if you are using url channel name or username. This field need to start with # for channel or @ for username: %v", c.Channel)
 	}
 
 	if c.MattermostUser == "" {
@@ -68,11 +72,11 @@ func (c *Config) IsValid() error {
 	}
 
 	if !validateImap(c.ImapServer) {
-		return fmt.Errorf("Field 'ImapServer' in config.json need to be a valid url")
+		return fmt.Errorf("Field 'ImapServer' in config.json need to be a valid url: %v", c.ImapServer)
 	}
 
 	if !validateEmail(c.Email) {
-		return fmt.Errorf("Field 'Email' in config.json is empty")
+		return fmt.Errorf("Field 'Email' in config.json need to be a valid email: %v", c.Email)
 	}
 
 	if c.EmailPass == "" {
@@ -84,16 +88,7 @@ func (c *Config) IsValid() error {
 	}
 
 	if c.LinesToPreview <= 0 {
-		c.LinesToPreview = defLinesToPreview
-	}
-
-	c.Channel = strings.TrimSpace(c.Channel)
-	c.Channel = strings.ToLower(c.Channel)
-
-	if len(c.Channel) > 0 {
-		if !strings.HasPrefix(c.Channel, "#") && !strings.HasPrefix(c.Channel, "@") {
-			c.Channel = "#" + c.Channel
-		}
+		return fmt.Errorf("Field 'LinesToPreview' in config.json need to be greater than 0")
 	}
 
 	if c.Filter != nil {
@@ -123,6 +118,21 @@ func LoadConfigArray(configFile string) ([]*Config, error) {
 
 	// Set default value
 	for _, c := range cfg {
+		// compatibility with old versions
+		c.Channel = strings.TrimSpace(c.Channel)
+		c.Channel = strings.ToLower(c.Channel)
+
+		if len(c.Channel) > 0 {
+			if !strings.HasPrefix(c.Channel, "#") && !strings.HasPrefix(c.Channel, "@") {
+				c.Channel = "#" + c.Channel
+			}
+		}
+
+		// default value
+		if c.LinesToPreview <= 0 {
+			c.LinesToPreview = defLinesToPreview
+		}
+
 		if err := c.IsValid(); err != nil {
 			return nil, err
 		}
@@ -147,7 +157,7 @@ func validateImap(url string) bool {
 }
 
 func validateChannel(channel string) bool {
-	Re := regexp.MustCompile(`^(#|@)?[a-z0-9\.\-_]+$`)
+	Re := regexp.MustCompile(`^(#|@)[a-z0-9\.\-_]+$`)
 	return Re.MatchString(channel)
 }
 

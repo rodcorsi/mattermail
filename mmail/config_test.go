@@ -30,7 +30,7 @@ func TestConfigIsValid(t *testing.T) {
 	config.Channel = "Channel 1"
 	valid()
 
-	config.Channel = "channel1"
+	config.Channel = "#channel1"
 	valid()
 
 	config.MattermostUser = "user"
@@ -55,6 +55,9 @@ func TestConfigIsValid(t *testing.T) {
 	valid()
 
 	config.MailTemplate = "%v jss %v"
+	valid()
+
+	config.LinesToPreview = 10
 
 	if err := config.IsValid(); err != nil {
 		t.Fatal(err)
@@ -117,7 +120,8 @@ func TestValidateChannel(t *testing.T) {
 	assert("", false)
 	assert("SDFgfs", false)
 	assert("D D", false)
-	assert("chane", true)
+	assert("chane", false)
+	assert(" cha ne ", false)
 	assert("#chabn", true)
 	assert("@djdj", true)
 }
