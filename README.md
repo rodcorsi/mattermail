@@ -57,6 +57,7 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 		"EmailPass":         "password",
 		"MailTemplate":      ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
 		"StartTLS":          false,  /*Optional default false*/
+		"TLSAcceptAllCerts": false,  /*Optional default false*/
 		"Disabled":          false,  /*Optional default false*/
 		"Debug":             true    /*Optional default false*/
         "LinesToPreview":    20,     /*Optional default 10*/
