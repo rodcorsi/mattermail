@@ -7,7 +7,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/rodrigocorsi2/mattermail/mmail"
+	"github.com/rodcorsi/mattermail/mmail"
 )
 
 const defLinesToPreview = 10

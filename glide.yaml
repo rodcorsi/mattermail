@@ -1,4 +1,4 @@
-package: github.com/rodrigocorsi2/mattermail
+package: github.com/rodcorsi/mattermail
 import:
 - package: github.com/jhillyerd/go.enmime
 - package: github.com/mattermost/platform

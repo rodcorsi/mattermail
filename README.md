@@ -1,11 +1,11 @@
-# ![mattermail icon](https://github.com/rodrigocorsi2/mattermail/raw/master/img/icon.png) MatterMail
+# ![mattermail icon](https://github.com/rodcorsi/mattermail/raw/master/img/icon.png) MatterMail
 
 *MatterMail* is an integration service for [Mattermost](http://www.mattermost.org/), *MatterMail* listen an email box and publish all received emails in a channel or private group in Mattermost.
 
 [![Build Status](https://travis-ci.org/rodrigocorsi2/mattermail.svg?branch=master)](https://travis-ci.org/rodrigocorsi2/mattermail)
 [![Coverage Status](https://coveralls.io/repos/github/rodrigocorsi2/mattermail/badge.svg?branch=master)](https://coveralls.io/github/rodrigocorsi2/mattermail?branch=master)
 
-![mattermail screenshot](https://github.com/rodrigocorsi2/mattermail/raw/master/img/screenshot.png)
+![mattermail screenshot](https://github.com/rodcorsi/mattermail/raw/master/img/screenshot.png)
 
 ## Redirect to the channel by subject (Version 3.0 or later)
 
@@ -19,15 +19,15 @@ Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
 
 
 ## Install
-  * For Mattermost 3.0 or later: [Latest Version](https://github.com/rodrigocorsi2/mattermail/releases/latest)
+  * For Mattermost 3.0 or later: [Latest Version](https://github.com/rodcorsi/mattermail/releases/latest)
 
-  * For Mattermost 2.2: [Version 2.2](https://github.com/rodrigocorsi2/mattermail/releases/tag/v2.2)
+  * For Mattermost 2.2: [Version 2.2](https://github.com/rodcorsi/mattermail/releases/tag/v2.2)
 
 ## Usage
 1. You need to create a user in Mattermost server, you can use MatterMail icon as profile picture.
 
 2. Get the *Channel Handle* of the channel and check if the user has permission to post in this channel
-![mattermail channel_handle](https://github.com/rodrigocorsi2/mattermail/raw/master/img/channel_handle.png)
+![mattermail channel_handle](https://github.com/rodcorsi/mattermail/raw/master/img/channel_handle.png)
 
 3. Edit the file config.json, e.g.:
 
@@ -102,7 +102,7 @@ Options:
 You need [Go](http://golang.org) to build this project
 
 ```bash
-$ go get github.com/rodrigocorsi2/mattermail
+$ go get github.com/rodcorsi/mattermail
 ```
 
 ### If you want to build MatterMail to Mattermost 2.2 you need to use `release-2.2` branch
