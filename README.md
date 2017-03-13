@@ -2,8 +2,8 @@
 
 *MatterMail* is an integration service for [Mattermost](http://www.mattermost.org/), *MatterMail* listen an email box and publish all received emails in a channel or private group in Mattermost.
 
-[![Build Status](https://travis-ci.org/rodrigocorsi2/mattermail.svg?branch=master)](https://travis-ci.org/rodrigocorsi2/mattermail)
-[![Coverage Status](https://coveralls.io/repos/github/rodrigocorsi2/mattermail/badge.svg?branch=master)](https://coveralls.io/github/rodrigocorsi2/mattermail?branch=master)
+[![Build Status](https://travis-ci.org/rodcorsi/mattermail.svg?branch=master)](https://travis-ci.org/rodcorsi/mattermail)
+[![Coverage Status](https://coveralls.io/repos/github/rodcorsi/mattermail/badge.svg?branch=master)](https://coveralls.io/github/rodcorsi/mattermail?branch=master)
 
 ![mattermail screenshot](https://github.com/rodcorsi/mattermail/raw/master/img/screenshot.png)
 
