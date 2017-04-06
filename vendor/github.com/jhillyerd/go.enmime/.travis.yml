@@ -1,0 +1,9 @@
+language: go
+sudo: false
+
+before_script:
+  - go vet ./...
+
+go:
+  - 1.6.3
+  - 1.7.3

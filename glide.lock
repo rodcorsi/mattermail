@@ -1,12 +1,12 @@
 hash: d53eeead38b8256fc32f24887df320a48039e65376bcc932e4100cb658e46256
-updated: 2017-03-13T18:52:42.342375183-03:00
+updated: 2017-04-06T09:35:09.593413-03:00
 imports:
 - name: github.com/alecthomas/log4go
   version: e5dc62318d9bd58682f1dceb53a4b24e8253682f
 - name: github.com/gorilla/websocket
   version: 1f512fc3f05332ba7117626cdfb4e07474e58e60
 - name: github.com/jaytaylor/html2text
-  version: 4b9124c9b0a2279e2092c4a9aaf1c83bbd2dcffc
+  version: f3b8a7ca0a23f0a806b2e1ad1247de39ecde54bf
 - name: github.com/jhillyerd/go.enmime
   version: 1b38e76723aa41be23ca88adbb21df1972c10b7f
 - name: github.com/mattermost/platform
@@ -31,18 +31,20 @@ imports:
   - data
 - name: github.com/pborman/uuid
   version: a97ce2ca70fa5a848076093f05e639a89ca34d06
+- name: github.com/ssor/bom
+  version: 6ed919a936d5ab554e4b40bc51f7c522488122c6
 - name: golang.org/x/crypto
   version: 6ab629be5e31660579425a738ba8870beb5b7404
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: 4971afdc2f162e82d185353533d3cf16188a9f4e
+  version: ffcf1bedda3b04ebb15a168a59800a73d6dc0f4d
   subpackages:
   - html
   - html/atom
 - name: golang.org/x/text
-  version: a263ba8db058568bb9beba166777d9c9dbe75d68
+  version: f4b4367115ec2de254587813edaa901bc1c723a8
   subpackages:
   - encoding
   - encoding/charmap
@@ -57,5 +59,5 @@ imports:
   - runes
   - transform
 - name: gopkg.in/yaml.v2
-  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
 testImports: []

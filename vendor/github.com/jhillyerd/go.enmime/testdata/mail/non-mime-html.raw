@@ -1,0 +1,28 @@
+Date: Sun, 14 Oct 2012 16:09:01 -0700
+To: greg@inbucket.com
+From: James Hillyerd <james@hillyerd.com>
+Subject: test Sun, 14 Oct 2012 16:09:01 -0700
+X-Mailer: swaks v20120320.0 jetmore.org/john/code/swaks/
+Content-Type: text/html; charset="UTF-8"
+
+<html>
+  <head>
+    <title>Document Title</title>
+    <meta charset="utf-8"/>
+    <style>
+      strong {
+        font-size: 110%;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      <span>This</span>
+      <em>is</em>
+      <strong>a</strong>
+      <b>test</b>
+      <i>mailing</i>
+    </p>
+  </body>
+</html>
+

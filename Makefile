@@ -11,8 +11,6 @@
 	test \
 	cover
 
-export GO15VENDOREXPERIMENT=1
-
 GOPATH ?= $(GOPATH:)
 GOFLAGS ?= $(GOFLAGS:)
 DIST := dist
