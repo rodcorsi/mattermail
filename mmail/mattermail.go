@@ -10,6 +10,8 @@ import (
 	"github.com/mattermost/platform/model"
 )
 
+const maxMattermostAttachments = 5
+
 // MatterMail struct with configurations, loggers and Mattemost user
 type MatterMail struct {
 	cfg  MatterMailConfig
@@ -111,8 +113,14 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 	}
 
 	var fileIds []string
+	filesUploaded := 0
 
 	uploadFile := func(filename string, data []byte) error {
+		if filesUploaded >= maxMattermostAttachments {
+			m.log.Infof("File '%v' was not uploaded due the Mattermost limit of %v files", filename, maxMattermostAttachments)
+			return nil
+		}
+
 		if len(data) == 0 {
 			return nil
 		}
@@ -126,6 +134,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 			return fmt.Errorf("error on upload file - fileinfos len different of one %v", resp.FileInfos)
 		}
 
+		filesUploaded++
 		fileIds = append(fileIds, resp.FileInfos[0].Id)
 		return nil
 	}
