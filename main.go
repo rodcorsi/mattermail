@@ -81,7 +81,9 @@ func main() {
 		wg.Add(1)
 		c := cfg
 		go func() {
-			mmail.InitMatterMail(c)
+			logger := mmail.NewLog(c.Name, c.Debug)
+			mailProvider := mailProvider(c.MailConfig, logger)
+			mmail.InitMatterMail(c.MatterMailConfig, logger, mailProvider)
 			wg.Done()
 		}()
 	}
@@ -91,4 +93,8 @@ func main() {
 	if !hasconfig {
 		log.Println(`There is no enabled profile. Check "Disabled" field in config.json`)
 	}
+}
+
+func mailProvider(cfg mmail.MailConfig, logger mmail.Logger) mmail.MailProvider {
+	return mmail.NewMailProviderImap(cfg, logger)
 }

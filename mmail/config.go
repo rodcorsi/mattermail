@@ -7,19 +7,23 @@ import (
 	"strings"
 )
 
-// Config type to parse config.json
-type Config struct {
+// MailConfig type with email settings
+type MailConfig struct {
+	ImapServer        string
+	StartTLS          bool
+	TLSAcceptAllCerts bool
+	Email             string
+	EmailPass         string
+}
+
+// MatterMailConfig type with Mattermail settings
+type MatterMailConfig struct {
 	Name              string
 	Server            string
 	Team              string
 	Channel           string
 	MattermostUser    string
 	MattermostPass    string
-	ImapServer        string
-	StartTLS          bool
-	TLSAcceptAllCerts bool
-	Email             string
-	EmailPass         string
 	MailTemplate      string
 	Debug             bool
 	Disabled          bool
@@ -27,6 +31,12 @@ type Config struct {
 	NoRedirectChannel bool
 	NoAttachment      bool
 	Filter            *Filter
+}
+
+// Config type to parse config.json
+type Config struct {
+	MailConfig
+	MatterMailConfig
 }
 
 const defLinesToPreview = 10
