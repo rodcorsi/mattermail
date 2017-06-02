@@ -12,7 +12,10 @@ func TestGetChannelFromSubject(t *testing.T) {
 
 	assert("", "")
 	assert("[#test]", "#test")
+	assert("[#test.1]", "#test")
 	assert("[@TeSt]", "@test")
+	assert("[@Test.1]", "@test")
+	assert("[@TeSt.1]", "@test")
 	assert(" [#test]", "#test")
 	assert("   [@test]", "@test")
 	assert("[ #test]", "#test")
