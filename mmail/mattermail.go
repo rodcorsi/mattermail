@@ -8,7 +8,6 @@ import (
 	"log"
 	"mime"
 	"net/mail"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -25,15 +24,13 @@ import (
 type MatterMail struct {
 	cfg        *Config
 	imapClient *imap.Client
-	info       *log.Logger
-	eror       *log.Logger
-	debg       *log.Logger
 	user       *model.User
+	log        Logger
 }
 
 func (m *MatterMail) tryTime(message string, fn func() error) {
 	if err := fn(); err != nil {
-		m.info.Println(message, err, "\n", "Try again in 30s")
+		m.log.Info(message, err, "\n", "Try again in 30s")
 		time.Sleep(30 * time.Second)
 		fn()
 	}
@@ -49,7 +46,7 @@ func (m *MatterMail) LogoutImapClient() {
 // CheckImapConnection if is connected return nil or try to connect
 func (m *MatterMail) CheckImapConnection() error {
 	if m.imapClient != nil && (m.imapClient.State() == imap.Auth || m.imapClient.State() == imap.Selected) {
-		m.debg.Println("CheckImapConnection: Connection alive")
+		m.log.Debug("CheckImapConnection: Connection alive")
 		return nil
 	}
 
@@ -57,20 +54,20 @@ func (m *MatterMail) CheckImapConnection() error {
 
 	//Start connection with server
 	if strings.HasSuffix(m.cfg.ImapServer, ":993") {
-		m.debg.Println("CheckImapConnection: DialTLS")
+		m.log.Debug("CheckImapConnection: DialTLS")
 		m.imapClient, err = imap.DialTLS(m.cfg.ImapServer, nil)
 	} else {
-		m.debg.Println("CheckImapConnection: Dial")
+		m.log.Debug("CheckImapConnection: Dial")
 		m.imapClient, err = imap.Dial(m.cfg.ImapServer)
 	}
 
 	if err != nil {
-		m.eror.Println("Unable to connect:", err)
+		m.log.Error("Unable to connect:", err)
 		return err
 	}
 
 	if m.cfg.StartTLS && m.imapClient.Caps["STARTTLS"] {
-		m.debg.Println("CheckImapConnection:StartTLS")
+		m.log.Debug("CheckImapConnection:StartTLS")
 		var tconfig tls.Config
 		if m.cfg.TLSAcceptAllCerts {
 			tconfig.InsecureSkipVerify = true
@@ -87,11 +84,11 @@ func (m *MatterMail) CheckImapConnection() error {
 			return fmt.Errorf("The server %q does not support IDLE\n", m.cfg.ImapServer)
 		}
 	*/
-	m.info.Printf("Connected with %q\n", m.cfg.ImapServer)
+	m.log.Infof("Connected with %q\n", m.cfg.ImapServer)
 
 	_, err = m.imapClient.Login(m.cfg.Email, m.cfg.EmailPass)
 	if err != nil {
-		m.eror.Println("Unable to login:", m.cfg.Email)
+		m.log.Error("Unable to login:", m.cfg.Email)
 		return err
 	}
 
@@ -100,7 +97,7 @@ func (m *MatterMail) CheckImapConnection() error {
 
 // CheckNewMails Check if exist a new mail and post it
 func (m *MatterMail) CheckNewMails() error {
-	m.debg.Println("CheckNewMails")
+	m.log.Debug("CheckNewMails")
 
 	if err := m.CheckImapConnection(); err != nil {
 		return err
@@ -121,28 +118,28 @@ func (m *MatterMail) CheckNewMails() error {
 	// get headers and UID for UnSeen message in src inbox...
 	cmd, err := imap.Wait(m.imapClient.UIDSearch(specs...))
 	if err != nil {
-		m.debg.Println("Error UIDSearch UTF-8:")
-		m.debg.Println(err)
-		m.debg.Println("Try with US-ASCII")
+		m.log.Debug("Error UIDSearch UTF-8:")
+		m.log.Debug(err)
+		m.log.Debug("Try with US-ASCII")
 
 		// try again with US-ASCII
 		cmd, err = imap.Wait(m.imapClient.Send("UID SEARCH", append([]imap.Field{"CHARSET", "US-ASCII"}, specs...)...))
 		if err != nil {
-			m.eror.Println("UID SEARCH US-ASCII")
+			m.log.Error("UID SEARCH US-ASCII")
 			return err
 		}
 	}
 
 	for _, rsp := range cmd.Data {
 		for _, uid := range rsp.SearchResults() {
-			m.debg.Println("CheckNewMails:AddNum ", uid)
+			m.log.Debug("CheckNewMails:AddNum ", uid)
 			seq.AddNum(uid)
 		}
 	}
 
 	// no new messages
 	if seq.Empty() {
-		m.debg.Println("CheckNewMails: No new messages")
+		m.log.Debug("CheckNewMails: No new messages")
 		return nil
 	}
 
@@ -150,7 +147,7 @@ func (m *MatterMail) CheckNewMails() error {
 	postmail := false
 
 	for cmd.InProgress() {
-		m.debg.Println("CheckNewMails: cmd in Progress")
+		m.log.Debug("CheckNewMails: cmd in Progress")
 		// Wait for the next response (no timeout)
 		m.imapClient.Recv(-1)
 
@@ -159,7 +156,7 @@ func (m *MatterMail) CheckNewMails() error {
 			msgFields := rsp.MessageInfo().Attrs
 			header := imap.AsBytes(msgFields["BODY[]"])
 			if msg, _ := mail.ReadMessage(bytes.NewReader(header)); msg != nil {
-				m.debg.Println("CheckNewMails:PostMail")
+				m.log.Debug("CheckNewMails:PostMail")
 				if err := m.PostMail(msg); err != nil {
 					return err
 				}
@@ -172,22 +169,22 @@ func (m *MatterMail) CheckNewMails() error {
 	// Check command completion status
 	if rsp, err := cmd.Result(imap.OK); err != nil {
 		if err == imap.ErrAborted {
-			m.eror.Println("Fetch command aborted")
+			m.log.Error("Fetch command aborted")
 			return err
 		}
-		m.eror.Println("Fetch error:", rsp.Info)
+		m.log.Error("Fetch error:", rsp.Info)
 		return err
 	}
 
 	cmd.Data = nil
 
 	if postmail {
-		m.debg.Println("CheckNewMails: Mark all messages with flag \\Seen")
+		m.log.Debug("CheckNewMails: Mark all messages with flag \\Seen")
 
 		//Mark all messages seen
 		_, err = imap.Wait(m.imapClient.UIDStore(seq, "+FLAGS.SILENT", `\Seen`))
 		if err != nil {
-			m.eror.Println("Error UIDStore \\Seen")
+			m.log.Error("Error UIDStore \\Seen")
 			return err
 		}
 	}
@@ -197,7 +194,7 @@ func (m *MatterMail) CheckNewMails() error {
 
 // IdleMailBox Change to state idle in imap server
 func (m *MatterMail) IdleMailBox() error {
-	m.debg.Println("IdleMailBox")
+	m.log.Debug("IdleMailBox")
 
 	if err := m.CheckImapConnection(); err != nil {
 		return err
@@ -244,9 +241,9 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 
 	client := model.NewClient(m.cfg.Server)
 
-	m.debg.Println(client)
+	m.log.Debug(client)
 
-	m.debg.Printf("Login user:%v team:%v url:%v\n", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
+	m.log.Debugf("Login user:%v team:%v url:%v\n", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
 
 	result, apperr := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass)
 	if apperr != nil {
@@ -255,7 +252,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 
 	m.user = result.Data.(*model.User)
 
-	m.info.Println("Post new message")
+	m.log.Info("Post new message")
 
 	defer client.Logout()
 
@@ -281,27 +278,27 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 
 	// redirect email by the subject
 	if !m.cfg.NoRedirectChannel {
-		m.debg.Println("Try to find channel/user by subject")
+		m.log.Debug("Try to find channel/user by subject")
 		channelName = getChannelFromSubject(subject)
 		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
 	// check filters
 	if channelID == "" && m.cfg.Filter != nil {
-		m.debg.Println("Did not find channel/user from Email Subject. Look for filter")
+		m.log.Debug("Did not find channel/user from Email Subject. Look for filter")
 		channelName = m.cfg.Filter.GetChannel(from, subject)
 		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
 	// get default Channel config
 	if channelID == "" {
-		m.debg.Printf("Did not find channel/user in filters. Look for channel '%v'\n", m.cfg.Channel)
+		m.log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", m.cfg.Channel)
 		channelName = m.cfg.Channel
 		channelID = m.getChannelID(client, channelList, channelName)
 	}
 
 	if channelID == "" && !m.cfg.NoRedirectChannel {
-		m.debg.Printf("Did not find channel/user with name '%v'. Trying channel town-square\n", m.cfg.Channel)
+		m.log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", m.cfg.Channel)
 		channelName = "town-square"
 		channelID = m.getChannelID(client, channelList, channelName)
 	}
@@ -310,7 +307,7 @@ func (m *MatterMail) PostFile(from, subject, message, emailname string, emailbod
 		return fmt.Errorf("Did not find any channel to post")
 	}
 
-	m.debg.Printf("Post email in %v", channelName)
+	m.log.Debugf("Post email in %v", channelName)
 
 	if m.cfg.NoAttachment || (len(*attach) == 0 && len(emailname) == 0) {
 		return m.postMessage(client, channelID, message, nil)
@@ -372,7 +369,7 @@ func getChannelIDByName(channelList *model.ChannelList, channelName string) stri
 func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList *model.ChannelList, userName string) string {
 
 	if m.user.Username == userName {
-		m.eror.Printf("Impossible create a Direct channel, Mattermail user (%v) equals destination user (%v)\n", m.user.Username, userName)
+		m.log.Errorf("Impossible create a Direct channel, Mattermail user (%v) equals destination user (%v)\n", m.user.Username, userName)
 		return ""
 	}
 
@@ -384,7 +381,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 	})
 
 	if err != nil {
-		m.eror.Println("Error on SearchUsers: ", err.Error())
+		m.log.Error("Error on SearchUsers: ", err.Error())
 		return ""
 	}
 
@@ -399,7 +396,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 	}
 
 	if userID == "" {
-		m.debg.Println("Did not find the username:", userName)
+		m.log.Debug("Did not find the username:", userName)
 		return ""
 	}
 
@@ -410,11 +407,11 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 		return dmID
 	}
 
-	m.debg.Println("Create direct channel to user:", userName)
+	m.log.Debug("Create direct channel to user:", userName)
 
 	result, err = client.CreateDirectChannel(userID)
 	if err != nil {
-		m.eror.Println("Error on CreateDirectChannel: ", err.Error())
+		m.log.Error("Error on CreateDirectChannel: ", err.Error())
 		return ""
 	}
 
@@ -537,40 +534,25 @@ func (m *MatterMail) PostMail(msg *mail.Message) error {
 	// Mattermost post limit
 	if utf8.RuneCountInString(message) > 4000 {
 		message = string([]rune(message)[:3995]) + " ..."
-		m.info.Println("Email has been cut because is larger than 4000 characters")
+		m.log.Info("Email has been cut because is larger than 4000 characters")
 	}
 
 	return m.PostFile(from, subject, message, emailname, &emailbody, &mime.Attachments)
 }
 
-type devNull int
-
-func (devNull) Write(p []byte) (int, error) {
-	return len(p), nil
-}
-
 // InitMatterMail init MatterMail server
 func InitMatterMail(cfg *Config) {
 	m := &MatterMail{
-		cfg:  cfg,
-		info: log.New(os.Stdout, "INFO "+cfg.Name+"\t", log.Ltime),
-		eror: log.New(os.Stderr, "EROR "+cfg.Name+"\t", log.Ltime),
-	}
-
-	if cfg.Debug {
-		m.debg = log.New(os.Stdout, "DEBG "+cfg.Name+"\t", log.Ltime)
-		imap.DefaultLogger = log.New(os.Stdout, "IMAP "+cfg.Name+"\t", log.Ltime)
-		imap.DefaultLogMask = imap.LogConn | imap.LogRaw
-	} else {
-		m.debg = log.New(devNull(0), "", 0)
+		cfg: cfg,
+		log: NewLog(cfg.Name, cfg.Debug),
 	}
 
 	defer m.LogoutImapClient()
 
-	m.debg.Println("Debug mode on")
-	m.info.Println("Checking new emails")
+	m.log.Debug("Debug mode on")
+	m.log.Info("Checking new emails")
 	m.tryTime("Error on check new email:", m.CheckNewMails)
-	m.info.Println("Waiting new messages")
+	m.log.Info("Waiting new messages")
 
 	for {
 		m.tryTime("Error Idle:", m.IdleMailBox)
