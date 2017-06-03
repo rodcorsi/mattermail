@@ -23,12 +23,17 @@ func TestGetChannelFromSubject(t *testing.T) {
 	assert("[#test ]", "#test")
 	assert("[@test    ]", "@test")
 	assert("[@test] kjshdfsdh [#kjshdf]", "@test")
-	assert("   [  #  sadfkj   ]  kjshdfsdh [#test]", "")
+	assert("   [  #  sadfkj   ]  kjshdfsdh [#test]", "#test")
 	assert("   [  @t-e_st   ]  kjshdfsdh [#kjshdf]", "@t-e_st")
-	assert("[#test fsd   ]", "")
+	assert("[#test fsd   ]", "#test")
 	assert("From:[@test]", "@test")
 	assert("fwd:  [#test]", "#test")
-	assert("foo baz  [@test]", "")
+	assert("foo baz  [@test]", "@test")
+	assert("[blah#test]", "#test")
+	assert("[blah# test]", "")
+	assert("foo: [  blah  @test]", "@test")
+	assert("#test", "")
+	assert("[@]", "")
 }
 
 func TestReadLines(t *testing.T) {
