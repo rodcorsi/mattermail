@@ -10,6 +10,7 @@ import (
 )
 
 const maxMattermostAttachments = 5
+const maxMattermostPostSize = 4000
 
 // MatterMail struct with configurations, loggers and Mattemost user
 type MatterMail struct {
@@ -129,7 +130,7 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 	//Discover channel id by channel name
 	channelList := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
 
-	mP, err := m.createMattermostPost(msg, func(channelName string) string {
+	mP, err := createMattermostPost(msg, m.cfg, m.log, func(channelName string) string {
 		if strings.HasPrefix(channelName, "#") {
 			return getChannelIDByName(channelList, strings.TrimPrefix(channelName, "#"))
 		} else if strings.HasPrefix(channelName, "@") {
@@ -185,11 +186,11 @@ type mattermostPost struct {
 	attachments []*Attachment
 }
 
-func (m *MatterMail) createMattermostPost(msg *MailMessage, getChannelID func(string) string) (*mattermostPost, error) {
+func createMattermostPost(msg *MailMessage, cfg MatterMailConfig, log Logger, getChannelID func(string) string) (*mattermostPost, error) {
 	mP := &mattermostPost{}
 
 	// read only some lines of text
-	partmessage := readLines(msg.EmailText, m.cfg.LinesToPreview)
+	partmessage := readLines(msg.EmailText, cfg.LinesToPreview)
 
 	postedfullmessage := false
 
@@ -200,39 +201,39 @@ func (m *MatterMail) createMattermostPost(msg *MailMessage, getChannelID func(st
 	}
 
 	// Apply MailTemplate to format message
-	mP.message = fmt.Sprintf(m.cfg.MailTemplate, msg.From, msg.Subject, partmessage)
+	mP.message = fmt.Sprintf(cfg.MailTemplate, msg.From, msg.Subject, partmessage)
 
 	// Mattermost post limit
-	if utf8.RuneCountInString(mP.message) > 4000 {
-		mP.message = string([]rune(mP.message)[:3995]) + " ..."
+	if utf8.RuneCountInString(mP.message) > maxMattermostPostSize {
+		mP.message = string([]rune(mP.message)[:(maxMattermostPostSize-5)]) + " ..."
 		postedfullmessage = false
-		m.log.Info("Email has been cut because is larger than 4000 characters")
+		log.Info("Email has been cut because is larger than 4000 characters")
 	}
 
 	// Try to discovery the channel
 	// redirect email by the subject
-	if !m.cfg.NoRedirectChannel {
-		m.log.Debug("Try to find channel/user by subject")
+	if !cfg.NoRedirectChannel {
+		log.Debug("Try to find channel/user by subject")
 		mP.channelName = getChannelFromSubject(msg.Subject)
 		mP.channelID = getChannelID(mP.channelName)
 	}
 
 	// check filters
-	if mP.channelID == "" && m.cfg.Filter != nil {
-		m.log.Debug("Did not find channel/user from Email Subject. Look for filter")
-		mP.channelName = m.cfg.Filter.GetChannel(msg.From, msg.Subject)
+	if mP.channelID == "" && cfg.Filter != nil {
+		log.Debug("Did not find channel/user from Email Subject. Look for filter")
+		mP.channelName = cfg.Filter.GetChannel(msg.From, msg.Subject)
 		mP.channelID = getChannelID(mP.channelName)
 	}
 
 	// get default Channel config
 	if mP.channelID == "" {
-		m.log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", m.cfg.Channel)
-		mP.channelName = m.cfg.Channel
+		log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channel)
+		mP.channelName = cfg.Channel
 		mP.channelID = getChannelID(mP.channelName)
 	}
 
-	if mP.channelID == "" && !m.cfg.NoRedirectChannel {
-		m.log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", m.cfg.Channel)
+	if mP.channelID == "" && !cfg.NoRedirectChannel {
+		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Channel)
 		mP.channelName = "town-square"
 		mP.channelID = getChannelID(mP.channelName)
 	}
@@ -242,7 +243,7 @@ func (m *MatterMail) createMattermostPost(msg *MailMessage, getChannelID func(st
 	}
 
 	// Attachments
-	if m.cfg.NoAttachment {
+	if cfg.NoAttachment {
 		return mP, nil
 	}
 
@@ -262,6 +263,7 @@ func (m *MatterMail) createMattermostPost(msg *MailMessage, getChannelID func(st
 	// Attachments
 	for _, a := range msg.Attachments {
 		if len(mP.attachments) >= maxMattermostAttachments {
+			log.Debugf("Max number of attachments '%v'\n", maxMattermostAttachments)
 			break
 		}
 		mP.attachments = append(mP.attachments, a)
