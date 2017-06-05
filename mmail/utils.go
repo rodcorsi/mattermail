@@ -1,30 +1,14 @@
 package mmail
 
 import (
-	"encoding/base64"
 	"log"
 	"mime"
 	"regexp"
 	"strings"
 
-	"github.com/jhillyerd/go.enmime"
 	"github.com/paulrosania/go-charset/charset"
 	_ "github.com/paulrosania/go-charset/data" //initiate go-charset data
 )
-
-//Replace cid:**** by embedded base64 image
-func replaceCID(html *string, part *enmime.MIMEPart) string {
-	cid := strings.Replace((*part).Header().Get("Content-ID"), "<", "", -1)
-	cid = strings.Replace(cid, ">", "", -1)
-
-	if len(cid) == 0 {
-		return *html
-	}
-
-	b64 := "data:" + (*part).ContentType() + ";base64," + base64.StdEncoding.EncodeToString((*part).Content())
-
-	return strings.Replace(*html, "cid:"+cid, b64, -1)
-}
 
 // NonASCII Decode non ASCII header string RFC 1342
 func NonASCII(encoded string) string {
