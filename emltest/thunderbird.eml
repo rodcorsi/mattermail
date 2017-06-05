@@ -1,0 +1,76 @@
+Return-Path: <test@gmail.com>
+Received: from [192.168.60.10] ([186.225.107.246])
+        by smtp.gmail.com with ESMTPSA id u9sm2028913qtb.29.2017.06.05.07.07.07
+        for <test@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Mon, 05 Jun 2017 07:07:08 -0700 (PDT)
+To: Rodrigo <test@gmail.com>
+From: Rodrigo <test@gmail.com>
+Subject: =?UTF-8?Q?Or=c3=a7amento_Teste?=
+Message-ID: <f28f2f55-a2eb-80c2-7de7-73f24a1a75e4@gmail.com>
+Date: Mon, 5 Jun 2017 11:07:05 -0300
+User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101
+ Thunderbird/52.1.1
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="------------1CCF1BC45FD50E601B3212A0"
+Content-Language: pt-BR
+
+This is a multi-part message in MIME format.
+--------------1CCF1BC45FD50E601B3212A0
+Content-Type: multipart/related;
+ boundary="------------7350621C63485DA0188F95C3"
+
+
+--------------7350621C63485DA0188F95C3
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+<html>
+  <head>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  </head>
+  <body text="#000000" bgcolor="#FFFFFF">
+    <p>This is a test</p>
+    <img moz-do-not-send="false"
+      src="cid:part1.1FDEB042.C9CA00F0@gmail.com" alt="" height="22"
+      width="25">
+  </body>
+</html>
+
+--------------7350621C63485DA0188F95C3
+Content-Type: image/png;
+ name="icon.png"
+Content-Transfer-Encoding: base64
+Content-ID: <part1.1FDEB042.C9CA00F0@gmail.com>
+Content-Disposition: inline;
+ filename="icon.png"
+
+iVBORw0KGgoAAAANSUhEUgAAABkAAAAWCAIAAAC63aDhAAAAAXNSR0IArs4c6QAAAARnQU1B
+AACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAALJSURBVDhPvVRdSFNhGLY7bc06NRwq
+NDAWFGhm2CSKIJZZVCYowSKQhP4QoguvJOi+LvuBWawrda6bstai/Wk/WP40LVN0s6RobO3H
+7bjjPOd83+lxjphnjn6QXp6L533f533Od77vnC9PWrv4X16EEJ7nk8kklwoQpCim21mxuhel
+FGOz0073w4bHdzWWG+sAEKQoogVBWpoRq3hBl0gkBqyXHt3Kn3y9Oxo4TWkbAIIURbQgyLaT
+e0ExF/3x3FT+yqxOsOfIwlk+WrcY3A+AIEURLQggk9nJvbApbsuJd080Er0qxg+Pv6kccVYI
+kX3AMkcRLQhcPfUQp8dSscIL++r92Gs1Foh8K5k/JMZqLjQwZ/SFIJl8qcW3Qub9ZM08ihVe
+eI6r57hvrJoKBpLQAY0HNhypzM/mEEDmtpzMXNoKr3g8busoZucMVNBTfi/Q1qK62MRkcwgg
+s3WUYiQ9LPOKRCJPjQpCrlCio6QaiEWrwrNaPqBZ+KIOerb4h5j5cSXnVXG+ImGx0WbciJH0
+sMwrHA5b7ysF/rJEdfOxCiFctuDdzE0UyhAaVnKTjMjV2+4VYiQ9nL0uu6mEjRnEeHlgmDHf
+VCSnGRlQDAxt4r9q4kG9w7Q157rw8o5O/czoLsLW8J9Vd9oVbYb8CTsDDoAgRREcghlPubO7
+Lud+4VAG+kxus0pcbBT9ZcKs+vr59VpF3i9caylAES0IIHvb/yDnOeJj8fv9zq7asT6tRJpI
+UEu+lQz3qm63KwEQpCiiBYGjqxbinN8XAs8Z9Qy5OqtGnGUce0riDtLITvq9dAnhHUhRfO/a
+BgFkmYtCyL3wi7Es6/F4XpgN7p7imQ97YqFjktQMgCBFES0IIPvN/4iAAteAz+dzPDPau472
+d253dBcBIEhRROuP7onlgA6XVCgUmpqaGhwcfJkKEKQo/sX99c+xdl6S9BNfRF4LljDBVAAA
+AABJRU5ErkJggg==
+--------------7350621C63485DA0188F95C3--
+
+--------------1CCF1BC45FD50E601B3212A0
+Content-Type: text/plain; charset=UTF-8;
+ name="attach.bak"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="attach.bak"
+
+YXR0YWNobWVudA==
+--------------1CCF1BC45FD50E601B3212A0--

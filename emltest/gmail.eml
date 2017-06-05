@@ -1,0 +1,58 @@
+MIME-Version: 1.0
+Received: by 10.28.140.81 with HTTP; Mon, 5 Jun 2017 07:08:54 -0700 (PDT)
+Date: Mon, 5 Jun 2017 11:08:54 -0300
+Delivered-To: test@gmail.com
+Message-ID: <CAOHBT=axR_YGX_L3X_ZRPOn6ibTUNNj9Mch8nvhYAV2YmpmM6g@mail.gmail.com>
+Subject: =?UTF-8?Q?Or=C3=A7amento_Teste?=
+From: Rodrigo <test@gmail.com>
+To: "Rodrigo" <test@gmail.com>
+Content-Type: multipart/mixed; boundary="001a114b061a0d0eed0551370bfc"
+
+--001a114b061a0d0eed0551370bfc
+Content-Type: multipart/related; boundary="001a114b061a0d0ee70551370bfb"
+
+--001a114b061a0d0ee70551370bfb
+Content-Type: multipart/alternative; boundary="001a114b061a0d0edc0551370bfa"
+
+--001a114b061a0d0edc0551370bfa
+Content-Type: text/plain; charset="UTF-8"
+
+This is a test
+
+--001a114b061a0d0edc0551370bfa
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr">This is a test<div><img src="cid:ii_15c7895ecf50717e" alt="Imagem inline 1" width="25" height="22"><br></div></div>
+
+--001a114b061a0d0edc0551370bfa--
+--001a114b061a0d0ee70551370bfb
+Content-Type: image/png; name="icon.png"
+Content-Disposition: inline; filename="icon.png"
+Content-Transfer-Encoding: base64
+Content-ID: <ii_15c7895ecf50717e>
+X-Attachment-Id: ii_15c7895ecf50717e
+
+iVBORw0KGgoAAAANSUhEUgAAABkAAAAWCAIAAAC63aDhAAAAAXNSR0IArs4c6QAAAARnQU1BAACx
+jwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAALJSURBVDhPvVRdSFNhGLY7bc06NRwqNDAWFGhm
+2CSKIJZZVCYowSKQhP4QoguvJOi+LvuBWawrda6bstai/Wk/WP40LVN0s6RobO3H7bjjPOd83+lx
+jphnjn6QXp6L533f533Od77vnC9PWrv4X16EEJ7nk8kklwoQpCim21mxuhelFGOz0073w4bHdzWW
+G+sAEKQoogVBWpoRq3hBl0gkBqyXHt3Kn3y9Oxo4TWkbAIIURbQgyLaTe0ExF/3x3FT+yqxOsOfI
+wlk+WrcY3A+AIEURLQggk9nJvbApbsuJd080Er0qxg+Pv6kccVYIkX3AMkcRLQhcPfUQp8dSscIL
+++r92Gs1Foh8K5k/JMZqLjQwZ/SFIJl8qcW3Qub9ZM08ihVeeI6r57hvrJoKBpLQAY0HNhypzM/m
+EEDmtpzMXNoKr3g8busoZucMVNBTfi/Q1qK62MRkcwggs3WUYiQ9LPOKRCJPjQpCrlCio6QaiEWr
+wrNaPqBZ+KIOerb4h5j5cSXnVXG+ImGx0WbciJH0sMwrHA5b7ysF/rJEdfOxCiFctuDdzE0UyhAa
+VnKTjMjV2+4VYiQ9nL0uu6mEjRnEeHlgmDHfVCSnGRlQDAxt4r9q4kG9w7Q157rw8o5O/czoLsLW
+8J9Vd9oVbYb8CTsDDoAgRREcghlPubO7Lud+4VAG+kxus0pcbBT9ZcKs+vr59VpF3i9caylAES0I
+IHvb/yDnOeJj8fv9zq7asT6tRJpIUEu+lQz3qm63KwEQpCiiBYGjqxbinN8XAs8Z9Qy5OqtGnGUc
+e0riDtLITvq9dAnhHUhRfO/aBgFkmYtCyL3wi7Es6/F4XpgN7p7imQ97YqFjktQMgCBFES0IIPvN
+/4iAAteAz+dzPDPau472d253dBcBIEhRROuP7onlgA6XVCgUmpqaGhwcfJkKEKQo/sX99c+xdl6S
+9BNfRF4LljDBVAAAAABJRU5ErkJggg==
+--001a114b061a0d0ee70551370bfb--
+--001a114b061a0d0eed0551370bfc
+Content-Type: application/octet-stream; name="attach.bak"
+Content-Disposition: attachment; filename="attach.bak"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_j3k7p5zu1
+
+YXR0YWNobWVudA==
+--001a114b061a0d0eed0551370bfc--

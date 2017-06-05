@@ -1,0 +1,128 @@
+Delivered-To: test@gmail.com
+Received: by 10.28.145.133 with SMTP id t127csp1453059wmd;
+        Mon, 5 Jun 2017 07:13:07 -0700 (PDT)
+X-Received: by 10.55.76.140 with SMTP id z134mr23250884qka.35.1496671987115;
+        Mon, 05 Jun 2017 07:13:07 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1496671987; cv=none;
+        d=google.com; s=arc-20160816;
+        b=J5Gxhezqzg/GMi8qIT8KOvN0eJFwEsyIvoWROxsYBuZ/p3v/YDZ07txu2mHLWBPbFv
+         citDcqSBCBGlr6w+Dp7ipKo3rwOYf2kXAYJWhMyrUVUIA1Oudz2SC0mh+lBlsfYB69x9
+         2c3+VeAfczy8HkiBW1ZySsFApo2QVBICTbna6XcWLB3IZ97H9Gs8Rsgh5QM5D6/1SAgW
+         BJApW5fgrwanTduyQKua/z3Ut3/tMcFaoFEn1emTHV2qtTDLT5WO1/gmWdUpPwEc2WpK
+         6NHAVKBmJLrH6XLqS/8C6C07Wh7+n20vOFoo8worQin6aFW9XlfLKsiYS098ZwjPc5ri
+         n7eg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=user-agent:message-id:subject:to:from:date:mime-version
+         :arc-authentication-results;
+        bh=UzQ4EEKJ9bd3V8YoSnlTDyp/MjL7Axnzliv1HaI4HMA=;
+        b=zKcfzB3T5YZJm5N7iENfEugBkioEeEXKpIIhTalMdzHWydy0U4+lc5VBC4z8hzAMtD
+         FfQFVUru6217PIt4Qs/P4CyIW7tjkQBGbmsdhkY+PjGs/6RoFu/q82hxSaNMMQyc5I5F
+         EA1nTZLfx2df0XhDJBVCiLFumKBPWZGWbQjzN8bT6jVdlvxRHbNmenw6UJ0rqZiEc8Zr
+         YqpoEFTQhk3GyfygzW9wKYOEEV+xBzBpzZ9Ar6mYYj0SZYkt0nvpyv0BiwOIc0IxsvZG
+         ldw71oqHlGoWKf7fFdTqkKTP6oF3im1zPASGCIqL/vn5X9gw+/AgC8HXxGNXqZboJxBc
+         EhSA==
+ARC-Authentication-Results: i=1; mx.google.com;
+       spf=pass (google.com: domain of test@example.com designates 191.252.30.29 as permitted sender) smtp.mailfrom=test@example.com
+Return-Path: <test@example.com>
+Received: from mcegress-30-lw-29.correio.biz (mcegress-30-lw-29.correio.biz. [191.252.30.29])
+        by mx.google.com with ESMTP id j42si32369417qtj.224.2017.06.05.07.13.05
+        for <test@gmail.com>;
+        Mon, 05 Jun 2017 07:13:06 -0700 (PDT)
+Received-SPF: pass (google.com: domain of test@example.com designates 191.252.30.29 as permitted sender) client-ip=191.252.30.29;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of test@example.com designates 191.252.30.29 as permitted sender) smtp.mailfrom=test@example.com
+X-Sender-Id: x-authuser|test@example.com
+Received: from mcbain0006.correio.biz (unknown [10.30.225.40])
+	by mcrelay.correio.biz (Postfix) with ESMTP id CB0D6150010B
+	for <test@gmail.com>; Mon,  5 Jun 2017 11:13:03 -0300 (BRT)
+X-Sender-Id: x-authuser|test@example.com
+Received: from mcbain0006.correio.biz (mcbain0006.email.locaweb.com.br [10.30.224.225])
+	by 0.0.0.0:2500 (trex/5.4.7);
+	Mon, 05 Jun 2017 11:13:03 -0300
+X-LW-Relay: Bad
+X-LW-SenderId: x-authuser|test@example.com
+Received: from mcbain0006.correio.biz (localhost [127.0.0.1])
+	by mcbain0006.correio.biz (Postfix) with ESMTP id 8E63222025C
+	for <test@gmail.com>; Mon,  5 Jun 2017 11:13:01 -0300 (BRT)
+Received: from moe0064.email.locaweb.com.br (moe0064.email.locaweb.com.br [10.20.124.58])
+	by mcbain0006.correio.biz (Postfix) with ESMTP id 48509340497
+	for <test@gmail.com>; Mon,  5 Jun 2017 11:12:58 -0300 (BRT)
+Received: from webmail-seguro.com.br (localhost [127.0.0.1])
+	by moe0064.email.locaweb.com.br (Postfix) with ESMTP id 62D15CC20AB
+	for <test@gmail.com>; Mon,  5 Jun 2017 11:12:58 -0300 (BRT)
+Received: from [186.225.107.246]
+ via [186.202.140.241]
+ by webmail-seguro.com.br
+ with HTTP (HTTP/1.0 POST); Mon, 05 Jun 2017 11:12:58 -0300
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="=_c90fb3c370b27dcef750e451d69f315e"
+Date: Mon, 05 Jun 2017 11:12:58 -0300
+From: test@example.com
+To: <test@gmail.com>
+Subject: =?UTF-8?Q?Or=C3=A7amento=20Teste?=
+Message-ID: <25f7776caea5bbd18961a984bbefdd8e@example.com>
+X-Sender: test@example.com
+User-Agent: Webmail Locaweb
+x-locaweb-id: 4VznvtvW0sTCgfV80ZxQnnvd4R-_vxFedQUUnag-i7lof_7sm4WHBDSC-xf7JSdc3K2y8hwTc3bF-Jj972nIxyh20-mTo4DCqJDMirT1DajrTM_Z5TATzUovPEQftqhUC6ZLlgbvnFrK2SNA461HyLTU5TnT9TUgVYUEcP_medBSoLjX41esfEJbO4mdnmd6nsvqO1JtIE9Ks7ujO4GHCCbCpUkNtgBQaw7tTY6_nnU=
+x-locaweb-id2: NzI2ZjY0NzI2OTY3NmYyZTYzNmY3MjczNjk0MDczNjM2ODY1NjU2YzY5NzQ2MTJlNjM2ZjZkMmU2Mjcy
+X-AuthUser: test@example.com
+X-Outbound-RspamD: yes
+X-MC: yes
+
+--=_c90fb3c370b27dcef750e451d69f315e
+Content-Type: multipart/alternative;
+ boundary="=_5e4b43182db860dc5e5ade3c5adc118f"
+
+--=_5e4b43182db860dc5e5ade3c5adc118f
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+
+This is a test
+
+--=_5e4b43182db860dc5e5ade3c5adc118f
+Content-Type: multipart/related;
+ boundary="=_da62f045933b6aa00831dbb8abc58070"
+
+--=_da62f045933b6aa00831dbb8abc58070
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=UTF-8
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
+<html><body>
+<p>This is a test</p>
+<p><img title=3D"Sorriso" src=3D"cid:smiley-smile.gif@example.com" alt=
+=3D"Sorriso" border=3D"0" /></p>
+</body></html>
+
+--=_da62f045933b6aa00831dbb8abc58070
+Content-Transfer-Encoding: base64
+Content-ID: <smiley-smile.gif@example.com>
+Content-Type: image/gif;
+ name=smiley-smile.gif
+Content-Disposition: inline;
+ filename=smiley-smile.gif;
+ size=344
+
+R0lGODlhEgASAPQfAHlgDsbGxpZ6DOrPEcq2at7SMr+qTu/v7vPwWdC9HlI9DbSYDPzwNmhUEsSr
+GfvmHvr6+uDYuv79cfryR8S8nbqeLtfX1tXDMf75N7mbHMKmMv77WvjaEiYKAqqKAgAAACH5BAUA
+AB8ALAAAAAASABIAQAXV4CeKUGmWo3gsEuYyz8MNA2dvyzFCFmVoDofGQLFAUhBDQjK5XBgM50SS
+MBwhFMcmBuh4O4DYxkE5kgiLC0IiQVwWBPMnWdi4FIp7HrMpWA8ZCAwDHjaGHB4DDxMZOjwaCQgY
+MA8MGAgJGkYpcxEGGR4eGQYRciMHFQ4IGxNQExsIDhU6nSytDQpQuAxTC6WACBMuAA3DxRgTCI0r
+LTCHhjUTOQcGBQwcAgAJNgkAAhwMfgcQ1AlbDw4CAg5iVeMqFgYOBa+sBQ4GFrRIBxYB/wH0mQoB
+ADs=
+--=_da62f045933b6aa00831dbb8abc58070--
+
+--=_5e4b43182db860dc5e5ade3c5adc118f--
+
+--=_c90fb3c370b27dcef750e451d69f315e
+Content-Transfer-Encoding: base64
+Content-Type: text/plain;
+ name=attach.bak
+Content-Disposition: attachment;
+ filename=attach.bak;
+ size=10
+
+YXR0YWNobWVudA==
+--=_c90fb3c370b27dcef750e451d69f315e--
+

@@ -3,6 +3,8 @@ package mmail
 import (
 	"log"
 	"mime"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -70,4 +72,17 @@ func readLines(s string, nmax int) string {
 		ret += rxlines
 	}
 	return ret
+}
+
+func findDir(dir string) string {
+	fileName := "."
+	if _, err := os.Stat("./" + dir + "/"); err == nil {
+		fileName, _ = filepath.Abs("./" + dir + "/")
+	} else if _, err := os.Stat("../" + dir + "/"); err == nil {
+		fileName, _ = filepath.Abs("../" + dir + "/")
+	} else if _, err := os.Stat("/tmp/" + dir); err == nil {
+		fileName, _ = filepath.Abs("/tmp/" + dir)
+	}
+
+	return fileName + "/"
 }
