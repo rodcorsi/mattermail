@@ -2,14 +2,17 @@ package mmail
 
 import "net/mail"
 
-// MailListener function called when an email arrives
-type MailListener func(msg *mail.Message) error
+// MailHandler function called to handle mail message
+type MailHandler func(msg *mail.Message) error
 
 // MailProvider interface to abstract email connection
 type MailProvider interface {
-	Start()
-	Terminate()
+	// CheckNewMessage gets new email from server
+	CheckNewMessage(handler MailHandler) error
 
-	// AddListenerOnReceived adds a listener for when an email arrives
-	AddListenerOnReceived(listener MailListener)
+	// WaitNewMessage waits for a new message (idle or time.Sleep)
+	WaitNewMessage(timeout int) error
+
+	// Terminate mail connection
+	Terminate() error
 }

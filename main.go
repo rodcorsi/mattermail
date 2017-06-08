@@ -82,7 +82,7 @@ func main() {
 		c := cfg
 		go func() {
 			logger := mmail.NewLog(c.Name, c.Debug)
-			mailProvider := mailProvider(c.MailConfig, logger)
+			mailProvider := mailProvider(c.MailConfig, logger, c.Debug)
 			mmail.InitMatterMail(c.MatterMailConfig, logger, mailProvider)
 			wg.Done()
 		}()
@@ -95,6 +95,6 @@ func main() {
 	}
 }
 
-func mailProvider(cfg mmail.MailConfig, logger mmail.Logger) mmail.MailProvider {
-	return mmail.NewMailProviderImap(cfg, logger)
+func mailProvider(cfg mmail.MailConfig, logger mmail.Logger, debug bool) mmail.MailProvider {
+	return mmail.NewMailProviderImap(cfg, logger, debug)
 }

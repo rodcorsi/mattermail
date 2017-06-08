@@ -6,6 +6,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"time"
+
 	"github.com/mattermost/platform/model"
 )
 
@@ -95,8 +97,6 @@ func (m *MatterMail) PostNetMail(msg *mail.Message) error {
 func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 
 	client := model.NewClient(m.cfg.Server)
-
-	m.log.Debug(client)
 
 	m.log.Debugf("Login user:%v team:%v url:%v\n", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
 
@@ -282,8 +282,19 @@ func InitMatterMail(cfg MatterMailConfig, log Logger, mailprovider MailProvider)
 	m.log.Debug("Debug mode on")
 	m.log.Info("Checking new emails")
 
-	mailprovider.AddListenerOnReceived(m.PostNetMail)
-
 	defer mailprovider.Terminate()
-	mailprovider.Start()
+
+	for {
+		if err := mailprovider.CheckNewMessage(m.PostNetMail); err != nil {
+			m.log.Error("MatterMail.InitMatterMail Error on check new messsage:", err.Error())
+			m.log.Info("Try again in 30s")
+			time.Sleep(time.Second * 30)
+		}
+
+		if err := mailprovider.WaitNewMessage(60); err != nil {
+			m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
+			m.log.Info("Try again in 30s")
+			time.Sleep(time.Second * 30)
+		}
+	}
 }

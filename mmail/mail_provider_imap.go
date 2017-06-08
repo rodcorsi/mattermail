@@ -1,35 +1,214 @@
 package mmail
 
 import (
-	"bytes"
 	"crypto/tls"
 	"net/mail"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/mxk/go-imap/imap"
+	"github.com/emersion/go-imap"
+	idle "github.com/emersion/go-imap-idle"
+	"github.com/emersion/go-imap/client"
 )
 
 // MailProviderImap implements MailProvider using imap
 type MailProviderImap struct {
-	imapClient *imap.Client
+	imapClient *client.Client
 	cfg        MailConfig
 	log        Logger
-	listener   MailListener
+	idle       bool
+	debug      bool
 }
 
+const mailBox = "INBOX"
+
 // NewMailProviderImap creates a new MailProviderImap implementing MailProvider
-func NewMailProviderImap(cfg MailConfig, log Logger) *MailProviderImap {
+func NewMailProviderImap(cfg MailConfig, log Logger, debug bool) *MailProviderImap {
 	return &MailProviderImap{
-		cfg: cfg,
-		log: log,
+		cfg:   cfg,
+		log:   log,
+		debug: debug,
 	}
+}
+
+// CheckNewMessage gets new email from server
+func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
+	m.log.Debug("MailProviderImap.CheckNewMessage")
+
+	if err := m.checkConnection(); err != nil {
+		return err
+	}
+
+	if err := m.selectMailBox(); err != nil {
+		return err
+	}
+
+	criteria := &imap.SearchCriteria{
+		WithoutFlags: []string{imap.SeenFlag},
+	}
+
+	uid, err := m.imapClient.UidSearch(criteria)
+	if err != nil {
+		m.log.Debug("MailProviderImap.CheckNewMessage: Error UIDSearch")
+		return err
+	}
+
+	if len(uid) == 0 {
+		m.log.Debug("MailProviderImap.CheckNewMessage: No new messages")
+		return nil
+	}
+
+	m.log.Debugf("MailProviderImap.CheckNewMessage: found %v uid", len(uid))
+
+	seqset := &imap.SeqSet{}
+	seqset.AddNum(uid...)
+
+	messages := make(chan *imap.Message, len(uid))
+	done := make(chan error, 1)
+	go func() {
+		done <- m.imapClient.UidFetch(seqset, []string{imap.EnvelopeMsgAttr, "BODY[]"}, messages)
+	}()
+
+	emailPosted := make(map[uint32]bool)
+	for _, v := range uid {
+		emailPosted[v] = false
+	}
+
+	for imapMsg := range messages {
+		m.log.Debug("MailProviderImap.CheckNewMessage: PostMail uid:", imapMsg.Uid)
+		if emailPosted[imapMsg.Uid] {
+			m.log.Debug("MailProviderImap.CheckNewMessage: Email was posted uid:", imapMsg.Uid)
+			continue
+		}
+
+		r := imapMsg.GetBody("BODY[]")
+		if r == nil {
+			m.log.Error("MailProviderImap.CheckNewMessage: message.GetBody(BODY[]) returns nil")
+			continue
+		}
+
+		msg, err := mail.ReadMessage(r)
+		if err != nil {
+			m.log.Error("MailProviderImap.CheckNewMessage: Error on parse imap/message to mail/message")
+			continue
+		}
+
+		if err := handler(msg); err != nil {
+			m.log.Debug("MailProviderImap.CheckNewMessage: Error handler:", err.Error())
+			continue
+		} else {
+			emailPosted[imapMsg.Uid] = true
+		}
+	}
+
+	// Check command completion status
+	if err := <-done; err != nil {
+		m.log.Error("MailProviderImap.CheckNewMessage: Error on terminate fetch command")
+		return err
+	}
+
+	errorset := &imap.SeqSet{}
+	for k, posted := range emailPosted {
+		if !posted {
+			errorset.AddNum(k)
+		}
+	}
+
+	if errorset.Empty() {
+		return nil
+	}
+
+	// Mark all valid messages as read
+	err = m.imapClient.UidStore(errorset, imap.RemoveFlags, []interface{}{imap.SeenFlag}, nil)
+	if err != nil {
+		m.log.Error("MailProviderImap.CheckNewMessage: Error UIDStore UNSEEN")
+		return err
+	}
+
+	return nil
+}
+
+// WaitNewMessage waits for a new message (idle or time.Sleep)
+func (m *MailProviderImap) WaitNewMessage(timeout int) error {
+	m.log.Debug("MailProviderImap.WaitNewMessage")
+
+	// Idle mode
+	if err := m.checkConnection(); err != nil {
+		return err
+	}
+
+	m.log.Debug("MailProviderImap.WaitNewMessage: idle mode:", m.idle)
+
+	if !m.idle {
+		time.Sleep(time.Second * time.Duration(timeout))
+		return nil
+	}
+
+	if err := m.selectMailBox(); err != nil {
+		return err
+	}
+
+	idleClient := idle.NewClient(m.imapClient)
+
+	// Create a channel to receive mailbox updates
+	statuses := make(chan *imap.MailboxStatus)
+	m.imapClient.MailboxUpdates = statuses
+
+	stop := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		done <- idleClient.Idle(stop)
+	}()
+
+	reset := time.After(time.Second * time.Duration(timeout))
+
+	var lock sync.Mutex
+	closed := false
+	closeChannel := func() {
+		lock.Lock()
+		if !closed {
+			close(stop)
+			closed = true
+		}
+		lock.Unlock()
+	}
+
+	for {
+		select {
+		case status := <-statuses:
+			m.log.Debug("MailProviderImap.WaitNewMessage: New mailbox status:", status.Format())
+			closeChannel()
+
+		case err := <-done:
+			if err != nil {
+				m.log.Error("MailProviderImap.WaitNewMessage: Error on terminate idle", err.Error())
+				return err
+			}
+			return nil
+		case <-reset:
+			closeChannel()
+		}
+	}
+}
+
+func (m *MailProviderImap) selectMailBox() error {
+	if m.imapClient.Mailbox != nil && m.imapClient.Mailbox.Name == mailBox {
+		return nil
+	}
+
+	_, err := m.imapClient.Select(mailBox, false)
+	if err != nil {
+		m.log.Error("MailProviderImap.selectMailBox: Error on select", mailBox)
+		return err
+	}
+	return nil
 }
 
 // checkConnection if is connected return nil or try to connect
 func (m *MailProviderImap) checkConnection() error {
-	if m.imapClient != nil && (m.imapClient.State() == imap.Auth || m.imapClient.State() == imap.Selected) {
-		m.log.Debug("CheckConnection: Connection alive")
+	if m.imapClient != nil && m.imapClient.State != imap.LogoutState {
+		m.log.Debug("MailProviderImap.CheckConnection: Connection state", m.imapClient.State)
 		return nil
 	}
 
@@ -37,193 +216,77 @@ func (m *MailProviderImap) checkConnection() error {
 
 	//Start connection with server
 	if strings.HasSuffix(m.cfg.ImapServer, ":993") {
-		m.log.Debug("CheckConnection: DialTLS")
-		m.imapClient, err = imap.DialTLS(m.cfg.ImapServer, nil)
+		m.log.Debug("MailProviderImap.CheckConnection: DialTLS")
+		m.imapClient, err = client.DialTLS(m.cfg.ImapServer, nil)
 	} else {
-		m.log.Debug("CheckConnection: Dial")
-		m.imapClient, err = imap.Dial(m.cfg.ImapServer)
+		m.log.Debug("MailProviderImap.CheckConnection: Dial")
+		m.imapClient, err = client.Dial(m.cfg.ImapServer)
 	}
 
 	if err != nil {
-		m.log.Error("Unable to connect:", err)
+		m.log.Error("MailProviderImap.CheckConnection: Unable to connect:", m.cfg.ImapServer)
 		return err
 	}
 
-	if m.cfg.StartTLS && m.imapClient.Caps["STARTTLS"] {
-		m.log.Debug("CheckConnection:StartTLS")
-		var tconfig tls.Config
-		if m.cfg.TLSAcceptAllCerts {
-			tconfig.InsecureSkipVerify = true
-		}
-		_, err = m.imapClient.StartTLS(&tconfig)
+	if m.debug {
+		m.imapClient.SetDebug(m.log)
+	}
+
+	// Max timeout awaiting a command
+	m.imapClient.Timeout = time.Minute * 3
+
+	if m.cfg.StartTLS {
+		starttls, err := m.imapClient.SupportStartTLS()
 		if err != nil {
 			return err
+		}
+
+		if starttls {
+			m.log.Debug("MailProviderImap.CheckConnection:StartTLS")
+			var tconfig tls.Config
+			if m.cfg.TLSAcceptAllCerts {
+				tconfig.InsecureSkipVerify = true
+			}
+			err = m.imapClient.StartTLS(&tconfig)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	m.log.Infof("Connected with %q\n", m.cfg.ImapServer)
 
-	_, err = m.imapClient.Login(m.cfg.Email, m.cfg.EmailPass)
+	err = m.imapClient.Login(m.cfg.Email, m.cfg.EmailPass)
 	if err != nil {
-		m.log.Error("Unable to login:", m.cfg.Email)
+		m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Email)
 		return err
 	}
 
-	return nil
-}
-
-// checkNewMails Check if exist a new mail
-func (m *MailProviderImap) checkNewMails() error {
-	m.log.Debug("checkNewMails")
-
-	if err := m.checkConnection(); err != nil {
+	if err = m.selectMailBox(); err != nil {
 		return err
 	}
 
-	var (
-		cmd *imap.Command
-		rsp *imap.Response
-	)
+	idleClient := idle.NewClient(m.imapClient)
 
-	// Open a mailbox (synchronous command - no need for imap.Wait)
-	m.imapClient.Select("INBOX", false)
-
-	var specs []imap.Field
-	specs = append(specs, "UNSEEN")
-	seq := &imap.SeqSet{}
-
-	// get headers and UID for UnSeen message in src inbox...
-	cmd, err := imap.Wait(m.imapClient.UIDSearch(specs...))
+	m.idle, err = idleClient.SupportIdle()
 	if err != nil {
-		m.log.Debug("Error UIDSearch UTF-8:")
-		m.log.Debug(err)
-		m.log.Debug("Try with US-ASCII")
-
-		// try again with US-ASCII
-		cmd, err = imap.Wait(m.imapClient.Send("UID SEARCH", append([]imap.Field{"CHARSET", "US-ASCII"}, specs...)...))
-		if err != nil {
-			m.log.Error("UID SEARCH US-ASCII")
-			return err
-		}
-	}
-
-	for _, rsp := range cmd.Data {
-		for _, uid := range rsp.SearchResults() {
-			m.log.Debug("checkNewMails:AddNum ", uid)
-			seq.AddNum(uid)
-		}
-	}
-
-	// no new messages
-	if seq.Empty() {
-		m.log.Debug("checkNewMails: No new messages")
-		return nil
-	}
-
-	cmd, _ = m.imapClient.UIDFetch(seq, "BODY[]")
-	postmail := false
-
-	for cmd.InProgress() {
-		m.log.Debug("checkNewMails: cmd in Progress")
-		// Wait for the next response (no timeout)
-		m.imapClient.Recv(-1)
-
-		// Process command data
-		for _, rsp = range cmd.Data {
-			msgFields := rsp.MessageInfo().Attrs
-			header := imap.AsBytes(msgFields["BODY[]"])
-			if msg, _ := mail.ReadMessage(bytes.NewReader(header)); msg != nil {
-				m.log.Debug("checkNewMails:PostMail")
-				// Call listener
-				if err := m.listener(msg); err != nil {
-					return err
-				}
-				postmail = true
-			}
-		}
-		cmd.Data = nil
-	}
-
-	// Check command completion status
-	if rsp, err := cmd.Result(imap.OK); err != nil {
-		if err == imap.ErrAborted {
-			m.log.Error("Fetch command aborted")
-			return err
-		}
-		m.log.Error("Fetch error:", rsp.Info)
+		m.idle = false
+		m.log.Error("MailProviderImap.CheckConnection: Error on check idle support")
 		return err
 	}
 
-	cmd.Data = nil
-
-	if postmail {
-		m.log.Debug("checkNewMails: Mark all messages with flag \\Seen")
-
-		//Mark all messages seen
-		_, err = imap.Wait(m.imapClient.UIDStore(seq, "+FLAGS.SILENT", `\Seen`))
-		if err != nil {
-			m.log.Error("Error UIDStore \\Seen")
-			return err
-		}
-	}
-
-	return nil
-}
-
-// idleMailBox Change to state idle in imap server
-func (m *MailProviderImap) idleMailBox() error {
-	m.log.Debug("idleMailBox")
-
-	if err := m.checkConnection(); err != nil {
-		return err
-	}
-
-	// Open a mailbox (synchronous command - no need for imap.Wait)
-	m.imapClient.Select("INBOX", false)
-
-	_, err := m.imapClient.Idle()
-	if err != nil {
-		return err
-	}
-
-	defer m.imapClient.IdleTerm()
-	timeout := 0
-	for {
-		err := m.imapClient.Recv(time.Second)
-		timeout++
-		if err == nil || timeout > 180 {
-			break
-		}
-	}
 	return nil
 }
 
 // Terminate imap connection
-func (m *MailProviderImap) Terminate() {
+func (m *MailProviderImap) Terminate() error {
 	if m.imapClient != nil {
-		m.imapClient.Logout(time.Second * 5)
+		m.log.Info("MailProviderImap.Terminate Logout")
+		if err := m.imapClient.Logout(); err != nil {
+			m.log.Error("MailProviderImap.Terminate Error:", err.Error())
+			return err
+		}
 	}
-}
 
-func (m *MailProviderImap) tryTime(message string, fn func() error) {
-	if err := fn(); err != nil {
-		m.log.Info(message, err, "\n", "Try again in 30s")
-		time.Sleep(30 * time.Second)
-		fn()
-	}
-}
-
-// AddListenerOnReceived adds a listener for when an email arrives
-func (m *MailProviderImap) AddListenerOnReceived(listener MailListener) {
-	m.listener = listener
-}
-
-// Start mail monitor to dispach when an email arrives
-func (m *MailProviderImap) Start() {
-	m.tryTime("Error on check new email:", m.checkNewMails)
-
-	for {
-		m.tryTime("Error Idle:", m.idleMailBox)
-		m.tryTime("Error on check new email:", m.checkNewMails)
-	}
+	return nil
 }

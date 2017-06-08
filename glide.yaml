@@ -5,10 +5,10 @@ import:
   version: v3.5.0
   subpackages:
   - model
-- package: github.com/mxk/go-imap
-  subpackages:
-  - imap
 - package: github.com/paulrosania/go-charset
   subpackages:
   - charset
   - data
+- package: github.com/emersion/go-imap
+  version: v0.9
+- package: github.com/emersion/go-imap-idle
