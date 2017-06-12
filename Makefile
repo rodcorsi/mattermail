@@ -27,7 +27,7 @@ build-linux:
 
 build-osx:
 	@echo Build OSX amd64
-	env GOOS=linux GOARCH=amd64 $(GO) build -o $(DIST)/osx/mattermail/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
+	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(DIST)/osx/mattermail/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
 
 package:
 	@echo Create Linux package
