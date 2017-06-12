@@ -17,7 +17,7 @@ DIST := dist
 VERSION := $(shell git describe --tags)
 GO := go
 
-GO_LINKER_FLAGS ?= -ldflags "-X main.Version=${VERSION}"
+GO_LINKER_FLAGS ?= -ldflags "-X github.com/rodcorsi/mattermail/cmd.Version=${VERSION}"
 
 all: build-linux build-osx
 
@@ -29,6 +29,10 @@ build-osx:
 	@echo Build OSX amd64
 	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(DIST)/osx/mattermail/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
 
+build-windows:
+	@echo Build Windows amd64
+	env GOOS=windows GOARCH=amd64 $(GO) build -o $(DIST)/windows/mattermail/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
+
 package:
 	@echo Create Linux package
 	cp config.json $(DIST)/linux/mattermail/
@@ -37,6 +41,10 @@ package:
 	@echo Create OSX package
 	cp config.json $(DIST)/osx/mattermail/
 	tar -C $(DIST)/osx -czf $(DIST)/mattermail-$(VERSION).osx.am64.tar.gz mattermail
+
+	@echo Create Windows package
+	cp config.json $(DIST)/windows/mattermail/
+	tar -C $(DIST)/windows -czf $(DIST)/mattermail-$(VERSION).windows.am64.tar.gz mattermail
 
 govet:
 	@echo GOVET
