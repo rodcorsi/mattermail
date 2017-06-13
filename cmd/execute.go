@@ -31,6 +31,9 @@ func parseCommand(args []string) (cmd command, err error) {
 		case "server":
 			cmd = &serverCommand{}
 			err = cmd.parse(args[2:])
+		case "migrate":
+			cmd = &migrateCommand{}
+			err = cmd.parse(args[2:])
 		case "-h", "--help":
 			cmd = &stringCommand{usage}
 		case "-v", "--version":
