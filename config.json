@@ -2,35 +2,20 @@
 	"Profiles":[
 		{
 			"Name":              "Orders",
-			"MailTemplate":      ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
-			"LinesToPreview":    10,
-			"RedirectChannel":   true,
-			"Attachment":        true,
-			"Disabled":          false,
+			"Channels":          ["#orders"],
 
 			"Email":{
 				"ImapServer":        "imap.example.com:143",
 				"Address":           "orders@example.com",
-				"Password":          "password",
-				"StartTLS":          false,
-				"TLSAcceptAllCerts": false
+				"Password":          "password"
 			},
 
 			"Mattermost":{
 				"Server":   "https://mattermost.example.com",
 				"Team":     "team1",
-				"Channels": ["#orders", "@john"],
 				"User":     "mattermail@example.com",
 				"Password": "password"
-			},
-
-			"Filter":            [
-				{"Subject":"Feature", "Channel":"#feature"},
-            	{"From":"test@gmail.com", "Subject":"To Me", "Channel":"@catarine"},
-				{"From":"@companyb.com", "Channel":"#companyb"}
-			]
+			}
 		}
-	],
-
-	"Debug": true
+	]
 }

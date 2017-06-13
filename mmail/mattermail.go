@@ -231,13 +231,13 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 
 	// get default Channel config
 	if mP.channelID == "" {
-		log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Mattermost.Channels)
-		mP.channelName = cfg.Mattermost.Channels[0]
+		log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channels)
+		mP.channelName = cfg.Channels[0]
 		mP.channelID = getChannelID(mP.channelName)
 	}
 
 	if mP.channelID == "" && *cfg.RedirectChannel {
-		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Mattermost.Channels)
+		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Channels)
 		mP.channelName = "town-square"
 		mP.channelID = getChannelID(mP.channelName)
 	}

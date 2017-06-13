@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 )
 
@@ -17,6 +18,7 @@ const (
 // Profile type with general service settings
 type Profile struct {
 	Name            string
+	Channels        []string
 	MailTemplate    *string `json:",omitempty"`
 	LinesToPreview  *int    `json:",omitempty"`
 	RedirectChannel *bool   `json:",omitempty"`
@@ -51,6 +53,16 @@ func NewProfile() *Profile {
 func (c *Profile) Validate() error {
 	if c.Name == "" {
 		return fmt.Errorf("Field 'Name' is empty set a name for help in log")
+	}
+
+	if len(c.Channels) == 0 {
+		return fmt.Errorf("Field 'Channels' need to set at least one channel or user for destination")
+	}
+
+	for _, channel := range c.Channels {
+		if channel != "" && !validateChannel(channel) {
+			return fmt.Errorf("Field 'Channels' contains invalid chars, make sure if you are using url channel name or username. This field need to start with # for channel or @ for username: %v", channel)
+		}
 	}
 
 	if c.LinesToPreview != nil && *c.LinesToPreview <= 0 {
@@ -88,6 +100,16 @@ func (c *Profile) Validate() error {
 
 // Fix fields and using default if is necessary
 func (c *Profile) Fix() {
+	for i, channel := range c.Channels {
+		channel = strings.TrimSpace(channel)
+		channel = strings.ToLower(channel)
+
+		if !strings.HasPrefix(channel, "#") && !strings.HasPrefix(channel, "@") {
+			channel = "#" + channel
+		}
+		c.Channels[i] = channel
+	}
+
 	if c.MailTemplate == nil {
 		x := defaultMailTemplate
 		c.MailTemplate = &x
@@ -110,7 +132,6 @@ func (c *Profile) Fix() {
 	}
 
 	c.Email.Fix()
-	c.Mattermost.Fix()
 
 	if c.Filter != nil {
 		c.Filter.Fix()

@@ -17,30 +17,38 @@ func TestProfile_Validate(t *testing.T) {
 	config.Name = "x"
 	valid(1)
 
-	x := -1
-	config.LinesToPreview = &x
+	config.Channels = []string{""}
 	valid(2)
 
-	*config.LinesToPreview = 10
+	config.Channels = []string{"Channel 1"}
 	valid(3)
 
-	config.Email = &Email{}
+	config.Channels = []string{"#channel1"}
 	valid(4)
+
+	config.LinesToPreview = new(int)
+	*config.LinesToPreview = -1
+	valid(5)
+
+	*config.LinesToPreview = 10
+	valid(6)
+
+	config.Email = &Email{}
+	valid(7)
 
 	config.Email = &Email{
 		ImapServer: "imap.example.com:143",
 		Address:    "orders@example.com",
 		Password:   "password",
 	}
-	valid(5)
+	valid(8)
 
 	config.Mattermost = &Mattermost{}
-	valid(6)
+	valid(9)
 
 	config.Mattermost = &Mattermost{
 		Server:   "https://mattermost.example.com",
 		Team:     "team1",
-		Channels: []string{"#orders"},
 		User:     "mattermail@example.com",
 		Password: "password",
 	}
@@ -50,7 +58,7 @@ func TestProfile_Validate(t *testing.T) {
 	}
 
 	config.Filter = &Filter{}
-	valid(7)
+	valid(10)
 
 	config.Filter = nil
 
@@ -61,9 +69,13 @@ func TestProfile_Validate(t *testing.T) {
 
 func TestProfile_Fix(t *testing.T) {
 	p := NewProfile()
+	p.Channels = []string{"  Test  "}
 
 	p.Fix()
 
+	if p.Channels[0] != "#test" {
+		t.Fatal("Expected #test result:", p.Channels)
+	}
 	if *p.MailTemplate != defaultMailTemplate {
 		t.Fatal("Expected MailTemplate:", defaultMailTemplate, " result:", *p.MailTemplate)
 	}

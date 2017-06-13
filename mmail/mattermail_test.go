@@ -9,7 +9,7 @@ import (
 func TestCreateMattermostPost(t *testing.T) {
 	cfg := model.NewProfile()
 	cfg.Name = "test"
-	cfg.Mattermost.Channels = []string{"#channel1"}
+	cfg.Channels = []string{"#channel1"}
 	*cfg.MailTemplate = "{{.From}}|{{.Subject}}|{{.Message}}"
 	*cfg.LinesToPreview = 1
 

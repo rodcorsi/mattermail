@@ -74,7 +74,6 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 		mattermost := &Mattermost{
 			Server:   c.Server,
 			Team:     c.Team,
-			Channels: []string{c.Channel},
 			User:     c.MattermostUser,
 			Password: c.MattermostPass,
 		}
@@ -82,6 +81,7 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 		// Profile
 		profile := &Profile{
 			Name:       c.Name,
+			Channels:   []string{c.Channel},
 			Email:      email,
 			Mattermost: mattermost,
 			Filter:     c.Filter,

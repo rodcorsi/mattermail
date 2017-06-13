@@ -69,6 +69,7 @@ func TestMigrateFromV1(t *testing.T) {
 	expected := &Config{
 		Profiles: []*Profile{{
 			Name:            "Orders",
+			Channels:        []string{"#orders"},
 			RedirectChannel: &redirect,
 			Email: &Email{
 				ImapServer: "imap.example.com:143",
@@ -79,7 +80,6 @@ func TestMigrateFromV1(t *testing.T) {
 			Mattermost: &Mattermost{
 				Server:   "https://mattermost.example.com",
 				Team:     "team1",
-				Channels: []string{"#orders"},
 				User:     "mattermail@example.com",
 				Password: "matterpassword",
 			},
