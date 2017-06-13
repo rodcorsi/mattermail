@@ -27,12 +27,24 @@ type Profile struct {
 	Filter          *Filter `json:",omitempty"`
 }
 
-// NewProfile creates new Profile
+// NewProfile creates new Profile with default values
 func NewProfile() *Profile {
-	return &Profile{
-		Email:      &Email{},
-		Mattermost: &Mattermost{},
+	profile := &Profile{
+		MailTemplate:    new(string),
+		LinesToPreview:  new(int),
+		RedirectChannel: new(bool),
+		Attachment:      new(bool),
+		Disabled:        new(bool),
+		Email:           NewEmail(),
+		Mattermost:      NewMattermost(),
 	}
+	*profile.MailTemplate = defaultMailTemplate
+	*profile.LinesToPreview = defaultLinesToPreview
+	*profile.RedirectChannel = defaultRedirectChannel
+	*profile.Attachment = defaultAttachment
+	*profile.Disabled = defaultDisabled
+
+	return profile
 }
 
 // Validate set default value for config and check if valid return err

@@ -13,6 +13,16 @@ type Config struct {
 	Debug    *bool `json:",omitempty"`
 }
 
+// NewConfig creates new Config with default values
+func NewConfig() *Config {
+	config := &Config{
+		Debug: new(bool),
+	}
+	*config.Debug = defaultDebug
+
+	return config
+}
+
 // Validate set default value for config and check if valid return err
 func (c *Config) Validate() error {
 	if c.Profiles == nil || len(c.Profiles) == 0 {

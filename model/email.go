@@ -16,6 +16,18 @@ type Email struct {
 	TLSAcceptAllCerts *bool `json:",omitempty"`
 }
 
+// NewEmail creates new Email with default values
+func NewEmail() *Email {
+	email := &Email{
+		StartTLS:          new(bool),
+		TLSAcceptAllCerts: new(bool),
+	}
+	*email.StartTLS = defaultStartTLS
+	*email.TLSAcceptAllCerts = defaultTLSAcceptAllCerts
+
+	return email
+}
+
 // Validate set default value for email and check if valid return err
 func (c *Email) Validate() error {
 	if c.ImapServer == "" {

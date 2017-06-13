@@ -14,6 +14,11 @@ type Mattermost struct {
 	Password string
 }
 
+// NewMattermost creates new Mattermost with default values
+func NewMattermost() *Mattermost {
+	return &Mattermost{}
+}
+
 // Validate valids Mattermost
 func (c *Mattermost) Validate() error {
 	if c.Server == "" {
