@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/rodcorsi/mattermail/mmail"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 type serverCommand struct {
@@ -15,31 +17,38 @@ type serverCommand struct {
 }
 
 func (sc *serverCommand) execute() error {
-	file, err := ioutil.ReadFile(sc.configFile)
+	data, err := ioutil.ReadFile(sc.configFile)
 	if err != nil {
 		return fmt.Errorf("Could not load: %v\n%v", sc.configFile, err.Error())
 	}
 
-	cfgs, err := mmail.ParseConfigList(file)
-	if err != nil {
-		return err
+	cfgs := &model.Config{}
+	if err = json.Unmarshal(data, cfgs); err != nil {
+		return fmt.Errorf("Error on read '%v' file, make sure if this file is has a valid configuration.\nExecute 'mattermail migrate -c %v' to migrate this file to new version if is necessary.\nerr:%v", sc.configFile, sc.configFile, err.Error())
+	}
+
+	cfgs.Fix()
+
+	if err = cfgs.Validate(); err != nil {
+		return fmt.Errorf("File '%v' is invalid err:%v", sc.configFile, err.Error())
 	}
 
 	hasconfig := false
 
 	var wg sync.WaitGroup
-	for _, cfg := range cfgs {
-		if cfg.Disabled {
+	for _, profile := range cfgs.Profiles {
+		if *profile.Disabled {
 			continue
 		}
 		hasconfig = true
 
 		wg.Add(1)
-		c := cfg
+		c := profile
+		debug := *cfgs.Debug
 		go func() {
-			logger := mmail.NewLog(c.Name, c.Debug)
-			mailProvider := mailProvider(c.MailConfig, logger, c.Debug)
-			mmail.InitMatterMail(c.MatterMailConfig, logger, mailProvider)
+			logger := mmail.NewLog(c.Name, debug)
+			mailProvider := mailProvider(c.Email, logger, debug)
+			mmail.InitMatterMail(c, logger, mailProvider)
 			wg.Done()
 		}()
 	}
@@ -76,6 +85,6 @@ Options:
 `)
 }
 
-func mailProvider(cfg mmail.MailConfig, logger mmail.Logger, debug bool) mmail.MailProvider {
+func mailProvider(cfg *model.Email, logger mmail.Logger, debug bool) mmail.MailProvider {
 	return mmail.NewMailProviderImap(cfg, logger, debug)
 }

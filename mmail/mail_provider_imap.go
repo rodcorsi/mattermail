@@ -10,12 +10,13 @@ import (
 	"github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 // MailProviderImap implements MailProvider using imap
 type MailProviderImap struct {
 	imapClient *client.Client
-	cfg        MailConfig
+	cfg        *model.Email
 	log        Logger
 	idle       bool
 	debug      bool
@@ -24,7 +25,7 @@ type MailProviderImap struct {
 const mailBox = "INBOX"
 
 // NewMailProviderImap creates a new MailProviderImap implementing MailProvider
-func NewMailProviderImap(cfg MailConfig, log Logger, debug bool) *MailProviderImap {
+func NewMailProviderImap(cfg *model.Email, log Logger, debug bool) *MailProviderImap {
 	return &MailProviderImap{
 		cfg:   cfg,
 		log:   log,
@@ -235,7 +236,7 @@ func (m *MailProviderImap) checkConnection() error {
 	// Max timeout awaiting a command
 	m.imapClient.Timeout = time.Minute * 3
 
-	if m.cfg.StartTLS {
+	if *m.cfg.StartTLS {
 		starttls, err := m.imapClient.SupportStartTLS()
 		if err != nil {
 			return err
@@ -244,7 +245,7 @@ func (m *MailProviderImap) checkConnection() error {
 		if starttls {
 			m.log.Debug("MailProviderImap.CheckConnection:StartTLS")
 			var tconfig tls.Config
-			if m.cfg.TLSAcceptAllCerts {
+			if *m.cfg.TLSAcceptAllCerts {
 				tconfig.InsecureSkipVerify = true
 			}
 			err = m.imapClient.StartTLS(&tconfig)
@@ -256,9 +257,9 @@ func (m *MailProviderImap) checkConnection() error {
 
 	m.log.Infof("Connected with %q\n", m.cfg.ImapServer)
 
-	err = m.imapClient.Login(m.cfg.Email, m.cfg.EmailPass)
+	err = m.imapClient.Login(m.cfg.Address, m.cfg.Password)
 	if err != nil {
-		m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Email)
+		m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Address)
 		return err
 	}
 

@@ -19,7 +19,7 @@
 			"Mattermost":{
 				"Server":   "https://mattermost.example.com",
 				"Team":     "team1",
-				"Channels": ["#orders, @john"],
+				"Channels": ["#orders", "@john"],
 				"User":     "mattermail@example.com",
 				"Password": "password"
 			},

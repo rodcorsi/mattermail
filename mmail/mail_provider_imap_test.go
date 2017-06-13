@@ -15,6 +15,7 @@ import (
 	"github.com/emersion/go-imap/backend"
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 type testServer struct {
@@ -65,11 +66,12 @@ func TestCheckNewMessage(t *testing.T) {
 	literal = bytes.NewBuffer(email)
 	inbox.CreateMessage([]string{}, time.Now(), literal)
 
-	mP := NewMailProviderImap(MailConfig{
-		Email:      "username",
-		EmailPass:  "password",
-		ImapServer: ts.addr,
-	}, NewLog("", debugImap), debugImap)
+	config := model.NewEmail()
+	config.Address = "username"
+	config.Password = "password"
+	config.ImapServer = ts.addr
+
+	mP := NewMailProviderImap(config, NewLog("", debugImap), debugImap)
 
 	defer mP.Terminate()
 
@@ -93,12 +95,13 @@ func TestCheckNewMessage(t *testing.T) {
 }
 
 func TestWaitNewMessage(t *testing.T) {
-	mP := NewMailProviderImap(MailConfig{
-		Email:      "username",
-		EmailPass:  "password",
-		ImapServer: ts.addr,
-		StartTLS:   true,
-	}, NewLog("", debugImap), debugImap)
+	config := model.NewEmail()
+	config.Address = "username"
+	config.Password = "password"
+	config.ImapServer = ts.addr
+	*config.StartTLS = true
+
+	mP := NewMailProviderImap(config, NewLog("", debugImap), debugImap)
 
 	done := make(chan error, 1)
 	go func() {

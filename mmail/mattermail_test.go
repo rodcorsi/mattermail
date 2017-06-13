@@ -1,16 +1,17 @@
 package mmail
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/rodcorsi/mattermail/model"
+)
 
 func TestCreateMattermostPost(t *testing.T) {
-	cfg := MatterMailConfig{
-		Name:              "test",
-		Channel:           "#channel1",
-		MailTemplate:      "%v|%v|%v",
-		LinesToPreview:    1,
-		NoRedirectChannel: false,
-		NoAttachment:      false,
-	}
+	cfg := model.NewProfile()
+	cfg.Name = "test"
+	cfg.Mattermost.Channels = []string{"#channel1"}
+	*cfg.MailTemplate = "{{.From}}|{{.Subject}}|{{.Message}}"
+	*cfg.LinesToPreview = 1
 
 	log := NewLog("test", false)
 
@@ -48,7 +49,7 @@ func TestCreateMattermostPost(t *testing.T) {
 	}
 
 	// Subject
-	cfg.LinesToPreview = 10
+	*cfg.LinesToPreview = 10
 	msg.Subject = "[@user2] subject 2"
 	mP, err = createMattermostPost(msg, cfg, log, getChannelID)
 	if err != nil {
@@ -71,7 +72,7 @@ func TestCreateMattermostPost(t *testing.T) {
 	msg.Subject = "Subject"
 	msg.EmailType = EmailTypeHTML
 
-	cfg.Filter = &Filter{&Rule{From: "jdoe@example.com", Channel: "#channel2"}}
+	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channel: "#channel2"}}
 	mP, err = createMattermostPost(msg, cfg, log, getChannelID)
 	if err != nil {
 		t.Fatalf("error on create mattermostPost %v", err)

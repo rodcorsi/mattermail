@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/mail"
 	"strings"
+	"time"
 	"unicode/utf8"
 
-	"time"
-
-	"github.com/mattermost/platform/model"
+	mmModel "github.com/mattermost/platform/model"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 const maxMattermostAttachments = 5
@@ -16,12 +16,12 @@ const maxMattermostPostSize = 4000
 
 // MatterMail struct with configurations, loggers and Mattemost user
 type MatterMail struct {
-	cfg  MatterMailConfig
-	user *model.User
+	cfg  *model.Profile
+	user *mmModel.User
 	log  Logger
 }
 
-func getChannelIDByName(channelList *model.ChannelList, channelName string) string {
+func getChannelIDByName(channelList *mmModel.ChannelList, channelName string) string {
 	for _, c := range *channelList {
 		if c.Name == channelName {
 			return c.Id
@@ -30,7 +30,7 @@ func getChannelIDByName(channelList *model.ChannelList, channelName string) stri
 	return ""
 }
 
-func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList *model.ChannelList, userName string) string {
+func (m *MatterMail) getDirectChannelIDByName(client *mmModel.Client, channelList *mmModel.ChannelList, userName string) string {
 
 	if m.user.Username == userName {
 		m.log.Errorf("Impossible create a Direct channel, Mattermail user (%v) equals destination user (%v)\n", m.user.Username, userName)
@@ -38,7 +38,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 	}
 
 	//result, err := client.GetProfilesForDirectMessageList(client.GetTeamId())
-	result, err := client.SearchUsers(model.UserSearch{
+	result, err := client.SearchUsers(mmModel.UserSearch{
 		AllowInactive: false,
 		TeamId:        client.GetTeamId(),
 		Term:          userName,
@@ -49,7 +49,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 		return ""
 	}
 
-	profiles := result.Data.([]*model.User)
+	profiles := result.Data.([]*mmModel.User)
 	var userID string
 
 	for _, p := range profiles {
@@ -64,7 +64,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 		return ""
 	}
 
-	dmName := model.GetDMNameFromIds(m.user.Id, userID)
+	dmName := mmModel.GetDMNameFromIds(m.user.Id, userID)
 	dmID := getChannelIDByName(channelList, dmName)
 
 	if dmID != "" {
@@ -79,7 +79,7 @@ func (m *MatterMail) getDirectChannelIDByName(client *model.Client, channelList 
 		return ""
 	}
 
-	directChannel := result.Data.(*model.Channel)
+	directChannel := result.Data.(*mmModel.Channel)
 	return directChannel.Id
 }
 
@@ -96,27 +96,27 @@ func (m *MatterMail) PostNetMail(msg *mail.Message) error {
 // PostMailMessage MailMessage in Mattermost
 func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 
-	client := model.NewClient(m.cfg.Server)
+	client := mmModel.NewClient(m.cfg.Mattermost.Server)
 
-	m.log.Debugf("Login user:%v team:%v url:%v\n", m.cfg.MattermostUser, m.cfg.Team, m.cfg.Server)
+	m.log.Debugf("Login user:%v team:%v url:%v\n", m.cfg.Mattermost.User, m.cfg.Mattermost.Team, m.cfg.Mattermost.Server)
 
-	result, apperr := client.Login(m.cfg.MattermostUser, m.cfg.MattermostPass)
+	result, apperr := client.Login(m.cfg.Mattermost.User, m.cfg.Mattermost.Password)
 	if apperr != nil {
 		return apperr
 	}
 
-	m.user = result.Data.(*model.User)
+	m.user = result.Data.(*mmModel.User)
 
 	m.log.Info("Post new message")
 
 	defer client.Logout()
 
 	// Get Team
-	teams := client.Must(client.GetAllTeams()).Data.(map[string]*model.Team)
+	teams := client.Must(client.GetAllTeams()).Data.(map[string]*mmModel.Team)
 
 	teamMatch := false
 	for _, t := range teams {
-		if t.Name == m.cfg.Team {
+		if t.Name == m.cfg.Mattermost.Team {
 			client.SetTeamId(t.Id)
 			teamMatch = true
 			break
@@ -124,11 +124,11 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 	}
 
 	if !teamMatch {
-		return fmt.Errorf("Did not find team with name '%v'. Check if the team exist or if you are not using display name instead team name", m.cfg.Team)
+		return fmt.Errorf("Did not find team with name '%v'. Check if the team exist or if you are not using display name instead team name", m.cfg.Mattermost.Team)
 	}
 
 	//Discover channel id by channel name
-	channelList := client.Must(client.GetChannels("")).Data.(*model.ChannelList)
+	channelList := client.Must(client.GetChannels("")).Data.(*mmModel.ChannelList)
 
 	mP, err := createMattermostPost(msg, m.cfg, m.log, func(channelName string) string {
 		if strings.HasPrefix(channelName, "#") {
@@ -165,7 +165,7 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 	}
 
 	// Post message
-	post := &model.Post{ChannelId: mP.channelID, Message: mP.message}
+	post := &mmModel.Post{ChannelId: mP.channelID, Message: mP.message}
 
 	if len(fileIds) > 0 {
 		post.FileIds = fileIds
@@ -186,11 +186,11 @@ type mattermostPost struct {
 	attachments []*Attachment
 }
 
-func createMattermostPost(msg *MailMessage, cfg MatterMailConfig, log Logger, getChannelID func(string) string) (*mattermostPost, error) {
+func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getChannelID func(string) string) (*mattermostPost, error) {
 	mP := &mattermostPost{}
 
 	// read only some lines of text
-	partmessage := readLines(msg.EmailText, cfg.LinesToPreview)
+	partmessage := readLines(msg.EmailText, *cfg.LinesToPreview)
 
 	postedfullmessage := false
 
@@ -201,7 +201,11 @@ func createMattermostPost(msg *MailMessage, cfg MatterMailConfig, log Logger, ge
 	}
 
 	// Apply MailTemplate to format message
-	mP.message = fmt.Sprintf(cfg.MailTemplate, msg.From, msg.Subject, partmessage)
+	var err error
+	mP.message, err = cfg.FormatMailTemplate(msg.From, msg.Subject, partmessage)
+	if err != nil {
+		return nil, fmt.Errorf("Error on format Mail Template err:%v", err.Error())
+	}
 
 	// Mattermost post limit
 	if utf8.RuneCountInString(mP.message) > maxMattermostPostSize {
@@ -212,7 +216,7 @@ func createMattermostPost(msg *MailMessage, cfg MatterMailConfig, log Logger, ge
 
 	// Try to discovery the channel
 	// redirect email by the subject
-	if !cfg.NoRedirectChannel {
+	if *cfg.RedirectChannel {
 		log.Debug("Try to find channel/user by subject")
 		mP.channelName = getChannelFromSubject(msg.Subject)
 		mP.channelID = getChannelID(mP.channelName)
@@ -227,13 +231,13 @@ func createMattermostPost(msg *MailMessage, cfg MatterMailConfig, log Logger, ge
 
 	// get default Channel config
 	if mP.channelID == "" {
-		log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channel)
-		mP.channelName = cfg.Channel
+		log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Mattermost.Channels)
+		mP.channelName = cfg.Mattermost.Channels[0]
 		mP.channelID = getChannelID(mP.channelName)
 	}
 
-	if mP.channelID == "" && !cfg.NoRedirectChannel {
-		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Channel)
+	if mP.channelID == "" && *cfg.RedirectChannel {
+		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Mattermost.Channels)
 		mP.channelName = "town-square"
 		mP.channelID = getChannelID(mP.channelName)
 	}
@@ -243,7 +247,7 @@ func createMattermostPost(msg *MailMessage, cfg MatterMailConfig, log Logger, ge
 	}
 
 	// Attachments
-	if cfg.NoAttachment {
+	if !*cfg.Attachment {
 		return mP, nil
 	}
 
@@ -273,7 +277,7 @@ func createMattermostPost(msg *MailMessage, cfg MatterMailConfig, log Logger, ge
 }
 
 // InitMatterMail init MatterMail server
-func InitMatterMail(cfg MatterMailConfig, log Logger, mailprovider MailProvider) {
+func InitMatterMail(cfg *model.Profile, log Logger, mailprovider MailProvider) {
 	m := &MatterMail{
 		cfg: cfg,
 		log: log,
