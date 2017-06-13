@@ -1,6 +1,8 @@
 package mmail
 
 import (
+	"net/mail"
+	"os"
 	"testing"
 
 	"github.com/rodcorsi/mattermail/model"
@@ -84,5 +86,34 @@ func TestCreateMattermostPost(t *testing.T) {
 
 	if len(mP.attachments) != 2 {
 		t.Fatalf("expected 2 attachments found %v", len(mP.attachments))
+	}
+}
+
+type mattermostMock struct{}
+
+func (m *mattermostMock) Login() error                           { return nil }
+func (m *mattermostMock) Logout() error                          { return nil }
+func (m *mattermostMock) GetChannelID(channelName string) string { return "id1234" }
+
+func (m *mattermostMock) PostMessage(message, channelID string, attachments []*Attachment) error {
+	return nil
+}
+
+func TestMatterMail_PostNetMail(t *testing.T) {
+	// gmail
+	gmailbuf, err := os.Open(findDir("emltest") + "gmail.eml")
+	if err != nil {
+		t.Fatal("Error on open gmail.eml:", err)
+	}
+
+	msg, err := mail.ReadMessage(gmailbuf)
+	if err != nil {
+		t.Fatalf("Failed parsing email:%v", err)
+	}
+
+	mm := NewMatterMail(model.NewProfile(), NewLog("", false), nil, &mattermostMock{})
+
+	if err := mm.PostNetMail(msg); err != nil {
+		t.Fatal("Error on PontNetMail err:", err.Error())
 	}
 }

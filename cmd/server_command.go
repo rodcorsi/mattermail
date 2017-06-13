@@ -45,10 +45,13 @@ func (sc *serverCommand) execute() error {
 		wg.Add(1)
 		c := profile
 		debug := *cfgs.Debug
+
 		go func() {
 			logger := mmail.NewLog(c.Name, debug)
 			mailProvider := mailProvider(c.Email, logger, debug)
-			mmail.InitMatterMail(c, logger, mailProvider)
+			mmProvider := mmail.NewMattermostDefault(c.Mattermost, logger)
+			mm := mmail.NewMatterMail(c, logger, mailProvider, mmProvider)
+			mm.Listen()
 			wg.Done()
 		}()
 	}
