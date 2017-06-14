@@ -6,6 +6,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/prometheus/common/log"
 	"github.com/rodcorsi/mattermail/model"
 )
 
@@ -50,9 +51,14 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 		return err
 	}
 
-	m.log.Debugf("Post email in %v", mP.channelName)
+	for name, id := range mP.channelMap {
+		m.log.Debugf("Post email in %v", name)
+		if err := m.mmProvider.PostMessage(mP.message, id, mP.attachments); err != nil {
+			return err
+		}
+	}
 
-	return m.mmProvider.PostMessage(mP.message, mP.channelID, mP.attachments)
+	return nil
 }
 
 // Listen starts MatterMail server
@@ -87,9 +93,11 @@ func NewMatterMail(cfg *model.Profile, log Logger, mailProvider MailProvider, mm
 	}
 }
 
+// map[channel name] = channel id
+type channelMap map[string]string
+
 type mattermostPost struct {
-	channelName string
-	channelID   string
+	channelMap  channelMap
 	message     string
 	attachments []*Attachment
 }
@@ -122,35 +130,9 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 		log.Info("Email has been cut because is larger than 4000 characters")
 	}
 
-	// Try to discovery the channel
-	// redirect email by the subject
-	if *cfg.RedirectChannel {
-		log.Debug("Try to find channel/user by subject")
-		mP.channelName = getChannelFromSubject(msg.Subject)
-		mP.channelID = getChannelID(mP.channelName)
-	}
+	mP.channelMap = chooseChannel(cfg, msg, getChannelID)
 
-	// check filters
-	if mP.channelID == "" && cfg.Filter != nil {
-		log.Debug("Did not find channel/user from Email Subject. Look for filter")
-		mP.channelName = cfg.Filter.GetChannel(msg.From, msg.Subject)
-		mP.channelID = getChannelID(mP.channelName)
-	}
-
-	// get default Channel config
-	if mP.channelID == "" {
-		log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channels)
-		mP.channelName = cfg.Channels[0]
-		mP.channelID = getChannelID(mP.channelName)
-	}
-
-	if mP.channelID == "" && *cfg.RedirectChannel {
-		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Channels)
-		mP.channelName = "town-square"
-		mP.channelID = getChannelID(mP.channelName)
-	}
-
-	if mP.channelID == "" {
+	if mP.channelMap == nil {
 		return nil, fmt.Errorf("Did not find any channel to post")
 	}
 
@@ -182,4 +164,57 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 	}
 
 	return mP, nil
+}
+
+func validateChannelNames(channelNames []string, getChannelID func(string) string) channelMap {
+	channels := make(channelMap)
+	gotOne := false
+	for _, v := range channelNames {
+		if id := getChannelID(v); id != "" {
+			gotOne = true
+			channels[v] = id
+		}
+	}
+
+	if !gotOne {
+		return nil
+	}
+
+	return channels
+}
+
+func chooseChannel(cfg *model.Profile, msg *MailMessage, getChannelID func(string) string) channelMap {
+	var chMap channelMap
+
+	// Try to discovery the channel
+	// redirect email by the subject
+	if *cfg.RedirectChannel {
+		log.Debug("Try to find channel/user by subject")
+		if chMap = validateChannelNames(getChannelsFromSubject(msg.Subject), getChannelID); chMap != nil {
+			return chMap
+		}
+	}
+
+	// check filters
+	if cfg.Filter != nil {
+		log.Debug("Did not find channel/user from Email Subject. Look for filter")
+		if chMap = validateChannelNames([]string{cfg.Filter.GetChannel(msg.From, msg.Subject)}, getChannelID); chMap != nil {
+			return chMap
+		}
+	}
+
+	// get default Channel config
+	log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channels)
+	if chMap = validateChannelNames(cfg.Channels, getChannelID); chMap != nil {
+		return chMap
+	}
+
+	if *cfg.RedirectChannel {
+		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Channels)
+		if chMap = validateChannelNames([]string{"town-square"}, getChannelID); chMap != nil {
+			return chMap
+		}
+	}
+
+	return nil
 }

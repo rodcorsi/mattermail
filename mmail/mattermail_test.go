@@ -38,8 +38,8 @@ func TestCreateMattermostPost(t *testing.T) {
 		t.Fatalf("error on create mattermostPost %v", err)
 	}
 
-	if mP.channelName != "#channel1" {
-		t.Fatalf("expected #channel1 result:'%v'", mP.channelName)
+	if _, ok := mP.channelMap["#channel1"]; !ok {
+		t.Fatalf("expected #channel1 result:'%v'", mP.channelMap)
 	}
 
 	if mP.message != "jdoe@example.com|Subject|line one ..." {
@@ -58,8 +58,8 @@ func TestCreateMattermostPost(t *testing.T) {
 		t.Fatalf("error on create mattermostPost %v", err)
 	}
 
-	if mP.channelName != "@user2" {
-		t.Fatalf("expected @user2 result:'%v'", mP.channelName)
+	if _, ok := mP.channelMap["@user2"]; !ok {
+		t.Fatalf("expected @user2 result:'%v'", mP.channelMap)
 	}
 
 	if mP.message != "jdoe@example.com|[@user2] subject 2|line one\nline two" {
@@ -80,8 +80,8 @@ func TestCreateMattermostPost(t *testing.T) {
 		t.Fatalf("error on create mattermostPost %v", err)
 	}
 
-	if mP.channelName != "#channel2" {
-		t.Fatalf("expected #channel2 result:'%v'", mP.channelName)
+	if _, ok := mP.channelMap["#channel2"]; !ok {
+		t.Fatalf("expected #channel2 result:'%v'", mP.channelMap)
 	}
 
 	if len(mP.attachments) != 2 {

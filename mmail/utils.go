@@ -31,16 +31,32 @@ func NonASCII(encoded string) string {
 	return result
 }
 
-var channelRegex = regexp.MustCompile(`\[[^\]]*?([#@][A-Za-z0-9.\-_]+)[^\]]*?\]`)
+var channelRegex = regexp.MustCompile(`[#@][A-Za-z0-9.\-_]+`)
+var bracketsRegex = regexp.MustCompile(`\[[^\]]*\]`)
 
-// getChannelFromSubject extract channel from subject ex:
-// getChannelFromSubject([#mychannel] blablanla) => #mychannel
-func getChannelFromSubject(subject string) string {
-	ret := channelRegex.FindStringSubmatch(subject)
-	if len(ret) < 2 {
-		return ""
+// getChannelsFromSubject extract channel from subject ex:
+// getChannelsFromSubject([#mychannel] blablanla) => #mychannel
+func getChannelsFromSubject(subject string) []string {
+	ret := bracketsRegex.FindAllString(subject, -1)
+
+	if len(ret) == 0 {
+		return nil
 	}
-	return strings.ToLower(ret[len(ret)-1])
+
+	var channels []string
+
+	for _, e := range ret {
+		chs := channelRegex.FindAllString(e, -1)
+		for _, c := range chs {
+			channels = append(channels, strings.ToLower(c))
+		}
+	}
+
+	if len(channels) == 0 {
+		return nil
+	}
+
+	return channels
 }
 
 //Read number of lines of string

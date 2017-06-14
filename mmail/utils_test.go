@@ -1,39 +1,43 @@
 package mmail
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
-func TestGetChannelFromSubject(t *testing.T) {
-	assert := func(subject, expected string) {
-		r := getChannelFromSubject(subject)
-		if r != expected {
-			t.Fatalf("Tested:%v expected:%v find:%v", subject, expected, r)
+func TestGetChannelsFromSubject(t *testing.T) {
+	assert := func(subject string, expected []string) {
+		r := getChannelsFromSubject(subject)
+		if !reflect.DeepEqual(r, expected) {
+			t.Fatalf("Tested:%v expected:%v result:%v", subject, expected, r)
 		}
 	}
 
-	assert("", "")
-	assert("[#test]", "#test")
-	assert("[#test.1]", "#test.1")
-	assert("[@TeSt]", "@test")
-	assert("[@Test.1]", "@test.1")
-	assert("[@TeSt.1]", "@test.1")
-	assert(" [#test]", "#test")
-	assert("   [@test]", "@test")
-	assert("[ #test]", "#test")
-	assert("[   @test]", "@test")
-	assert("[#test ]", "#test")
-	assert("[@test    ]", "@test")
-	assert("[@test] kjshdfsdh [#kjshdf]", "@test")
-	assert("   [  #  sadfkj   ]  kjshdfsdh [#test]", "#test")
-	assert("   [  @t-e_st   ]  kjshdfsdh [#kjshdf]", "@t-e_st")
-	assert("[#test fsd   ]", "#test")
-	assert("From:[@test]", "@test")
-	assert("fwd:  [#test]", "#test")
-	assert("foo baz  [@test]", "@test")
-	assert("[blah#test]", "#test")
-	assert("[blah# test]", "")
-	assert("foo: [  blah  @test]", "@test")
-	assert("#test", "")
-	assert("[@]", "")
+	assert("", nil)
+	assert("[#test]", []string{"#test"})
+	assert("[#test.1]", []string{"#test.1"})
+	assert("[@TeSt]", []string{"@test"})
+	assert("[@Test.1]", []string{"@test.1"})
+	assert("[@TeSt.1]", []string{"@test.1"})
+	assert(" [#test]", []string{"#test"})
+	assert("   [@test]", []string{"@test"})
+	assert("[ #test]", []string{"#test"})
+	assert("[   @test]", []string{"@test"})
+	assert("[#test ]", []string{"#test"})
+	assert("[@test    ]", []string{"@test"})
+	assert("[@test] kjshdfsdh [@user]", []string{"@test", "@user"})
+	assert("   [  #  sadfkj   ]  kjshdfsdh [#test]", []string{"#test"})
+	assert("   [  @t-e_st   ]  kjshdfsdh [#ttt]", []string{"@t-e_st", "#ttt"})
+	assert("[#test fsd   ]", []string{"#test"})
+	assert("From:[@test]", []string{"@test"})
+	assert("fwd:  [#test]", []string{"#test"})
+	assert("foo baz  [@test]", []string{"@test"})
+	assert("[blah#test]", []string{"#test"})
+	assert("[blah# test]", nil)
+	assert("foo: [  blah  @test]", []string{"@test"})
+	assert("#test", nil)
+	assert("[@]", nil)
+	assert("hgh @foo asdasghj [sds #test, @test sss ] sdsds [#other] jsdhfjs", []string{"#test", "@test", "#other"})
 }
 
 func TestReadLines(t *testing.T) {

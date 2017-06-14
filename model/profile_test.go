@@ -68,7 +68,7 @@ func TestProfile_Validate(t *testing.T) {
 }
 
 func TestProfile_Fix(t *testing.T) {
-	p := NewProfile()
+	p := &Profile{}
 	p.Channels = []string{"  Test  "}
 
 	p.Fix()

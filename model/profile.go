@@ -131,7 +131,9 @@ func (c *Profile) Fix() {
 		c.Disabled = &x
 	}
 
-	c.Email.Fix()
+	if c.Email != nil {
+		c.Email.Fix()
+	}
 
 	if c.Filter != nil {
 		c.Filter.Fix()
