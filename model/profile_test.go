@@ -82,8 +82,8 @@ func TestProfile_Fix(t *testing.T) {
 	if *p.LinesToPreview != defaultLinesToPreview {
 		t.Fatal("Expected LinesToPreview:", defaultLinesToPreview, " result:", *p.LinesToPreview)
 	}
-	if *p.RedirectChannel != defaultRedirectChannel {
-		t.Fatal("Expected RedirectChannel:", defaultRedirectChannel, " result:", *p.RedirectChannel)
+	if *p.RedirectBySubject != defaultRedirectBySubject {
+		t.Fatal("Expected RedirectBySubject:", defaultRedirectBySubject, " result:", *p.RedirectBySubject)
 	}
 	if *p.Attachment != defaultAttachment {
 		t.Fatal("Expected Attachment:", defaultAttachment, " result:", *p.Attachment)

@@ -6,7 +6,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/prometheus/common/log"
 	"github.com/rodcorsi/mattermail/model"
 )
 
@@ -130,7 +129,7 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 		log.Info("Email has been cut because is larger than 4000 characters")
 	}
 
-	mP.channelMap = chooseChannel(cfg, msg, getChannelID)
+	mP.channelMap = chooseChannel(cfg, msg, log, getChannelID)
 
 	if mP.channelMap == nil {
 		return nil, fmt.Errorf("Did not find any channel to post")
@@ -183,12 +182,12 @@ func validateChannelNames(channelNames []string, getChannelID func(string) strin
 	return channels
 }
 
-func chooseChannel(cfg *model.Profile, msg *MailMessage, getChannelID func(string) string) channelMap {
+func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelID func(string) string) channelMap {
 	var chMap channelMap
 
 	// Try to discovery the channel
 	// redirect email by the subject
-	if *cfg.RedirectChannel {
+	if *cfg.RedirectBySubject {
 		log.Debug("Try to find channel/user by subject")
 		if chMap = validateChannelNames(getChannelsFromSubject(msg.Subject), getChannelID); chMap != nil {
 			return chMap
@@ -207,13 +206,6 @@ func chooseChannel(cfg *model.Profile, msg *MailMessage, getChannelID func(strin
 	log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channels)
 	if chMap = validateChannelNames(cfg.Channels, getChannelID); chMap != nil {
 		return chMap
-	}
-
-	if *cfg.RedirectChannel {
-		log.Debugf("Did not find channel/user with name '%v'. Trying channel town-square\n", cfg.Channels)
-		if chMap = validateChannelNames([]string{"town-square"}, getChannelID); chMap != nil {
-			return chMap
-		}
 	}
 
 	return nil

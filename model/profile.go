@@ -8,41 +8,41 @@ import (
 )
 
 const (
-	defaultMailTemplate    = ":incoming_envelope: _From: **{{.From}}**_\n>_{{.Subject}}_\n\n{{.Message}}"
-	defaultLinesToPreview  = 10
-	defaultRedirectChannel = true
-	defaultAttachment      = true
-	defaultDisabled        = false
+	defaultMailTemplate      = ":incoming_envelope: _From: **{{.From}}**_\n>_{{.Subject}}_\n\n{{.Message}}"
+	defaultLinesToPreview    = 10
+	defaultRedirectBySubject = true
+	defaultAttachment        = true
+	defaultDisabled          = false
 )
 
 // Profile type with general service settings
 type Profile struct {
-	Name            string
-	Channels        []string
-	MailTemplate    *string `json:",omitempty"`
-	LinesToPreview  *int    `json:",omitempty"`
-	RedirectChannel *bool   `json:",omitempty"`
-	Attachment      *bool   `json:",omitempty"`
-	Disabled        *bool   `json:",omitempty"`
-	Email           *Email
-	Mattermost      *Mattermost
-	Filter          *Filter `json:",omitempty"`
+	Name              string
+	Channels          []string
+	MailTemplate      *string `json:",omitempty"`
+	LinesToPreview    *int    `json:",omitempty"`
+	RedirectBySubject *bool   `json:",omitempty"`
+	Attachment        *bool   `json:",omitempty"`
+	Disabled          *bool   `json:",omitempty"`
+	Email             *Email
+	Mattermost        *Mattermost
+	Filter            *Filter `json:",omitempty"`
 }
 
 // NewProfile creates new Profile with default values
 func NewProfile() *Profile {
 	profile := &Profile{
-		MailTemplate:    new(string),
-		LinesToPreview:  new(int),
-		RedirectChannel: new(bool),
-		Attachment:      new(bool),
-		Disabled:        new(bool),
-		Email:           NewEmail(),
-		Mattermost:      NewMattermost(),
+		MailTemplate:      new(string),
+		LinesToPreview:    new(int),
+		RedirectBySubject: new(bool),
+		Attachment:        new(bool),
+		Disabled:          new(bool),
+		Email:             NewEmail(),
+		Mattermost:        NewMattermost(),
 	}
 	*profile.MailTemplate = defaultMailTemplate
 	*profile.LinesToPreview = defaultLinesToPreview
-	*profile.RedirectChannel = defaultRedirectChannel
+	*profile.RedirectBySubject = defaultRedirectBySubject
 	*profile.Attachment = defaultAttachment
 	*profile.Disabled = defaultDisabled
 
@@ -118,9 +118,9 @@ func (c *Profile) Fix() {
 		x := defaultLinesToPreview
 		c.LinesToPreview = &x
 	}
-	if c.RedirectChannel == nil {
-		x := defaultRedirectChannel
-		c.RedirectChannel = &x
+	if c.RedirectBySubject == nil {
+		x := defaultRedirectBySubject
+		c.RedirectBySubject = &x
 	}
 	if c.Attachment == nil {
 		x := defaultAttachment

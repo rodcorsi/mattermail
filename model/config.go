@@ -99,11 +99,11 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 			profile.LinesToPreview = &c.LinesToPreview
 		}
 
-		profile.RedirectChannel = &c.NoRedirectChannel
-		*profile.RedirectChannel = !*profile.RedirectChannel
+		profile.RedirectBySubject = &c.NoRedirectChannel
+		*profile.RedirectBySubject = !*profile.RedirectBySubject
 
-		if *profile.RedirectChannel == defaultRedirectChannel {
-			profile.RedirectChannel = nil
+		if *profile.RedirectBySubject == defaultRedirectBySubject {
+			profile.RedirectBySubject = nil
 		}
 
 		profile.Attachment = &c.NoAttachment

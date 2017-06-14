@@ -68,9 +68,9 @@ func TestMigrateFromV1(t *testing.T) {
 
 	expected := &Config{
 		Profiles: []*Profile{{
-			Name:            "Orders",
-			Channels:        []string{"#orders"},
-			RedirectChannel: &redirect,
+			Name:              "Orders",
+			Channels:          []string{"#orders"},
+			RedirectBySubject: &redirect,
 			Email: &Email{
 				ImapServer: "imap.example.com:143",
 				Address:    "orders@example.com",

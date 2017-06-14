@@ -54,6 +54,7 @@ Version: ` + Version + `
 
 Usage:
 	mattermail server  Starts Mattermail server
+	mattermail migrate Migrates config.json to new version
 
 For more details execute:
 

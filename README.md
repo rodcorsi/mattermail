@@ -1,101 +1,172 @@
 # ![mattermail icon](https://github.com/rodcorsi/mattermail/raw/master/img/icon.png) MatterMail
 
-*MatterMail* is an integration service for [Mattermost](http://www.mattermost.org/), *MatterMail* listen an email box and publish all received emails in a channel or private group in Mattermost.
+*MatterMail* is an integration service for [Mattermost](http://www.mattermost.org/), *MatterMail* listen an email box and publish all received emails in channels or users in Mattermost.
 
 [![Build Status](https://travis-ci.org/rodcorsi/mattermail.svg?branch=master)](https://travis-ci.org/rodcorsi/mattermail)
 [![Coverage Status](https://coveralls.io/repos/github/rodcorsi/mattermail/badge.svg?branch=master)](https://coveralls.io/github/rodcorsi/mattermail?branch=master)
 
 ![mattermail screenshot](https://github.com/rodcorsi/mattermail/raw/master/img/screenshot.png)
 
-## Redirect to the channel by subject (Version 3.0 or later)
-
-Mattermail post the email using this rules (if "`NoRedirectChannel:false`"):
-
-1 - If the email subject contains "`[#anychannelname] blablabla`" or "`[@usertosend] xxxxxx`", Mattermail will try to post to the channel or to the username
-
-2 - If the email subject doesn't contain channel or username, Mattermail will try to post the channel defined in `config.json`
-
-3 - If Mattermail can not post the email will try to post in "Town Square"
-
-
 ## Install
-  * For Mattermost 3.0 or later: [Latest Version](https://github.com/rodcorsi/mattermail/releases/latest)
-
-  * For Mattermost 2.2: [Version 2.2](https://github.com/rodcorsi/mattermail/releases/tag/v2.2)
+  Download the [Latest Version](https://github.com/rodcorsi/mattermail/releases/latest)
 
 ## Usage
-1. You need to create a user in Mattermost server, you can use MatterMail icon as profile picture.
+1. You need to create an user in Mattermost server and you can use MatterMail icon as profile picture.
 
-2. Get the *Channel Handle* of the channel and check if the user has permission to post in this channel
-![mattermail channel_handle](https://github.com/rodcorsi/mattermail/raw/master/img/channel_handle.png)
+2. Get the [Team and Channels](https://github.com/rodcorsi/mattermail#teamchannel) and check if the user has permission to post in these channels
 
-3. Edit the file config.json, e.g.:
-
-```javascript
-[
-	{
-		"Name":          "Orders",
-		"Server":        "https://mattermost.example.com",
-		"Team":          "team1",
-		"Channel":       "#orders",
-		"MattermostUser":"mattermail@example.com",
-		"MattermostPass":"password",
-		"ImapServer":    "imap.example.com:143",
-		"Email":         "orders@example.com",
-		"EmailPass":     "password",
-		"MailTemplate":  ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v"
-	},
-	{
-		"Name":              "Bugs",
-		"Server":            "https://mattermost.example.com",
-		"Team":              "team1",
-		"Channel":           "@user123",
-		"MattermostUser":    "mattermail@example.com",
-		"MattermostPass":    "password",
-		"ImapServer":        "imap.gmail.com:993",
-		"Email":             "bugs@gmail.com",
-		"EmailPass":         "password",
-		"MailTemplate":      ":incoming_envelope: _From: **%v**_\n>_%v_\n\n%v",
-		"StartTLS":          false,  /*Optional default false*/
-		"TLSAcceptAllCerts": false,  /*Optional default false*/
-		"Disabled":          false,  /*Optional default false*/
-		"Debug":             true    /*Optional default false*/
-        "LinesToPreview":    20,     /*Optional default 10*/
-		"NoRedirectChannel": true,   /*Optional default false*/
-        "NoAttachment":      true,   /*Optional leave out attachments*/
-
-        /*Filter works only (Version 3.0 or later)*/
-        "Filter":            [
-            /* if subject contains 'Feature' redirect to #feature */
-            {"Subject":"Feature", "Channel":"#feature"},
-            
-            /* if from contains 'test@gmail.com' and subject contains 'to me' redirect to @test2*/
-            {"From":"test@gmail.com", "Subject":"To Me", "Channel":"@test2"},
-            
-            /* if from contains '@companyb.com' redirect to #companyb */
-			{"From":"@companyb.com", "Channel":"#companyb"} /**/
-        ]
-	},
-	{
-		/*.... other if you want ....*/
-	}
-]
-```
+3. Edit the file config.json
 
 4. Execute the command to put in background
 
 ```
 $ ./mattermail > /var/log/mattermail.log 2>&1 &
 ```
+
+## Migrate configuration
+
+To upgrade the config.json to new version using this command:
+```bash
+$ ./mattermail migrate -c ./config.json > ./new_config.json
+```
+
+## Configuration
+
+Minimal configuration:
+
+```javascript
+{
+	"Profiles":[
+		{
+			"Name":              "Orders",
+			"Channels":          ["#orders"],
+
+			"Email":{
+				"ImapServer":        "imap.example.com:143",
+				"Address":           "orders@example.com",
+				"Password":          "password"
+			},
+
+			"Mattermost":{
+				"Server":   "https://mattermost.example.com",
+				"Team":     "team1",
+				"User":     "mattermail@example.com",
+				"Password": "password"
+			}
+		}
+	]
+}
+```
+
+### Profiles
+
+You can set multiple profiles using different names
+
+| Field             | Type    | Default | Obrigatory         | Information                                                                                              |
+|-------------------|:-------:|---------|:------------------:|----------------------------------------------------------------------------------------------------------|
+| Name              | string  |         | :white_check_mark: | Name of profile, used to log                                                                             |
+| Channels          | array   |         | :white_check_mark: | List of channels where the email will be posted. You can use `#channel` or `@username`                   |
+| Email             | object  |         | :white_check_mark: | Configuration of Email [(details)](https://github.com/rodcorsi/mattermail#email)                         |
+| Mattermost        | object  |         | :white_check_mark: | Configuration of Mattermost [(details)](https://github.com/rodcorsi/mattermail#mattermost)               |
+| MailTemplate      | string  |         |                    | Template used to format message to post [(details)](https://github.com/rodcorsi/mattermail#mailtemplate) |
+| LinesToPreview    | int     | 10      |                    | Number of email lines that will be posted                                                                |
+| Attachment        | boolean | true    |                    | Inform if attachments will be posted in Mattermost                                                       |
+| Disabled          | boolean | false   |                    | Disable this profile                                                                                     |
+| RedirectBySubject | boolean | true    |                    | Inform if redirect email by subject [(details)](https://github.com/rodcorsi/mattermail#redirectbysubject)|
+| Filter            | object  |         |                    | Filter used to redirect email [(details)](https://github.com/rodcorsi/mattermail#filter)                 |
+
+#### Email
+
+Email configuration, used to access IMAP server
+
+| Field             | Type    | Default | Obrigatory         | Information                                                        |
+|-------------------|:-------:|---------|:------------------:|--------------------------------------------------------------------|
+| ImapServer        | string  |         | :white_check_mark: | Address of imap server with port number ex: _imap.example.com:143_ |
+| Address           | string  |         | :white_check_mark: | Email address used authenticate on email server                    |
+| Password          | string  |         | :white_check_mark: | Password used authenticate on email server                         |
+| StartTLS          | boolean | false   |                    | Enable StartTLS connection if server supports                      |
+| TLSAcceptAllCerts | boolean | false   |                    | Accept insecure certificates with TLS connection                   |
+
+#### Mattermost
+
+Mattermost configuration
+
+| Field     | Type   | Default | Obrigatory         | Information                                                                                                              |
+|-----------|:------:|---------|:------------------:|--------------------------------------------------------------------------------------------------------------------------|
+| Server    | string |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _https://mattermost.example.com:8065_ |
+| Team      | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                        |
+| User      | string |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                            |
+| Password  | string |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                        |
+
+
+#### MailTemplate
+
+This configuration formats email message using markdown to post on Mattermost.
+The default configuration is `:incoming_envelope: _From: **{{.From}}**_\n>_{{.Subject}}_\n\n{{.Message}}`, in this example when Mattermail receives a message from `john@example.com`, with subject `Hello world` and message body `Hi I'm John`. This email will be formated to:
+
+:incoming_envelope: _From: **john@example.com**_
+>_Hello world_
+
+Hi I'm John
+
+#### RedirectBySubject
+
+If the option `RedirectBySubject` is `true` the Mattermail will try to redirect an email and post it using the subject, ex:
+
+| Subject                     | Destination                         |
+|-----------------------------|-------------------------------------|
+| [#orders] blah              | channel `orders`                    |
+| [#orders #info] blah        | channel `orders` and `info`         |
+| Fwd [#orders] [#info] blah  | channel `orders` and `info`         |
+| [1234#orders] foo           | channel `orders`                    |
+| [@john] blah                | user `john`                         |
+| [@john #orders] blah        | user `john` and channel `orders`    |
+
+#### Filter
+
+This option is used to redirect email following the rules.
+
+```javascript
+"Filter":            [
+	/* if subject contains 'Feature' redirect to #feature */
+	{"Subject":"Feature", "Channel":"#feature"},
+
+	/* if from contains 'test@gmail.com' and subject contains 'to me' redirect to @test2*/
+	{"From":"test@gmail.com", "Subject":"To Me", "Channel":"@test2"},
+
+	/* if from contains '@companyb.com' redirect to #companyb */
+	{"From":"@companyb.com", "Channel":"#companyb"} /**/
+]
+```
+
+#### Team/Channel
+
+You can find team and channel name by URL ex:
+
+![mattermail teamchannel](https://github.com/rodcorsi/mattermail/raw/master/img/team_channel.png)
+
+
+## Sequence that the email will be redirected
+
+Mattermail post the email using this rules:
+
+1 - Try to post using the subject if the option `RedirectBySubject` is `true`
+
+2 - Try to post following the [Filter](https://github.com/rodcorsi/mattermail#filter) configuration.
+
+3 - Post on channels/users defined on field `Channels` in `config.json`
+
 ## Options
 
 ```bash
 $ ./mattermail --help
-Options:
-    -c, --config  Sets the file location for config.json
-                  Default: ./config.json 
-    -h, --help    Show this help
-    -v, --version Print current version
+Usage:
+	mattermail server  Starts Mattermail server
+	mattermail migrate Migrates config.json to new version
+
+For more details execute:
+
+	mattermail [command] --help
 ```
 
 ## Building
@@ -104,6 +175,4 @@ You need [Go](http://golang.org) to build this project
 ```bash
 $ go get github.com/rodcorsi/mattermail
 ```
-
-### If you want to build MatterMail to Mattermost 2.2 you need to use `release-2.2` branch
 

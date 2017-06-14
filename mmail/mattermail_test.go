@@ -111,9 +111,12 @@ func TestMatterMail_PostNetMail(t *testing.T) {
 		t.Fatalf("Failed parsing email:%v", err)
 	}
 
-	mm := NewMatterMail(model.NewProfile(), NewLog("", false), nil, &mattermostMock{})
+	profile := model.NewProfile()
+	profile.Channels = []string{"#town-square"}
+
+	mm := NewMatterMail(profile, NewLog("", false), nil, &mattermostMock{})
 
 	if err := mm.PostNetMail(msg); err != nil {
-		t.Fatal("Error on PontNetMail err:", err.Error())
+		t.Fatal("Error on PostNetMail err:", err.Error())
 	}
 }
