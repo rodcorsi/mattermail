@@ -44,6 +44,9 @@ func NewMattermostDefault(cfg *model.Mattermost, log Logger) *MattermostDefault 
 func (m *MattermostDefault) Login() error {
 	m.client = mmModel.NewClient(m.cfg.Server)
 
+	m.client.GetClientProperties()
+	m.log.Debug("Mattermost version:", m.client.ServerVersion)
+
 	m.log.Debugf("Login user:%v team:%v url:%v\n", m.cfg.User, m.cfg.Team, m.cfg.Server)
 
 	result, apperr := m.client.Login(m.cfg.User, m.cfg.Password)
