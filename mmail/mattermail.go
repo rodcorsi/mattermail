@@ -38,7 +38,7 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 
 	defer func() {
 		if err := m.mmProvider.Logout(); err != nil {
-			m.log.Error("Logout error err:", err.Error())
+			m.log.Error("Logout error err:", err)
 		}
 	}()
 
