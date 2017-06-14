@@ -63,11 +63,13 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 		}
 
 		if c.StartTLS != defaultStartTLS {
-			email.StartTLS = &c.StartTLS
+			email.StartTLS = new(bool)
+			*email.StartTLS = c.StartTLS
 		}
 
 		if c.TLSAcceptAllCerts != defaultTLSAcceptAllCerts {
-			email.TLSAcceptAllCerts = &c.TLSAcceptAllCerts
+			email.TLSAcceptAllCerts = new(bool)
+			*email.TLSAcceptAllCerts = c.TLSAcceptAllCerts
 		}
 
 		// Mattermost
@@ -96,25 +98,23 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 		}
 
 		if c.LinesToPreview != defaultLinesToPreview {
-			profile.LinesToPreview = &c.LinesToPreview
+			profile.LinesToPreview = new(int)
+			*profile.LinesToPreview = c.LinesToPreview
 		}
 
-		profile.RedirectBySubject = &c.NoRedirectChannel
-		*profile.RedirectBySubject = !*profile.RedirectBySubject
-
-		if *profile.RedirectBySubject == defaultRedirectBySubject {
-			profile.RedirectBySubject = nil
+		redirectBySubject := !c.NoRedirectChannel
+		if redirectBySubject != defaultRedirectBySubject {
+			profile.RedirectBySubject = &redirectBySubject
 		}
 
-		profile.Attachment = &c.NoAttachment
-		*profile.Attachment = !*profile.Attachment
-
-		if *profile.Attachment == defaultAttachment {
-			profile.Attachment = nil
+		attachment := !c.NoAttachment
+		if attachment != defaultAttachment {
+			profile.Attachment = &attachment
 		}
 
 		if c.Disabled != defaultDisabled {
-			profile.Disabled = &c.Disabled
+			profile.Disabled = new(bool)
+			*profile.Disabled = c.Disabled
 		}
 
 		config.Profiles = append(config.Profiles, profile)
