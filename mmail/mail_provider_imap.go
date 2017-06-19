@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"net/mail"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/emersion/go-imap"
@@ -164,21 +163,18 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 
 	reset := time.After(time.Second * time.Duration(timeout))
 
-	var lock sync.Mutex
 	closed := false
 	closeChannel := func() {
-		lock.Lock()
 		if !closed {
 			close(stop)
 			closed = true
 		}
-		lock.Unlock()
 	}
 
 	for {
 		select {
 		case status := <-statuses:
-			m.log.Debug("MailProviderImap.WaitNewMessage: New mailbox status:", status.Format())
+			m.log.Debug("MailProviderImap.WaitNewMessage: New mailbox status:", status)
 			closeChannel()
 
 		case err := <-done:
@@ -208,7 +204,7 @@ func (m *MailProviderImap) selectMailBox() error {
 
 // checkConnection if is connected return nil or try to connect
 func (m *MailProviderImap) checkConnection() error {
-	if m.imapClient != nil && m.imapClient.State != imap.LogoutState {
+	if m.imapClient != nil && (m.imapClient.State == imap.AuthenticatedState || m.imapClient.State == imap.SelectedState) {
 		m.log.Debug("MailProviderImap.CheckConnection: Connection state", m.imapClient.State)
 		return nil
 	}
