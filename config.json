@@ -1,13 +1,13 @@
 {
 	"Profiles":[
 		{
-			"Name":              "Orders",
-			"Channels":          ["#orders"],
+			"Name":     "Orders",
+			"Channels": ["#orders"],
 
 			"Email":{
-				"ImapServer":        "imap.example.com:143",
-				"Address":           "orders@example.com",
-				"Password":          "password"
+				"ImapServer": "imap.example.com:143",
+				"Address":    "orders@example.com",
+				"Password":   "password"
 			},
 
 			"Mattermost":{
