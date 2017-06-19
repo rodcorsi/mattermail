@@ -19,7 +19,7 @@ GO := go
 
 GO_LINKER_FLAGS ?= -ldflags "-X github.com/rodcorsi/mattermail/cmd.Version=${VERSION}"
 
-all: build-linux build-osx
+all: build-linux build-osx build-windows
 
 build-linux:
 	@echo Build Linux amd64
