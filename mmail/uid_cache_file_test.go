@@ -1,11 +1,14 @@
 package mmail
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
-func Test_uidCacheMem_GetNextUID(t *testing.T) {
-	cache := &uidCacheMem{}
+func TestUIDCacheFile_GetNextUID(t *testing.T) {
+	cache := NewUIDCacheFile(os.TempDir(), "test@example.com", "INBOX")
+	defer os.Remove(cache.filename)
 
 	if _, err := cache.GetNextUID(0); err == nil {
 		t.Fatal("Expected error to uidvalidity 0")
@@ -13,6 +16,11 @@ func Test_uidCacheMem_GetNextUID(t *testing.T) {
 
 	if _, err := cache.GetNextUID(1); err != ErrEmptyUID {
 		t.Fatal("Expected ErrEmptyUID err:", err)
+	}
+
+	ioutil.WriteFile(cache.filename, []byte{}, 0640)
+	if _, err := cache.GetNextUID(1); err == nil {
+		t.Fatal("Expected error invalid size")
 	}
 
 	if err := cache.SaveNextUID(10, 100); err != nil {
@@ -28,8 +36,9 @@ func Test_uidCacheMem_GetNextUID(t *testing.T) {
 	}
 }
 
-func Test_uidCacheMem_SaveNextUID(t *testing.T) {
-	cache := &uidCacheMem{}
+func TestUIDCacheFile_SaveNextUID(t *testing.T) {
+	cache := NewUIDCacheFile(os.TempDir(), "test2@example.com", "INBOX")
+	defer os.Remove(cache.filename)
 
 	if err := cache.SaveNextUID(0, 100); err == nil {
 		t.Fatal("Expected error to uidvalidity 0")
