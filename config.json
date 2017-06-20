@@ -1,4 +1,6 @@
 {
+	"Directory": "./data/",
+
 	"Profiles":[
 		{
 			"Name":     "Orders",

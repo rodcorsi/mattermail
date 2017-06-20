@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -16,8 +17,15 @@ func TestConfig_Validate(t *testing.T) {
 
 	valid(0)
 
-	config.Profiles = []*Profile{{}}
+	config = NewConfig()
+	config.Directory = os.TempDir()
 	valid(1)
+
+	config.Profiles = []*Profile{{}}
+	valid(2)
+
+	config.Profiles = []*Profile{NewProfile()}
+	valid(3)
 }
 
 func TestConfig_Fix(t *testing.T) {
@@ -67,6 +75,7 @@ func TestMigrateFromV1(t *testing.T) {
 	startTLS := true
 
 	expected := &Config{
+		Directory: defaultDirectory,
 		Profiles: []*Profile{{
 			Name:              "Orders",
 			Channels:          []string{"#orders"},

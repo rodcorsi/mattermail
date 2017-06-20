@@ -36,6 +36,7 @@ Minimal configuration:
 
 ```javascript
 {
+	"Directory": "./data/",
 	"Profiles":[
 		{
 			"Name":              "Orders",
@@ -57,6 +58,9 @@ Minimal configuration:
 	]
 }
 ```
+### Directoy
+
+Location where the cache is stored, default value is `./data/`
 
 ### Profiles
 

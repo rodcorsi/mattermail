@@ -2,21 +2,27 @@ package model
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
-const defaultDebug = true
+const (
+	defaultDebug     = true
+	defaultDirectory = "./data/"
+)
 
 // Config type to parse config.json
 type Config struct {
-	Profiles []*Profile
-	Debug    *bool `json:",omitempty"`
+	Directory string
+	Debug     *bool `json:",omitempty"`
+	Profiles  []*Profile
 }
 
 // NewConfig creates new Config with default values
 func NewConfig() *Config {
 	config := &Config{
-		Debug: new(bool),
+		Debug:     new(bool),
+		Directory: defaultDirectory,
 	}
 	*config.Debug = defaultDebug
 
@@ -25,6 +31,13 @@ func NewConfig() *Config {
 
 // Validate set default value for config and check if valid return err
 func (c *Config) Validate() error {
+	if _, err := os.Stat(c.Directory); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("Directory %v does not exists. please create the directory first", c.Directory)
+		}
+		return fmt.Errorf("Field 'Directory':'%v' is not a valid path err: %v", c.Directory, err.Error())
+	}
+
 	if c.Profiles == nil || len(c.Profiles) == 0 {
 		return fmt.Errorf("Field 'Profiles' is empty set Profiles configuration")
 	}
@@ -40,6 +53,10 @@ func (c *Config) Validate() error {
 
 // Fix fields and using default if is necessary
 func (c *Config) Fix() {
+	if c.Directory == "" {
+		c.Directory = defaultDirectory
+	}
+
 	if c.Debug == nil {
 		x := defaultDebug
 		c.Debug = &x
@@ -52,7 +69,9 @@ func (c *Config) Fix() {
 
 // MigrateFromV1 migrates config from version 1 to actual
 func MigrateFromV1(v1 ConfigV1) *Config {
-	config := &Config{}
+	config := &Config{
+		Directory: defaultDirectory,
+	}
 
 	for _, c := range v1 {
 		// Email
