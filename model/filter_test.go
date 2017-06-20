@@ -120,3 +120,22 @@ func TestFilter_Fix(t *testing.T) {
 		t.Fatal("Expected From: test@test.com result:", rule.From)
 	}
 }
+
+func TestFilter_Validate(t *testing.T) {
+	filter := &Filter{}
+
+	if err := filter.Validate(); err == nil {
+		t.Fatal("Expected error not nil for empty filter")
+	}
+
+	*filter = append(*filter, &Rule{})
+
+	if err := filter.Validate(); err == nil {
+		t.Fatal("Expected error not nil for filter with invalid rule")
+	}
+
+	*filter = append(Filter{}, &Rule{Subject: "X", Channel: "#channel"})
+	if err := filter.Validate(); err != nil {
+		t.Fatal("Expected error nil for valid filter err:", err.Error())
+	}
+}
