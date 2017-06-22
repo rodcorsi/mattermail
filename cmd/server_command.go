@@ -48,7 +48,7 @@ func (sc *serverCommand) execute() error {
 
 		go func() {
 			logger := mmail.NewLog(c.Name, debug)
-			mailProvider := mailProvider(c.Email, logger, debug)
+			mailProvider := mailProvider(c.Email, logger, cfgs.Directory, debug)
 			mmProvider := mmail.NewMattermostDefault(c.Mattermost, logger)
 			mm := mmail.NewMatterMail(c, logger, mailProvider, mmProvider)
 			mm.Listen()
@@ -88,6 +88,7 @@ Options:
 `)
 }
 
-func mailProvider(cfg *model.Email, logger mmail.Logger, debug bool) mmail.MailProvider {
-	return mmail.NewMailProviderImap(cfg, logger, debug)
+func mailProvider(cfg *model.Email, logger mmail.Logger, directory string, debug bool) mmail.MailProvider {
+	cache := mmail.NewUIDCacheFile(directory, cfg.Address, mmail.MailBox)
+	return mmail.NewMailProviderImap(cfg, logger, cache, debug)
 }

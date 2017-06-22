@@ -74,11 +74,15 @@ func (m *MatterMail) Listen() {
 			time.Sleep(time.Second * 30)
 		}
 
+		time.Sleep(time.Second * 2)
+
 		if err := m.mailProvider.WaitNewMessage(60); err != nil {
 			m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
 			m.log.Info("Try again in 30s")
 			time.Sleep(time.Second * 30)
 		}
+
+		time.Sleep(time.Second * 2)
 	}
 }
 
