@@ -7,6 +7,8 @@ import (
 
 // ErrEmptyUID error when is empty UID stored or invalid UIDVALIDITY
 var ErrEmptyUID = errors.New("Empty UID stored or invalid UIDVALIDITY")
+
+// ErrUIDValidityZero error when UIDVALIDITY is zero
 var ErrUIDValidityZero = errors.New("uidvalidity need to be greater than zero")
 
 // UIDCache is a cache of uid for account + mailbox
