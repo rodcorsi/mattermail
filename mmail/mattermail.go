@@ -9,8 +9,12 @@ import (
 	"github.com/rodcorsi/mattermail/model"
 )
 
-const maxMattermostAttachments = 5
-const maxMattermostPostSize = 4000
+const (
+	maxMattermostAttachments = 5
+	maxMattermostPostSize    = 4000
+	tryAgainTime             = 30
+	waitMessageTimeout       = 60
+)
 
 // MatterMail struct with configurations, loggers and Mattemost user
 type MatterMail struct {
@@ -68,22 +72,28 @@ func (m *MatterMail) Listen() {
 	defer m.mailProvider.Terminate()
 
 	for {
-		if err := m.mailProvider.CheckNewMessage(m.PostNetMail); err != nil {
-			m.log.Error("MatterMail.InitMatterMail Error on check new messsage:", err.Error())
-			m.log.Info("Try again in 30s")
-			time.Sleep(time.Second * 30)
+		if err := m.checkAndWait(); err != nil {
+			m.log.Infof("Try again in %vs", tryAgainTime)
+			time.Sleep(time.Second * tryAgainTime)
+		} else {
+			time.Sleep(time.Second * 2)
 		}
-
-		time.Sleep(time.Second * 2)
-
-		if err := m.mailProvider.WaitNewMessage(60); err != nil {
-			m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
-			m.log.Info("Try again in 30s")
-			time.Sleep(time.Second * 30)
-		}
-
-		time.Sleep(time.Second * 2)
 	}
+}
+
+func (m *MatterMail) checkAndWait() error {
+	if err := m.mailProvider.CheckNewMessage(m.PostNetMail); err != nil {
+		m.log.Error("MatterMail.InitMatterMail Error on check new messsage:", err.Error())
+		return err
+	}
+
+	time.Sleep(time.Second * 2)
+
+	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout); err != nil {
+		m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
+		return err
+	}
+	return nil
 }
 
 // NewMatterMail creates a new MatterMail instance
