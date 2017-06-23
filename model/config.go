@@ -1,7 +1,9 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -27,6 +29,22 @@ func NewConfig() *Config {
 	*config.Debug = defaultDebug
 
 	return config
+}
+
+// NewConfigFromFile loads config from json file
+func NewConfigFromFile(file string) (*Config, error) {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("Could not load: %v\n%v", file, err.Error())
+	}
+
+	config := NewConfig()
+	if err = json.Unmarshal(data, config); err != nil {
+		return nil, fmt.Errorf("Error on read '%v' err:%v", file, err.Error())
+	}
+
+	config.Fix()
+	return config, nil
 }
 
 // Validate set default value for config and check if valid return err

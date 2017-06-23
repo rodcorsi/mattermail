@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -110,5 +111,20 @@ func TestMigrateFromV1(t *testing.T) {
 	res, _ := json.MarshalIndent(result, "", "\t")
 	if !reflect.DeepEqual(exp, res) {
 		t.Fatalf("Different Config expected:\n%v\n result:\n%v", string(exp), string(res))
+	}
+}
+
+func TestNewConfigFromFile(t *testing.T) {
+	if _, err := NewConfigFromFile(":invalid:"); err == nil {
+		t.Fatal("Expected error to load invalid file path")
+	}
+
+	rootDir := filepath.Join(findDir("model"), "../")
+	if _, err := NewConfigFromFile(filepath.Join(rootDir, "README.md")); err == nil {
+		t.Fatal("Expected error to load invalid json file")
+	}
+
+	if _, err := NewConfigFromFile(filepath.Join(rootDir, "config.json")); err != nil {
+		t.Fatal("Error on load valid config.json", err.Error())
 	}
 }
