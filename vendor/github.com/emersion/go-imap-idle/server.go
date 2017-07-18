@@ -14,7 +14,7 @@ type Handler struct {
 }
 
 func (h *Handler) Handle(conn server.Conn) error {
-	cont := &imap.ContinuationResp{Info: "idling"}
+	cont := &imap.ContinuationReq{Info: "idling"}
 	if err := conn.WriteResp(cont); err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ type Append struct {
 func (cmd *Append) Command() *imap.Command {
 	var args []interface{}
 
-	mailbox, _ := utf7.Encoder.String(cmd.Mailbox)
+	mailbox, _ := utf7.Encoding.NewEncoder().String(cmd.Mailbox)
 	args = append(args, mailbox)
 
 	if cmd.Flags != nil {
@@ -48,9 +48,9 @@ func (cmd *Append) Parse(fields []interface{}) (err error) {
 	}
 
 	// Parse mailbox name
-	if mailbox, ok := fields[0].(string); !ok {
-		return errors.New("Mailbox name must be a string")
-	} else if mailbox, err = utf7.Decoder.String(mailbox); err != nil {
+	if mailbox, err := imap.ParseString(fields[0]); err != nil {
+		return err
+	} else if mailbox, err = utf7.Encoding.NewDecoder().String(mailbox); err != nil {
 		return err
 	} else {
 		cmd.Mailbox = imap.CanonicalMailboxName(mailbox)
@@ -81,11 +81,9 @@ func (cmd *Append) Parse(fields []interface{}) (err error) {
 
 		// Parse date
 		if len(fields) > 0 {
-			date, ok := fields[0].(string)
-			if !ok {
+			if date, ok := fields[0].(string); !ok {
 				return errors.New("Date must be a string")
-			}
-			if cmd.Date, err = time.Parse(imap.DateTimeLayout, date); err != nil {
+			} else if cmd.Date, err = time.Parse(imap.DateTimeLayout, date); err != nil {
 				return err
 			}
 		}

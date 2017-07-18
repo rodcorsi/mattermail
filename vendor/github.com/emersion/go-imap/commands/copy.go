@@ -14,7 +14,7 @@ type Copy struct {
 }
 
 func (cmd *Copy) Command() *imap.Command {
-	mailbox, _ := utf7.Encoder.String(cmd.Mailbox)
+	mailbox, _ := utf7.Encoding.NewEncoder().String(cmd.Mailbox)
 
 	return &imap.Command{
 		Name:      imap.Copy,
@@ -29,15 +29,15 @@ func (cmd *Copy) Parse(fields []interface{}) error {
 
 	if seqSet, ok := fields[0].(string); !ok {
 		return errors.New("Invalid sequence set")
-	} else if seqSet, err := imap.NewSeqSet(seqSet); err != nil {
+	} else if seqSet, err := imap.ParseSeqSet(seqSet); err != nil {
 		return err
 	} else {
 		cmd.SeqSet = seqSet
 	}
 
-	if mailbox, ok := fields[1].(string); !ok {
-		return errors.New("Mailbox name must be a string")
-	} else if mailbox, err := utf7.Decoder.String(mailbox); err != nil {
+	if mailbox, err := imap.ParseString(fields[1]); err != nil {
+		return err
+	} else if mailbox, err := utf7.Encoding.NewDecoder().String(mailbox); err != nil {
 		return err
 	} else {
 		cmd.Mailbox = imap.CanonicalMailboxName(mailbox)

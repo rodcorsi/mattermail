@@ -16,19 +16,23 @@ func NewClient(c *client.Client) *Client {
 
 // Idle indicates to the server that the client is ready to receive unsolicited
 // mailbox update messages. When the client wants to send commands again, it
-// must first close done.
-func (c *Client) Idle(done <-chan struct{}) error {
+// must first close stop.
+func (c *Client) Idle(stop <-chan struct{}) error {
 	cmd := &Command{}
 
+	done := make(chan error, 1)
 	res := &Response{
+		Stop:   stop,
 		Done:   done,
 		Writer: c.c.Writer(),
 	}
 
 	if status, err := c.c.Execute(cmd, res); err != nil {
 		return err
+	} else if err := status.Err(); err != nil {
+		return err
 	} else {
-		return status.Err()
+		return <-done
 	}
 }
 

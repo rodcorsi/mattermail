@@ -2,6 +2,7 @@ package imap
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -53,20 +54,30 @@ func (info *MailboxInfo) Parse(fields []interface{}) error {
 		return errors.New("Mailbox info needs at least 3 fields")
 	}
 
-	info.Attributes, _ = ParseStringList(fields[0])
+	var err error
+	if info.Attributes, err = ParseStringList(fields[0]); err != nil {
+		return err
+	}
 
-	info.Delimiter, _ = fields[1].(string)
+	var ok bool
+	if info.Delimiter, ok = fields[1].(string); !ok {
+		return errors.New("Mailbox delimiter must be a string")
+	}
 
-	name, _ := fields[2].(string)
-	info.Name, _ = utf7.Decoder.String(name)
-	info.Name = CanonicalMailboxName(info.Name)
+	if name, err := ParseString(fields[2]); err != nil {
+		return err
+	} else if name, err := utf7.Encoding.NewDecoder().String(name); err != nil {
+		return err
+	} else {
+		info.Name = CanonicalMailboxName(name)
+	}
 
 	return nil
 }
 
 // Format mailbox info to fields.
 func (info *MailboxInfo) Format() []interface{} {
-	name, _ := utf7.Encoder.String(info.Name)
+	name, _ := utf7.Encoding.NewEncoder().String(info.Name)
 	// Thunderbird doesn't understand delimiters if not quoted
 	return []interface{}{FormatStringList(info.Attributes), Quoted(info.Delimiter), name}
 }
@@ -193,7 +204,7 @@ func (status *MailboxStatus) Parse(fields []interface{}) error {
 		if i%2 == 0 {
 			var ok bool
 			if k, ok = f.(string); !ok {
-				return errors.New("Key is not a string")
+				return fmt.Errorf("cannot parse mailbox status: key is not a string, but a %T", f)
 			}
 			k = strings.ToUpper(k)
 		} else {

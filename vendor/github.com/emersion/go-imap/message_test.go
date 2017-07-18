@@ -158,7 +158,7 @@ var bodySectionNameTests = []struct {
 	},
 	{
 		raw:    "BODY[5.MIME]",
-		parsed: &BodySectionName{BodyPartName: &BodyPartName{Specifier: MimeSpecifier, Path: []int{5}}},
+		parsed: &BodySectionName{BodyPartName: &BodyPartName{Specifier: MIMESpecifier, Path: []int{5}}},
 	},
 	{
 		raw:    "BODY[HEADER.FIELDS (From To)]",
@@ -172,7 +172,7 @@ var bodySectionNameTests = []struct {
 
 func TestNewBodySectionName(t *testing.T) {
 	for i, test := range bodySectionNameTests {
-		bsn, err := NewBodySectionName(test.raw)
+		bsn, err := ParseBodySectionName(test.raw)
 		if err != nil {
 			t.Errorf("Cannot parse #%v: %v", i, err)
 			continue
@@ -237,7 +237,7 @@ func TestBodySectionName_ExtractPartial(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		bsn, err := NewBodySectionName(test.bsn)
+		bsn, err := ParseBodySectionName(test.bsn)
 		if err != nil {
 			t.Errorf("Cannot parse body section name #%v: %v", i, err)
 			continue
@@ -287,12 +287,35 @@ var envelopeTests = []struct {
 func TestEnvelope_Parse(t *testing.T) {
 	for i, test := range envelopeTests {
 		e := &Envelope{}
-
 		if err := e.Parse(test.fields); err != nil {
 			t.Error("Error parsing envelope:", err)
 		} else if !reflect.DeepEqual(e, test.envelope) {
 			t.Errorf("Invalid envelope for #%v: got %v but expected %v", i, e, test.envelope)
 		}
+	}
+}
+
+func TestEnvelope_Parse_literal(t *testing.T) {
+	subject := "Hello World!"
+	l := bytes.NewBufferString(subject)
+	fields := []interface{}{
+		"Tue, 10 Nov 2009 23:00:00 -0600",
+		l,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		"42@example.org",
+		"43@example.org",
+	}
+
+	e := &Envelope{}
+	if err := e.Parse(fields); err != nil {
+		t.Error("Error parsing envelope:", err)
+	} else if e.Subject != subject {
+		t.Errorf("Invalid envelope subject: got %v but expected %v", e.Subject, subject)
 	}
 }
 
@@ -421,8 +444,8 @@ var bodyStructureTests = []struct {
 	{
 		fields: []interface{}{"image", "jpeg", []interface{}{}, "<foo4%25foo1@bar.net>", "A picture of cat", "base64", "4242"},
 		bodyStructure: &BodyStructure{
-			MimeType:    "image",
-			MimeSubType: "jpeg",
+			MIMEType:    "image",
+			MIMESubType: "jpeg",
 			Params:      map[string]string{},
 			Id:          "<foo4%25foo1@bar.net>",
 			Description: "A picture of cat",
@@ -433,8 +456,8 @@ var bodyStructureTests = []struct {
 	{
 		fields: []interface{}{"text", "plain", []interface{}{"charset", "utf-8"}, nil, nil, "us-ascii", "42", "2"},
 		bodyStructure: &BodyStructure{
-			MimeType:    "text",
-			MimeSubType: "plain",
+			MIMEType:    "text",
+			MIMESubType: "plain",
 			Params:      map[string]string{"charset": "utf-8"},
 			Encoding:    "us-ascii",
 			Size:        42,
@@ -449,8 +472,8 @@ var bodyStructureTests = []struct {
 			"67",
 		},
 		bodyStructure: &BodyStructure{
-			MimeType:    "message",
-			MimeSubType: "rfc822",
+			MIMEType:    "message",
+			MIMESubType: "rfc822",
 			Params:      map[string]string{},
 			Encoding:    "us-ascii",
 			Size:        42,
@@ -476,13 +499,13 @@ var bodyStructureTests = []struct {
 			[]interface{}{"en-US"}, []interface{}{},
 		},
 		bodyStructure: &BodyStructure{
-			MimeType:          "application",
-			MimeSubType:       "pdf",
+			MIMEType:          "application",
+			MIMESubType:       "pdf",
 			Params:            map[string]string{},
 			Encoding:          "base64",
 			Size:              4242,
 			Extended:          true,
-			Md5:               "e0323a9039add2978bf5b49550572c7c",
+			MD5:               "e0323a9039add2978bf5b49550572c7c",
 			Disposition:       "attachment",
 			DispositionParams: map[string]string{"filename": "document.pdf"},
 			Language:          []string{"en-US"},
@@ -496,21 +519,21 @@ var bodyStructureTests = []struct {
 			"alternative",
 		},
 		bodyStructure: &BodyStructure{
-			MimeType:    "multipart",
-			MimeSubType: "alternative",
+			MIMEType:    "multipart",
+			MIMESubType: "alternative",
 			Params:      map[string]string{},
 			Parts: []*BodyStructure{
 				{
-					MimeType:    "text",
-					MimeSubType: "plain",
+					MIMEType:    "text",
+					MIMESubType: "plain",
 					Params:      map[string]string{},
 					Encoding:    "us-ascii",
 					Size:        87,
 					Lines:       22,
 				},
 				{
-					MimeType:    "text",
-					MimeSubType: "html",
+					MIMEType:    "text",
+					MIMESubType: "html",
 					Params:      map[string]string{},
 					Encoding:    "us-ascii",
 					Size:        106,
@@ -527,13 +550,13 @@ var bodyStructureTests = []struct {
 			[]interface{}{"en-US"}, []interface{}{},
 		},
 		bodyStructure: &BodyStructure{
-			MimeType:    "multipart",
-			MimeSubType: "alternative",
+			MIMEType:    "multipart",
+			MIMESubType: "alternative",
 			Params:      map[string]string{"hello": "world"},
 			Parts: []*BodyStructure{
 				{
-					MimeType:    "text",
-					MimeSubType: "plain",
+					MIMEType:    "text",
+					MIMESubType: "plain",
 					Params:      map[string]string{},
 					Encoding:    "us-ascii",
 					Size:        87,

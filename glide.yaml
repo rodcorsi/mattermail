@@ -10,5 +10,6 @@ import:
   - charset
   - data
 - package: github.com/emersion/go-imap
-  version: v0.9
+  version: dc58f306f9a760d70f4eb628b3c1b5fa8a490b97
 - package: github.com/emersion/go-imap-idle
+  version: 2ba078955c8a32885916065eaa984b39ce90ff58

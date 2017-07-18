@@ -22,8 +22,9 @@ func (cmd *List) Command() *imap.Command {
 		name = imap.Lsub
 	}
 
-	ref, _ := utf7.Encoder.String(cmd.Reference)
-	mailbox, _ := utf7.Encoder.String(cmd.Mailbox)
+	enc := utf7.Encoding.NewEncoder()
+	ref, _ := enc.String(cmd.Reference)
+	mailbox, _ := enc.String(cmd.Mailbox)
 
 	return &imap.Command{
 		Name:      name,
@@ -36,18 +37,20 @@ func (cmd *List) Parse(fields []interface{}) error {
 		return errors.New("No enough arguments")
 	}
 
-	if mailbox, ok := fields[0].(string); !ok {
-		return errors.New("Reference name must be a string")
-	} else if mailbox, err := utf7.Decoder.String(mailbox); err != nil {
+	dec := utf7.Encoding.NewDecoder()
+
+	if mailbox, err := imap.ParseString(fields[0]); err != nil {
+		return err
+	} else if mailbox, err := dec.String(mailbox); err != nil {
 		return err
 	} else {
 		// TODO: canonical mailbox path
 		cmd.Reference = imap.CanonicalMailboxName(mailbox)
 	}
 
-	if mailbox, ok := fields[1].(string); !ok {
-		return errors.New("Mailbox name must be a string")
-	} else if mailbox, err := utf7.Decoder.String(mailbox); err != nil {
+	if mailbox, err := imap.ParseString(fields[1]); err != nil {
+		return err
+	} else if mailbox, err := dec.String(mailbox); err != nil {
 		return err
 	} else {
 		cmd.Mailbox = imap.CanonicalMailboxName(mailbox)

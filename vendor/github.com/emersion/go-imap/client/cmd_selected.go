@@ -17,7 +17,7 @@ var ErrNoMailboxSelected = errors.New("No mailbox selected")
 // refers to any implementation-dependent housekeeping associated with the
 // mailbox that is not normally executed as part of each command.
 func (c *Client) Check() error {
-	if c.State != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return ErrNoMailboxSelected
 	}
 
@@ -35,7 +35,7 @@ func (c *Client) Check() error {
 // the currently selected mailbox, and returns to the authenticated state from
 // the selected state.
 func (c *Client) Close() error {
-	if c.State != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return ErrNoMailboxSelected
 	}
 
@@ -48,8 +48,10 @@ func (c *Client) Close() error {
 		return err
 	}
 
-	c.State = imap.AuthenticatedState
-	c.Mailbox = nil
+	c.locker.Lock()
+	c.state = imap.AuthenticatedState
+	c.mailbox = nil
+	c.locker.Unlock()
 	return nil
 }
 
@@ -57,18 +59,19 @@ func (c *Client) Close() error {
 // the currently selected mailbox. If ch is not nil, sends sequence IDs of each
 // deleted message to this channel.
 func (c *Client) Expunge(ch chan uint32) error {
-	if c.State != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return ErrNoMailboxSelected
 	}
 
 	cmd := new(commands.Expunge)
 
-	var res imap.RespHandlerFrom
+	var h responses.Handler
 	if ch != nil {
-		res = &responses.Expunge{SeqNums: ch}
+		h = &responses.Expunge{SeqNums: ch}
+		defer close(ch)
 	}
 
-	status, err := c.execute(cmd, res)
+	status, err := c.execute(cmd, h)
 	if err != nil {
 		return err
 	}
@@ -76,7 +79,7 @@ func (c *Client) Expunge(ch chan uint32) error {
 }
 
 func (c *Client) executeSearch(uid bool, criteria *imap.SearchCriteria, charset string) (ids []uint32, status *imap.StatusResp, err error) {
-	if c.State != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		err = ErrNoMailboxSelected
 		return
 	}
@@ -128,9 +131,11 @@ func (c *Client) UidSearch(criteria *imap.SearchCriteria) (uids []uint32, err er
 }
 
 func (c *Client) fetch(uid bool, seqset *imap.SeqSet, items []string, ch chan *imap.Message) error {
-	if c.State != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return ErrNoMailboxSelected
 	}
+
+	defer close(ch)
 
 	var cmd imap.Commander
 	cmd = &commands.Fetch{
@@ -163,7 +168,7 @@ func (c *Client) UidFetch(seqset *imap.SeqSet, items []string, ch chan *imap.Mes
 }
 
 func (c *Client) store(uid bool, seqset *imap.SeqSet, item string, value interface{}, ch chan *imap.Message) error {
-	if c.State != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return ErrNoMailboxSelected
 	}
 
@@ -183,12 +188,13 @@ func (c *Client) store(uid bool, seqset *imap.SeqSet, item string, value interfa
 		cmd = &commands.Uid{Cmd: cmd}
 	}
 
-	var res imap.RespHandlerFrom
+	var h responses.Handler
 	if ch != nil {
-		res = &responses.Fetch{Messages: ch}
+		h = &responses.Fetch{Messages: ch}
+		defer close(ch)
 	}
 
-	status, err := c.execute(cmd, res)
+	status, err := c.execute(cmd, h)
 	if err != nil {
 		return err
 	}
@@ -209,7 +215,7 @@ func (c *Client) UidStore(seqset *imap.SeqSet, item string, value interface{}, c
 }
 
 func (c *Client) copy(uid bool, seqset *imap.SeqSet, dest string) error {
-	if c.State != imap.SelectedState {
+	if c.State() != imap.SelectedState {
 		return ErrNoMailboxSelected
 	}
 

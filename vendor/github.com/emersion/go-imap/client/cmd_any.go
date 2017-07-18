@@ -5,7 +5,6 @@ import (
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/commands"
-	"github.com/emersion/go-imap/responses"
 )
 
 // ErrAlreadyLoggedOut is returned if Logout is called when the client is
@@ -20,31 +19,25 @@ var ErrAlreadyLoggedOut = errors.New("Already logged out")
 // Most of the time, Support should be used instead.
 func (c *Client) Capability() (map[string]bool, error) {
 	cmd := &commands.Capability{}
-	res := &responses.Capability{}
 
-	if status, err := c.execute(cmd, res); err != nil {
+	if status, err := c.execute(cmd, nil); err != nil {
 		return nil, err
 	} else if err := status.Err(); err != nil {
 		return nil, err
 	}
 
-	caps := make(map[string]bool)
-	for _, name := range res.Caps {
-		caps[name] = true
-	}
-
-	c.capsLocker.Lock()
-	c.caps = caps
-	c.capsLocker.Unlock()
+	c.locker.Lock()
+	caps := c.caps
+	c.locker.Unlock()
 	return caps, nil
 }
 
 // Support checks if cap is a capability supported by the server. If the server
 // hasn't sent its capabilities yet, Support requests them.
 func (c *Client) Support(cap string) (bool, error) {
-	c.capsLocker.Lock()
+	c.locker.Lock()
 	ok := c.caps != nil
-	c.capsLocker.Unlock()
+	c.locker.Unlock()
 
 	// If capabilities are not cached, request them
 	if !ok {
@@ -53,9 +46,9 @@ func (c *Client) Support(cap string) (bool, error) {
 		}
 	}
 
-	c.capsLocker.Lock()
+	c.locker.Lock()
 	supported := c.caps[cap]
-	c.capsLocker.Unlock()
+	c.locker.Unlock()
 	return supported, nil
 }
 
@@ -76,7 +69,7 @@ func (c *Client) Noop() error {
 
 // Logout gracefully closes the connection.
 func (c *Client) Logout() error {
-	if c.State == imap.LogoutState {
+	if c.State() == imap.LogoutState {
 		return ErrAlreadyLoggedOut
 	}
 
