@@ -16,6 +16,7 @@ import (
 // MailProviderImap implements MailProvider using imap
 type MailProviderImap struct {
 	imapClient *client.Client
+	idleClient *idle.Client
 	cfg        *model.Email
 	log        Logger
 	cache      UIDCache
@@ -152,7 +153,9 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 		return err
 	}
 
-	idleClient := idle.NewClient(m.imapClient)
+	if m.idleClient == nil {
+		m.idleClient = idle.NewClient(m.imapClient)
+	}
 
 	// Create a channel to receive mailbox updates
 	statuses := make(chan *imap.MailboxStatus)
@@ -161,7 +164,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 	stop := make(chan struct{})
 	done := make(chan error, 1)
 	go func() {
-		done <- idleClient.Idle(stop)
+		done <- m.idleClient.Idle(stop)
 	}()
 
 	reset := time.After(time.Second * time.Duration(timeout))
@@ -196,7 +199,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 
 func (m *MailProviderImap) selectMailBox() (*imap.MailboxStatus, error) {
 
-	if m.imapClient.Mailbox != nil && m.imapClient.Mailbox.Name == MailBox {
+	if m.imapClient.Mailbox() != nil && m.imapClient.Mailbox().Name == MailBox {
 		if err := m.imapClient.Close(); err != nil {
 			m.log.Debug("MailProviderImap.selectMailBox: Error on close mailbox:", err.Error())
 		}
@@ -214,7 +217,7 @@ func (m *MailProviderImap) selectMailBox() (*imap.MailboxStatus, error) {
 
 // checkConnection if is connected return nil or try to connect
 func (m *MailProviderImap) checkConnection() error {
-	if m.imapClient != nil && (m.imapClient.State == imap.AuthenticatedState || m.imapClient.State == imap.SelectedState) {
+	if m.imapClient != nil && (m.imapClient.State() == imap.AuthenticatedState || m.imapClient.State() == imap.SelectedState) {
 		m.log.Debug("MailProviderImap.CheckConnection: Connection state", m.imapClient.State)
 		return nil
 	}
@@ -273,16 +276,13 @@ func (m *MailProviderImap) checkConnection() error {
 		return err
 	}
 
-	//disabled because the bug in go-imap-idle
-	m.idle = false
-
-	// idleClient := idle.NewClient(m.imapClient)
-	// m.idle, err = idleClient.SupportIdle()
-	// if err != nil {
-	// 	m.idle = false
-	// 	m.log.Error("MailProviderImap.CheckConnection: Error on check idle support")
-	// 	return err
-	// }
+	idleClient := idle.NewClient(m.imapClient)
+	m.idle, err = idleClient.SupportIdle()
+	if err != nil {
+		m.idle = false
+		m.log.Error("MailProviderImap.CheckConnection: Error on check idle support")
+		return err
+	}
 
 	return nil
 }
