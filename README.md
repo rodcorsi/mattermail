@@ -8,26 +8,29 @@
 ![mattermail screenshot](https://github.com/rodcorsi/mattermail/raw/master/img/screenshot.png)
 
 ## Install
+
   Download the [Latest Version](https://github.com/rodcorsi/mattermail/releases/latest)
 
 ## Usage
+
 1. You need to create an user in Mattermost server and you can use MatterMail icon as profile picture.
 
-2. Get the [Team and Channels](https://github.com/rodcorsi/mattermail#teamchannel) and check if the user has permission to post in these channels
+1. Get the [Team and Channels](https://github.com/rodcorsi/mattermail#teamchannel) and check if the user has permission to post in these channels
 
-3. Edit the file config.json
+1. Edit the file config.json
 
-4. Execute the command to put in background
+1. Execute the command to put in background
 
-```
-$ ./mattermail > /var/log/mattermail.log 2>&1 &
+```bash
+./mattermail > /var/log/mattermail.log 2>&1 &
 ```
 
 ## Migrate configuration
 
 To upgrade the config.json to new version using this command:
+
 ```bash
-$ ./mattermail migrate -c ./config.json > ./new_config.json
+./mattermail migrate -c ./config.json > ./new_config.json
 ```
 
 ## Configuration
@@ -36,28 +39,29 @@ Minimal configuration:
 
 ```javascript
 {
-	"Directory": "./data/",
-	"Profiles":[
-		{
-			"Name":              "Orders",
-			"Channels":          ["#orders"],
+    "Directory": "./data/",
+    "Profiles":[
+        {
+            "Name":              "Orders",
+            "Channels":          ["#orders"],
 
-			"Email":{
-				"ImapServer":        "imap.example.com:143",
-				"Username":          "orders@example.com",
-				"Password":          "password"
-			},
+            "Email":{
+                "ImapServer":        "imap.example.com:143",
+                "Username":          "orders@example.com",
+                "Password":          "password"
+            },
 
-			"Mattermost":{
-				"Server":   "https://mattermost.example.com",
-				"Team":     "team1",
-				"User":     "mattermail@example.com",
-				"Password": "password"
-			}
-		}
-	]
+            "Mattermost":{
+                "Server":   "https://mattermost.example.com",
+                "Team":     "team1",
+                "User":     "mattermail@example.com",
+                "Password": "password"
+            }
+        }
+    ]
 }
 ```
+
 ### Directoy
 
 Location where the cache is stored, default value is `./data/`
@@ -95,13 +99,12 @@ Email configuration, used to access IMAP server
 
 Mattermost configuration
 
-| Field     | Type   | Default | Obrigatory         | Information                                                                                                              |
-|-----------|:------:|---------|:------------------:|--------------------------------------------------------------------------------------------------------------------------|
-| Server    | string |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _https://mattermost.example.com:8065_ |
-| Team      | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                        |
-| User      | string |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                            |
-| Password  | string |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                        |
-
+| Field     | Type   | Default | Obrigatory         | Information                                                                                                                |
+|-----------|:------:|---------|:------------------:|----------------------------------------------------------------------------------------------------------------------------|
+| Server    | string |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _<https://mattermost.example.com:8065>_ |
+| Team      | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                          |
+| User      | string |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                              |
+| Password  | string |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                          |
 
 #### MailTemplate
 
@@ -132,14 +135,14 @@ This option is used to redirect email following the rules.
 
 ```javascript
 "Filter":            [
-	/* if subject contains 'Feature' redirect to #feature */
-	{"Subject":"Feature", "Channel":"#feature"},
+    /* if subject contains 'Feature' redirect to #feature */
+    {"Subject":"Feature", "Channel":"#feature"},
 
-	/* if from contains 'test@gmail.com' and subject contains 'to me' redirect to @test2*/
-	{"From":"test@gmail.com", "Subject":"To Me", "Channel":"@test2"},
+    /* if from contains 'test@gmail.com' and subject contains 'to me' redirect to @test2*/
+    {"From":"test@gmail.com", "Subject":"To Me", "Channel":"@test2"},
 
-	/* if from contains '@companyb.com' redirect to #companyb */
-	{"From":"@companyb.com", "Channel":"#companyb"} /**/
+    /* if from contains '@companyb.com' redirect to #companyb */
+    {"From":"@companyb.com", "Channel":"#companyb"} /**/
 ]
 ```
 
@@ -148,7 +151,6 @@ This option is used to redirect email following the rules.
 You can find team and channel name by URL ex:
 
 ![mattermail teamchannel](https://github.com/rodcorsi/mattermail/raw/master/img/team_channel.png)
-
 
 ## Sequence that the email will be redirected
 
@@ -165,18 +167,18 @@ Mattermail post the email using this rules:
 ```bash
 $ ./mattermail --help
 Usage:
-	mattermail server  Starts Mattermail server
-	mattermail migrate Migrates config.json to new version
+    mattermail server  Starts Mattermail server
+    mattermail migrate Migrates config.json to new version
 
 For more details execute:
 
-	mattermail [command] --help
+    mattermail [command] --help
 ```
 
 ## Building
+
 You need [Go](http://golang.org) to build this project
 
 ```bash
-$ go get github.com/rodcorsi/mattermail
+go get github.com/rodcorsi/mattermail
 ```
-
