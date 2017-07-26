@@ -44,7 +44,7 @@ Minimal configuration:
 
 			"Email":{
 				"ImapServer":        "imap.example.com:143",
-				"Address":           "orders@example.com",
+				"Username":          "orders@example.com",
 				"Password":          "password"
 			},
 
@@ -86,7 +86,7 @@ Email configuration, used to access IMAP server
 | Field             | Type    | Default | Obrigatory         | Information                                                        |
 |-------------------|:-------:|---------|:------------------:|--------------------------------------------------------------------|
 | ImapServer        | string  |         | :white_check_mark: | Address of imap server with port number ex: _imap.example.com:143_ |
-| Address           | string  |         | :white_check_mark: | Email address used authenticate on email server                    |
+| Username          | string  |         | :white_check_mark: | Email address or username used authenticate on email server        |
 | Password          | string  |         | :white_check_mark: | Password used authenticate on email server                         |
 | StartTLS          | boolean | false   |                    | Enable StartTLS connection if server supports                      |
 | TLSAcceptAllCerts | boolean | false   |                    | Accept insecure certificates with TLS connection                   |

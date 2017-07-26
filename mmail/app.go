@@ -44,7 +44,7 @@ func Start(config *model.Config) error {
 
 func createMatterMail(profile *model.Profile, directory string, debug bool) *MatterMail {
 	logger := NewLog(profile.Name, debug)
-	cache := NewUIDCacheFile(directory, profile.Email.Address, MailBox)
+	cache := NewUIDCacheFile(directory, profile.Email.Username, MailBox)
 	mailProvider := NewMailProviderImap(profile.Email, logger, cache, debug)
 	mattermost := NewMattermostDefault(profile.Mattermost, logger)
 	return NewMatterMail(profile, logger, mailProvider, mattermost)

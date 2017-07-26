@@ -83,7 +83,7 @@ func TestMigrateFromV1(t *testing.T) {
 			RedirectBySubject: &redirect,
 			Email: &Email{
 				ImapServer: "imap.example.com:143",
-				Address:    "orders@example.com",
+				Username:   "orders@example.com",
 				Password:   "emailpassword",
 				StartTLS:   &startTLS,
 			},

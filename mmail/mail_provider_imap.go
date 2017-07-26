@@ -266,9 +266,9 @@ func (m *MailProviderImap) checkConnection() error {
 
 	m.log.Infof("Connected with %q\n", m.cfg.ImapServer)
 
-	err = m.imapClient.Login(m.cfg.Address, m.cfg.Password)
+	err = m.imapClient.Login(m.cfg.Username, m.cfg.Password)
 	if err != nil {
-		m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Address)
+		m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Username)
 		return err
 	}
 

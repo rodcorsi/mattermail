@@ -95,7 +95,7 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 		// Email
 		email := &Email{
 			ImapServer: c.ImapServer,
-			Address:    c.Email,
+			Username:   c.Email,
 			Password:   c.EmailPass,
 		}
 

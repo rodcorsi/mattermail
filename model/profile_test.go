@@ -38,7 +38,7 @@ func TestProfile_Validate(t *testing.T) {
 
 	config.Email = &Email{
 		ImapServer: "imap.example.com:143",
-		Address:    "orders@example.com",
+		Username:   "orders@example.com",
 		Password:   "password",
 	}
 	valid(8)

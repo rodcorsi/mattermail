@@ -67,7 +67,7 @@ func TestCheckNewMessage(t *testing.T) {
 	inbox.CreateMessage([]string{}, time.Now(), literal)
 
 	config := model.NewEmail()
-	config.Address = "username"
+	config.Username = "username"
 	config.Password = "password"
 	config.ImapServer = ts.addr
 
@@ -97,7 +97,7 @@ func TestCheckNewMessage(t *testing.T) {
 func TestWaitNewMessage(t *testing.T) {
 	t.Skip("Disabled bug in lib")
 	config := model.NewEmail()
-	config.Address = "username"
+	config.Username = "username"
 	config.Password = "password"
 	config.ImapServer = ts.addr
 	*config.StartTLS = true

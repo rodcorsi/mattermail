@@ -20,10 +20,7 @@ func TestEmail_Validate(t *testing.T) {
 	config.ImapServer = "imap.ssj.com"
 	valid(2)
 
-	config.Address = "sdhsfk"
-	valid(3)
-
-	config.Address = "hahah@jdjd.xx"
+	config.Username = "foo@blah.hh"
 	valid(4)
 
 	config.Password = "1234"

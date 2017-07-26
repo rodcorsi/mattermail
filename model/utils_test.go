@@ -2,22 +2,6 @@ package model
 
 import "testing"
 
-func Test_validateEmail(t *testing.T) {
-	assert := func(test string, expected bool) {
-		if validateEmail(test) != expected {
-			t.Fatalf("test %v expected %v", test, expected)
-		}
-	}
-	assert("", false)
-	assert("x", false)
-	assert("as@xjsj@", false)
-	assert("@", false)
-	assert("@hdjdh", false)
-	assert("ajjs@", false)
-	assert("jjsj@kdkd", false)
-	assert("jjsj@kdkd.ccj", true)
-}
-
 func Test_validateURL(t *testing.T) {
 	assert := func(test string, expected bool) {
 		if validateURL(test) != expected {

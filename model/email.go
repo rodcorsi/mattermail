@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 const (
 	defaultStartTLS          = false
@@ -10,7 +13,7 @@ const (
 // Email type with email settings
 type Email struct {
 	ImapServer        string
-	Address           string
+	Username          string
 	Password          string
 	StartTLS          *bool `json:",omitempty"`
 	TLSAcceptAllCerts *bool `json:",omitempty"`
@@ -31,19 +34,19 @@ func NewEmail() *Email {
 // Validate set default value for email and check if valid return err
 func (c *Email) Validate() error {
 	if c.ImapServer == "" {
-		return fmt.Errorf("Field 'ImapServer' is empty set imap server address eg.: imap.example.com:143")
+		return errors.New("Field 'ImapServer' is empty set imap server address eg.: imap.example.com:143")
 	}
 
 	if !validateImap(c.ImapServer) {
 		return fmt.Errorf("Field 'ImapServer' need to be a valid url: %v", c.ImapServer)
 	}
 
-	if !validateEmail(c.Address) {
-		return fmt.Errorf("Field 'Address' need to be a valid email: %v", c.Address)
+	if c.Username == "" {
+		return errors.New("Field 'Username' is empty, set email address or username eg.: test@example.com")
 	}
 
 	if c.Password == "" {
-		return fmt.Errorf("Field 'Password' is empty")
+		return errors.New("Field 'Password' is empty")
 	}
 
 	return nil
