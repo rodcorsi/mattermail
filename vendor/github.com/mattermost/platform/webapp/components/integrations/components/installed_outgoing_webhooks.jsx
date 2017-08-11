@@ -1,17 +1,19 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import BackstageList from 'components/backstage/components/backstage_list.jsx';
 import InstalledOutgoingWebhook from './installed_outgoing_webhook.jsx';
 
+import ChannelStore from 'stores/channel_store.jsx';
 import IntegrationStore from 'stores/integration_store.jsx';
 import TeamStore from 'stores/team_store.jsx';
 import UserStore from 'stores/user_store.jsx';
 
-import {loadOutgoingHooks} from 'actions/integration_actions.jsx';
+import {loadOutgoingHooks, regenOutgoingHookToken, deleteOutgoingHook} from 'actions/integration_actions.jsx';
 
 import * as Utils from 'utils/utils.jsx';
-import * as AsyncClient from 'utils/async_client.jsx';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
@@ -19,7 +21,9 @@ import {FormattedMessage} from 'react-intl';
 export default class InstalledOutgoingWebhooks extends React.Component {
     static get propTypes() {
         return {
-            team: React.propTypes.object.isRequired
+            team: PropTypes.object,
+            user: PropTypes.object,
+            isAdmin: PropTypes.bool
         };
     }
 
@@ -45,7 +49,7 @@ export default class InstalledOutgoingWebhooks extends React.Component {
         UserStore.addChangeListener(this.handleUserChange);
 
         if (window.mm_config.EnableOutgoingWebhooks === 'true') {
-            loadOutgoingHooks();
+            loadOutgoingHooks(() => this.setState({loading: false}));
         }
     }
 
@@ -58,8 +62,7 @@ export default class InstalledOutgoingWebhooks extends React.Component {
         const teamId = TeamStore.getCurrentId();
 
         this.setState({
-            outgoingWebhooks: IntegrationStore.getOutgoingWebhooks(teamId),
-            loading: !IntegrationStore.hasReceivedOutgoingWebhooks(teamId)
+            outgoingWebhooks: IntegrationStore.getOutgoingWebhooks(teamId)
         });
     }
 
@@ -68,15 +71,41 @@ export default class InstalledOutgoingWebhooks extends React.Component {
     }
 
     regenOutgoingWebhookToken(outgoingWebhook) {
-        AsyncClient.regenOutgoingHookToken(outgoingWebhook.id);
+        regenOutgoingHookToken(outgoingWebhook.id);
     }
 
     deleteOutgoingWebhook(outgoingWebhook) {
-        AsyncClient.deleteOutgoingHook(outgoingWebhook.id);
+        deleteOutgoingHook(outgoingWebhook.id);
+    }
+
+    outgoingWebhookCompare(a, b) {
+        let displayNameA = a.display_name;
+        if (!displayNameA) {
+            const channelA = ChannelStore.get(a.channel_id);
+            if (channelA) {
+                displayNameA = channelA.display_name;
+            } else {
+                displayNameA = Utils.localizeMessage('installed_outgoing_webhooks.unknown_channel', 'A Private Webhook');
+            }
+        }
+
+        let displayNameB = b.display_name;
+        if (!displayNameB) {
+            const channelB = ChannelStore.get(b.channel_id);
+            if (channelB) {
+                displayNameB = channelB.display_name;
+            } else {
+                displayNameB = Utils.localizeMessage('installed_outgoing_webhooks.unknown_channel', 'A Private Webhook');
+            }
+        }
+
+        return displayNameA.localeCompare(displayNameB);
     }
 
     render() {
-        const outgoingWebhooks = this.state.outgoingWebhooks.map((outgoingWebhook) => {
+        const outgoingWebhooks = this.state.outgoingWebhooks.sort(this.outgoingWebhookCompare).map((outgoingWebhook) => {
+            const canChange = this.props.isAdmin || this.props.user.id === outgoingWebhook.creator_id;
+
             return (
                 <InstalledOutgoingWebhook
                     key={outgoingWebhook.id}
@@ -84,6 +113,8 @@ export default class InstalledOutgoingWebhooks extends React.Component {
                     onRegenToken={this.regenOutgoingWebhookToken}
                     onDelete={this.deleteOutgoingWebhook}
                     creator={this.state.users[outgoingWebhook.creator_id] || {}}
+                    canChange={canChange}
+                    team={this.props.team}
                 />
             );
         });
@@ -112,17 +143,29 @@ export default class InstalledOutgoingWebhooks extends React.Component {
                 helpText={
                     <FormattedMessage
                         id='installed_outgoing_webhooks.help'
-                        defaultMessage='Create outgoing webhook URLs for use in external integrations. Please see {link} to learn more.'
+                        defaultMessage='Use outgoing webhooks to connect external tools to Mattermost. {buildYourOwn} or visit the {appDirectory} to find self-hosted, third-party apps and integrations.'
                         values={{
-                            link: (
+                            buildYourOwn: (
                                 <a
                                     target='_blank'
                                     rel='noopener noreferrer'
                                     href='http://docs.mattermost.com/developer/webhooks-outgoing.html'
                                 >
                                     <FormattedMessage
-                                        id='installed_outgoing_webhooks.helpLink'
-                                        defaultMessage='documentation'
+                                        id='installed_outgoing_webhooks.help.buildYourOwn'
+                                        defaultMessage='Build your own'
+                                    />
+                                </a>
+                            ),
+                            appDirectory: (
+                                <a
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    href='https://about.mattermost.com/default-app-directory/'
+                                >
+                                    <FormattedMessage
+                                        id='installed_outgoing_webhooks.help.appDirectory'
+                                        defaultMessage='App Directory'
                                     />
                                 </a>
                             )

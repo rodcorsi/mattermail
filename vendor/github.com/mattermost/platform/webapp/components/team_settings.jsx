@@ -1,10 +1,12 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import TeamStore from 'stores/team_store.jsx';
 import ImportTab from './team_import_tab.jsx';
 import GeneralTab from './team_general_tab.jsx';
 import * as Utils from 'utils/utils.jsx';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -73,7 +75,7 @@ TeamSettings.defaultProps = {
 };
 
 TeamSettings.propTypes = {
-    activeTab: React.PropTypes.string.isRequired,
-    activeSection: React.PropTypes.string.isRequired,
-    updateSection: React.PropTypes.func.isRequired
+    activeTab: PropTypes.string.isRequired,
+    activeSection: PropTypes.string.isRequired,
+    updateSection: PropTypes.func.isRequired
 };

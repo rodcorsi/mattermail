@@ -1,4 +1,6 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -8,13 +10,13 @@ import {Link} from 'react-router/es6';
 export default class AdminSidebarCategory extends React.Component {
     static get propTypes() {
         return {
-            name: React.PropTypes.string,
-            title: React.PropTypes.node.isRequired,
-            icon: React.PropTypes.string.isRequired,
-            sectionClass: React.PropTypes.string,
-            parentLink: React.PropTypes.string,
-            children: React.PropTypes.node,
-            action: React.PropTypes.node
+            name: PropTypes.string,
+            title: PropTypes.node.isRequired,
+            icon: PropTypes.string.isRequired,
+            sectionClass: PropTypes.string,
+            parentLink: PropTypes.string,
+            children: PropTypes.node,
+            action: PropTypes.node
         };
     }
 
@@ -26,7 +28,7 @@ export default class AdminSidebarCategory extends React.Component {
 
     static get contextTypes() {
         return {
-            router: React.PropTypes.object.isRequired
+            router: PropTypes.object.isRequired
         };
     }
 

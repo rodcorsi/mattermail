@@ -54,6 +54,10 @@
         }
     }
 
+    .help__format-text {
+        display: none;
+    }
+
     .inner-wrap {
         &.move--left,
         &.webrtc--show {
@@ -76,14 +80,32 @@
 }
 
 @media (max-width: 1024px) {
-    .inner-wrap {
-        &.move--left {
-            .channel-header {
-                .heading {
-                    width: 100px;
-                }
+    .channel-header {
+        .search-bar__container {
+            .search__form {
+                width: 150px;
             }
         }
+
+        .heading {
+            max-width: calc(100vw - 800px);
+
+            .multi-teams & {
+                max-width: calc(100vw - 775px);
+            }
+        }
+    }
+
+    .channel-header__info {
+        .channel-header__description {
+            .multi-teams & {
+                max-width: calc(100vw - 730px);
+            }
+        }
+    }
+
+    .integration-option {
+        width: 280px;
     }
 }
 

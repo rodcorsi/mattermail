@@ -1,14 +1,16 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import * as Utils from 'utils/utils.jsx';
-import Client from 'client/web_client.jsx';
 import Constants from 'utils/constants.jsx';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {FormattedMessage} from 'react-intl';
-import {browserHistory} from 'react-router/es6';
+
+import {oauthToEmail} from 'actions/admin_actions.jsx';
 
 export default class OAuthToEmail extends React.Component {
     constructor(props) {
@@ -48,14 +50,11 @@ export default class OAuthToEmail extends React.Component {
         state.error = null;
         this.setState(state);
 
-        Client.oauthToEmail(
+        oauthToEmail(
+            this.props.currentType,
             this.props.email,
             password,
-            (data) => {
-                if (data.follow_link) {
-                    browserHistory.push(data.follow_link);
-                }
-            },
+            null,
             (err) => {
                 this.setState({error: err.message});
             }
@@ -143,6 +142,6 @@ export default class OAuthToEmail extends React.Component {
 OAuthToEmail.defaultProps = {
 };
 OAuthToEmail.propTypes = {
-    currentType: React.PropTypes.string,
-    email: React.PropTypes.string
+    currentType: PropTypes.string,
+    email: PropTypes.string
 };

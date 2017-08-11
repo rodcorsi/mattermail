@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import AdminSettings from './admin_settings.jsx';
@@ -7,13 +7,13 @@ import {ConnectionSecurityDropdownSettingLdap} from './connection_security_dropd
 import SettingsGroup from './settings_group.jsx';
 import TextSetting from './text_setting.jsx';
 
-import SyncNowButton from './sync_now_button.jsx';
-import LdapTestButton from './ldap_test_button.jsx';
+import {ldapSyncNow, ldapTest} from 'actions/admin_actions.jsx';
 
 import * as Utils from 'utils/utils.jsx';
 
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
+import RequestButton from './request_button/request_button.jsx';
 
 export default class LdapSettings extends AdminSettings {
     constructor(props) {
@@ -38,6 +38,7 @@ export default class LdapSettings extends AdminSettings {
         config.LdapSettings.NicknameAttribute = this.state.nicknameAttribute;
         config.LdapSettings.EmailAttribute = this.state.emailAttribute;
         config.LdapSettings.UsernameAttribute = this.state.usernameAttribute;
+        config.LdapSettings.PositionAttribute = this.state.positionAttribute;
         config.LdapSettings.IdAttribute = this.state.idAttribute;
         config.LdapSettings.SyncIntervalMinutes = this.parseIntNonZero(this.state.syncIntervalMinutes);
         config.LdapSettings.SkipCertificateVerification = this.state.skipCertificateVerification;
@@ -63,6 +64,7 @@ export default class LdapSettings extends AdminSettings {
             nicknameAttribute: config.LdapSettings.NicknameAttribute,
             emailAttribute: config.LdapSettings.EmailAttribute,
             usernameAttribute: config.LdapSettings.UsernameAttribute,
+            positionAttribute: config.LdapSettings.PositionAttribute,
             idAttribute: config.LdapSettings.IdAttribute,
             syncIntervalMinutes: config.LdapSettings.SyncIntervalMinutes,
             skipCertificateVerification: config.LdapSettings.SkipCertificateVerification,
@@ -74,12 +76,10 @@ export default class LdapSettings extends AdminSettings {
 
     renderTitle() {
         return (
-            <h3>
-                <FormattedMessage
-                    id='admin.authentication.ldap'
-                    defaultMessage='AD/LDAP'
-                />
-            </h3>
+            <FormattedMessage
+                id='admin.authentication.ldap'
+                defaultMessage='AD/LDAP'
+            />
         );
     }
 
@@ -300,6 +300,25 @@ export default class LdapSettings extends AdminSettings {
                     disabled={!this.state.enable}
                 />
                 <TextSetting
+                    id='positionAttribute'
+                    label={
+                        <FormattedMessage
+                            id='admin.ldap.positionAttrTitle'
+                            defaultMessage='Position Attribute:'
+                        />
+                    }
+                    placeholder={Utils.localizeMessage('admin.ldap.positionAttrEx', 'E.g.: "title"')}
+                    helpText={
+                        <FormattedMessage
+                            id='admin.ldap.positionAttrDesc'
+                            defaultMessage='(Optional) The attribute in the AD/LDAP server that will be used to populate the position field in Mattermost.'
+                        />
+                    }
+                    value={this.state.positionAttribute}
+                    onChange={this.handleChange}
+                    disabled={!this.state.enable}
+                />
+                <TextSetting
                     id='emailAttribute'
                     label={
                         <FormattedMessage
@@ -349,7 +368,7 @@ export default class LdapSettings extends AdminSettings {
                     helpText={
                         <FormattedMessage
                             id='admin.ldap.idAttrDesc'
-                            defaultMessage='The attribute in the AD/LDAP server that will be used as a unique identifier in Mattermost. It should be an AD/LDAP attribute with a value that does not change, such as username or uid. If a user’s ID Attribute changes, it will create a new Mattermost account unassociated with their old one. This is the value used to log in to Mattermost in the "AD/LDAP Username" field on the sign in page. Normally this attribute is the same as the “Username Attribute” field above. If your team typically uses domain\\username to sign in to other services with AD/LDAP, you may choose to put domain\\username in this field to maintain consistency between sites.'
+                            defaultMessage='The attribute in the AD/LDAP server that will be used as a unique identifier in Mattermost. It should be an AD/LDAP attribute with a value that does not change, such as username or uid. If a user’s ID Attribute changes, it will create a new Mattermost account unassociated with their old one. This is the value used to log in to Mattermost in the "AD/LDAP Username" field on the sign in page. Normally this attribute is the same as the "Username Attribute" field above. If your team typically uses domain\\username to sign in to other services with AD/LDAP, you may choose to put domain\\username in this field to maintain consistency between sites.'
                         />
                     }
                     value={this.state.idAttribute}
@@ -386,7 +405,7 @@ export default class LdapSettings extends AdminSettings {
                     helpText={
                         <FormattedMessage
                             id='admin.ldap.syncIntervalHelpText'
-                            defaultMessage='AD/LDAP Synchronization updates Mattermost user information to reflect updates on the AD/LDAP server. For example, when a user’s name changes on the AD/LDAP server, the change updates in Mattermost when synchronization is performed. Accounts removed from or disabled in the AD/LDAP server have their Mattermost accounts set to “Inactive” and have their account sessions revoked. Mattermost performs synchronization on the interval entered. For example, if 60 is entered, Mattermost synchronizes every 60 minutes.'
+                            defaultMessage='AD/LDAP Synchronization updates Mattermost user information to reflect updates on the AD/LDAP server. For example, when a user’s name changes on the AD/LDAP server, the change updates in Mattermost when synchronization is performed. Accounts removed from or disabled in the AD/LDAP server have their Mattermost accounts set to "Inactive" and have their account sessions revoked. Mattermost performs synchronization on the interval entered. For example, if 60 is entered, Mattermost synchronizes every 60 minutes.'
                         />
                     }
                     value={this.state.syncIntervalMinutes}
@@ -431,13 +450,53 @@ export default class LdapSettings extends AdminSettings {
                     onChange={this.handleChange}
                     disabled={!this.state.enable}
                 />
-                <SyncNowButton
+                <RequestButton
+                    requestAction={ldapSyncNow}
+                    helpText={
+                        <FormattedMessage
+                            id='admin.ldap.syncNowHelpText'
+                            defaultMessage='Initiates an AD/LDAP synchronization immediately.'
+                        />
+                    }
+                    buttonText={
+                        <FormattedMessage
+                            id='admin.ldap.sync_button'
+                            defaultMessage='AD/LDAP Synchronize Now'
+                        />
+                    }
                     disabled={!this.state.enable}
+                    showSuccessMessage={false}
+                    errorMessage={{
+                        id: 'admin.ldap.syncFailure',
+                        defaultMessage: 'Sync Failure: {error}'
+                    }}
+                    includeDetailedError={true}
                 />
-                <LdapTestButton
+                <RequestButton
+                    requestAction={ldapTest}
+                    helpText={
+                        <FormattedMessage
+                            id='admin.ldap.testHelpText'
+                            defaultMessage='Tests if the Mattermost server can connect to the AD/LDAP server specified. See log file for more detailed error messages.'
+                        />
+                    }
+                    buttonText={
+                        <FormattedMessage
+                            id='admin.ldap.ldap_test_button'
+                            defaultMessage='AD/LDAP Test'
+                        />
+                    }
                     disabled={!this.state.enable}
-                    submitFunction={this.doSubmit}
                     saveNeeded={this.state.saveNeeded}
+                    saveConfigAction={this.doSubmit}
+                    errorMessage={{
+                        id: 'admin.ldap.testFailure',
+                        defaultMessage: 'AD/LDAP Test Failure: {error}'
+                    }}
+                    successMessage={{
+                        id: 'admin.ldap.testSuccess',
+                        defaultMessage: 'AD/LDAP Test Successful'
+                    }}
                 />
             </SettingsGroup>
         );

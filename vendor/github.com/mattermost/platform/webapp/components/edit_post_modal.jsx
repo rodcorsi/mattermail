@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import Textbox from './textbox.jsx';
@@ -9,11 +9,9 @@ import MessageHistoryStore from 'stores/message_history_store.jsx';
 import PreferenceStore from 'stores/preference_store.jsx';
 
 import * as GlobalActions from 'actions/global_actions.jsx';
-import {loadPosts} from 'actions/post_actions.jsx';
+import {updatePost} from 'actions/post_actions.jsx';
 
-import Client from 'client/web_client.jsx';
 import * as UserAgent from 'utils/user_agent.jsx';
-import * as AsyncClient from 'utils/async_client.jsx';
 import * as Utils from 'utils/utils.jsx';
 import Constants from 'utils/constants.jsx';
 const KeyCodes = Constants.KeyCodes;
@@ -22,6 +20,11 @@ import $ from 'jquery';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {FormattedMessage} from 'react-intl';
+
+import store from 'stores/redux_store.jsx';
+const getState = store.getState;
+
+import * as Selectors from 'mattermost-redux/selectors/entities/posts';
 
 export default class EditPostModal extends React.Component {
     constructor(props) {
@@ -38,6 +41,7 @@ export default class EditPostModal extends React.Component {
         this.onModalShown = this.onModalShown.bind(this);
         this.onModalHide = this.onModalHide.bind(this);
         this.onModalKeyDown = this.onModalKeyDown.bind(this);
+        this.handlePostError = this.handlePostError.bind(this);
 
         this.state = {
             editText: '',
@@ -47,15 +51,33 @@ export default class EditPostModal extends React.Component {
             channel_id: '',
             comments: 0,
             refocusId: '',
-            ctrlSend: PreferenceStore.getBool(Constants.Preferences.CATEGORY_ADVANCED_SETTINGS, 'send_on_ctrl_enter')
+            ctrlSend: PreferenceStore.getBool(Constants.Preferences.CATEGORY_ADVANCED_SETTINGS, 'send_on_ctrl_enter'),
+            postError: ''
         };
     }
 
-    handleEdit() {
-        var updatedPost = {};
-        updatedPost.message = this.state.editText.trim();
+    handlePostError(postError) {
+        if (this.state.postError !== postError) {
+            this.setState({postError});
+        }
+    }
 
-        if (updatedPost.message === this.state.originalText.trim()) {
+    handleEdit() {
+        const updatedPost = {
+            message: this.state.editText,
+            id: this.state.post_id,
+            channel_id: this.state.channel_id
+        };
+
+        if (this.state.postError) {
+            this.setState({errorClass: 'animation--highlight'});
+            setTimeout(() => {
+                this.setState({errorClass: null});
+            }, Constants.ANIMATION_TIMEOUT);
+            return;
+        }
+
+        if (updatedPost.message === this.state.originalText) {
             // no changes so just close the modal
             $('#edit_post').modal('hide');
             return;
@@ -63,26 +85,19 @@ export default class EditPostModal extends React.Component {
 
         MessageHistoryStore.storeMessageInHistory(updatedPost.message);
 
-        if (updatedPost.message.length === 0) {
+        if (updatedPost.message.trim().length === 0) {
             var tempState = this.state;
             Reflect.deleteProperty(tempState, 'editText');
             BrowserStore.setItem('edit_state_transfer', tempState);
             $('#edit_post').modal('hide');
-            GlobalActions.showDeletePostModal(PostStore.getPost(this.state.channel_id, this.state.post_id), this.state.comments);
+            GlobalActions.showDeletePostModal(Selectors.getPost(getState(), this.state.post_id), this.state.comments);
             return;
         }
 
-        updatedPost.id = this.state.post_id;
-        updatedPost.channel_id = this.state.channel_id;
-
-        Client.updatePost(
+        updatePost(
             updatedPost,
             () => {
-                loadPosts(updatedPost.channel_id);
                 window.scrollTo(0, 0);
-            },
-            (err) => {
-                AsyncClient.dispatchError(err, 'updatePost');
             }
         );
 
@@ -90,8 +105,9 @@ export default class EditPostModal extends React.Component {
     }
 
     handleChange(e) {
+        const message = e.target.value;
         this.setState({
-            editText: e.target.value
+            editText: message
         });
     }
 
@@ -108,6 +124,17 @@ export default class EditPostModal extends React.Component {
     }
 
     handleEditPostEvent(options) {
+        const post = Selectors.getPost(getState(), options.postId);
+        if (global.window.mm_license.IsLicensed === 'true') {
+            if (global.window.mm_config.AllowEditPost === Constants.ALLOW_EDIT_POST_NEVER) {
+                return;
+            }
+            if (global.window.mm_config.AllowEditPost === Constants.ALLOW_EDIT_POST_TIME_LIMIT) {
+                if ((post.create_at + (global.window.mm_config.PostEditTimeLimit * 1000)) < Utils.getTimestamp()) {
+                    return;
+                }
+            }
+        }
         this.setState({
             editText: options.message || '',
             originalText: options.message || '',
@@ -161,9 +188,14 @@ export default class EditPostModal extends React.Component {
     }
 
     onModalHide() {
+        this.refs.editbox.hidePreview();
+
         if (this.state.refocusId !== '') {
             setTimeout(() => {
-                $(this.state.refocusId).get(0).focus();
+                const element = $(this.state.refocusId).get(0);
+                if (element) {
+                    element.focus();
+                }
             });
         }
     }
@@ -195,9 +227,11 @@ export default class EditPostModal extends React.Component {
     }
 
     render() {
-        var error = (<div className='form-group'><br/></div>);
-        if (this.state.error) {
-            error = (<div className='form-group has-error'><br/><label className='control-label'>{this.state.error}</label></div>);
+        const errorBoxClass = 'edit-post-footer' + (this.state.postError ? ' has-error' : '');
+        let postError = null;
+        if (this.state.postError) {
+            const postErrorClass = 'post-error' + (this.state.errorClass ? (' ' + this.state.errorClass) : '');
+            postError = (<label className={postErrorClass}>{this.state.postError}</label>);
         }
 
         return (
@@ -235,14 +269,18 @@ export default class EditPostModal extends React.Component {
                                 onChange={this.handleChange}
                                 onKeyPress={this.handleEditKeyPress}
                                 onKeyDown={this.handleKeyDown}
+                                handlePostError={this.handlePostError}
                                 value={this.state.editText}
                                 channelId={this.state.channel_id}
                                 createMessage={Utils.localizeMessage('edit_post.editPost', 'Edit the post...')}
                                 supportsCommands={false}
+                                suggestionListStyle='bottom'
                                 id='edit_textbox'
                                 ref='editbox'
                             />
-                            {error}
+                            <div className={errorBoxClass}>
+                                {postError}
+                            </div>
                         </div>
                         <div className='modal-footer'>
                             <button

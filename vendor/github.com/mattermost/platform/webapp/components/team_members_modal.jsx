@@ -1,12 +1,14 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-import MemberListTeam from './member_list_team.jsx';
+import MemberListTeam from 'components/member_list_team';
 import TeamStore from 'stores/team_store.jsx';
 
 import {FormattedMessage} from 'react-intl';
 
 import {Modal} from 'react-bootstrap';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -25,6 +27,9 @@ export default class TeamMembersModal extends React.Component {
 
     componentDidMount() {
         TeamStore.addChangeListener(this.teamChanged);
+        if (this.props.onLoad) {
+            this.props.onLoad();
+        }
     }
 
     componentWillUnmount() {
@@ -68,24 +73,13 @@ export default class TeamMembersModal extends React.Component {
                         isAdmin={this.props.isAdmin}
                     />
                 </Modal.Body>
-                <Modal.Footer>
-                    <button
-                        type='button'
-                        className='btn btn-default'
-                        onClick={this.onHide}
-                    >
-                        <FormattedMessage
-                            id='team_member_modal.close'
-                            defaultMessage='Close'
-                        />
-                    </button>
-                </Modal.Footer>
             </Modal>
         );
     }
 }
 
 TeamMembersModal.propTypes = {
-    onHide: React.PropTypes.func.isRequired,
-    isAdmin: React.PropTypes.bool.isRequired
+    onHide: PropTypes.func.isRequired,
+    isAdmin: PropTypes.bool.isRequired,
+    onLoad: PropTypes.func
 };

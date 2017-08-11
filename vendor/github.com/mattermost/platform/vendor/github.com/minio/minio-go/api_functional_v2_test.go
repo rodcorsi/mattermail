@@ -36,16 +36,19 @@ func TestMakeBucketErrorV2(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping functional tests for short runs")
 	}
+	if os.Getenv("S3_ADDRESS") != "s3.amazonaws.com" {
+		t.Skip("skipping region functional tests for non s3 runs")
+	}
 
 	// Seed random based on current time.
 	rand.Seed(time.Now().Unix())
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -88,10 +91,10 @@ func TestGetObjectClosedTwiceV2(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -168,10 +171,10 @@ func TestRemovePartiallyUploadedV2(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -198,14 +201,14 @@ func TestRemovePartiallyUploadedV2(t *testing.T) {
 	go func() {
 		i := 0
 		for i < 25 {
-			_, err = io.CopyN(writer, r, 128*1024)
-			if err != nil {
-				t.Fatal("Error:", err, bucketName)
+			_, cerr := io.CopyN(writer, r, 128*1024)
+			if cerr != nil {
+				t.Fatal("Error:", cerr, bucketName)
 			}
 			i++
 			r.Seek(0, 0)
 		}
-		writer.CloseWithError(errors.New("Proactively closed to be verified later."))
+		writer.CloseWithError(errors.New("proactively closed to be verified later"))
 	}()
 
 	objectName := bucketName + "-resumable"
@@ -213,7 +216,7 @@ func TestRemovePartiallyUploadedV2(t *testing.T) {
 	if err == nil {
 		t.Fatal("Error: PutObject should fail.")
 	}
-	if err.Error() != "Proactively closed to be verified later." {
+	if err.Error() != "proactively closed to be verified later" {
 		t.Fatal("Error:", err)
 	}
 	err = c.RemoveIncompleteUpload(bucketName, objectName)
@@ -238,10 +241,10 @@ func TestResumablePutObjectV2(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -350,10 +353,10 @@ func TestFPutObjectV2(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -499,10 +502,10 @@ func TestResumableFPutObjectV2(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -571,16 +574,19 @@ func TestMakeBucketRegionsV2(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping functional tests for short runs")
 	}
+	if os.Getenv("S3_ADDRESS") != "s3.amazonaws.com" {
+		t.Skip("skipping region functional tests for non s3 runs")
+	}
 
 	// Seed random based on current time.
 	rand.Seed(time.Now().Unix())
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -628,10 +634,10 @@ func TestGetObjectReadSeekFunctionalV2(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -761,10 +767,10 @@ func TestGetObjectReadAtFunctionalV2(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -897,10 +903,10 @@ func TestCopyObjectV2(t *testing.T) {
 
 	// Instantiate new minio client object
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -943,7 +949,7 @@ func TestCopyObjectV2(t *testing.T) {
 	}
 
 	// Set copy conditions.
-	copyConds := NewCopyConditions()
+	copyConds := CopyConditions{}
 	err = copyConds.SetModified(time.Date(2014, time.April, 0, 0, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -1014,10 +1020,10 @@ func TestFunctionalV2(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 
 	c, err := NewV2(
-		"s3.amazonaws.com",
+		os.Getenv("S3_ADDRESS"),
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		true,
+		mustParseBool(os.Getenv("S3_SECURE")),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)

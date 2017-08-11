@@ -1,9 +1,10 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import UserStore from 'stores/user_store.jsx';
 import PreferenceStore from 'stores/preference_store.jsx';
-import * as AsyncClient from 'utils/async_client.jsx';
+import {savePreference} from 'actions/user_actions.jsx';
+import {trackEvent} from 'actions/diagnostics_actions.jsx';
 
 import Constants from 'utils/constants.jsx';
 
@@ -13,6 +14,8 @@ const Preferences = Constants.Preferences;
 import * as Utils from 'utils/utils.jsx';
 
 import {Overlay} from 'react-bootstrap';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -25,6 +28,7 @@ export default class TutorialTip extends React.Component {
 
         this.handleNext = this.handleNext.bind(this);
         this.toggle = this.toggle.bind(this);
+        this.skipTutorial = this.skipTutorial.bind(this);
 
         this.state = {currentScreen: 0, show: false};
     }
@@ -35,7 +39,7 @@ export default class TutorialTip extends React.Component {
         if (!show && this.state.currentScreen >= this.props.screens.length - 1) {
             const step = PreferenceStore.getInt(Preferences.TUTORIAL_STEP, UserStore.getCurrentId(), 0);
 
-            AsyncClient.savePreference(
+            savePreference(
                 Preferences.TUTORIAL_STEP,
                 UserStore.getCurrentId(),
                 (step + 1).toString()
@@ -46,6 +50,22 @@ export default class TutorialTip extends React.Component {
         if (this.state.currentScreen < this.props.screens.length - 1) {
             this.setState({currentScreen: this.state.currentScreen + 1});
             return;
+        }
+
+        if (this.props.diagnosticsTag) {
+            let tag = this.props.diagnosticsTag;
+
+            if (this.props.screens.length > 1) {
+                tag += '_' + (this.state.currentScreen + 1).toString();
+            }
+
+            if (this.state.currentScreen === this.props.screens.length - 1) {
+                tag += '_okay';
+            } else {
+                tag += '_next';
+            }
+
+            trackEvent('tutorial', tag);
         }
 
         this.closeRightSidebar();
@@ -62,7 +82,16 @@ export default class TutorialTip extends React.Component {
     skipTutorial(e) {
         e.preventDefault();
 
-        AsyncClient.savePreference(
+        if (this.props.diagnosticsTag) {
+            let tag = this.props.diagnosticsTag;
+            if (this.props.screens.length > 1) {
+                tag += '_' + this.state.currentScreen;
+            }
+            tag += '_skip';
+            trackEvent('tutorial', tag);
+        }
+
+        savePreference(
             Preferences.TUTORIAL_STEP,
             UserStore.getCurrentId(),
             '999'
@@ -109,7 +138,10 @@ export default class TutorialTip extends React.Component {
         }
 
         return (
-            <div className={'tip-div ' + this.props.overlayClass}>
+            <div
+                className={'tip-div ' + this.props.overlayClass}
+                onClick={this.toggle}
+            >
                 <img
                     className='tip-button'
                     src={tutorialGifImage}
@@ -172,9 +204,10 @@ TutorialTip.defaultProps = {
 };
 
 TutorialTip.propTypes = {
-    screens: React.PropTypes.array.isRequired,
-    placement: React.PropTypes.string.isRequired,
-    overlayClass: React.PropTypes.string
+    screens: PropTypes.array.isRequired,
+    placement: PropTypes.string.isRequired,
+    overlayClass: PropTypes.string,
+    diagnosticsTag: PropTypes.string
 };
 
 export function createMenuTip(toggleFunc, onBottom) {
@@ -207,6 +240,7 @@ export function createMenuTip(toggleFunc, onBottom) {
                 placement={placement}
                 screens={screens}
                 overlayClass={'tip-overlay--header--' + arrow}
+                diagnosticsTag='tutorial_tip_3_main_menu'
             />
         </div>
     );

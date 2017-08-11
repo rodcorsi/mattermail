@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package store
@@ -10,10 +10,10 @@ import (
 )
 
 type SqlSessionStore struct {
-	*SqlStore
+	SqlStore
 }
 
-func NewSqlSessionStore(sqlStore *SqlStore) SessionStore {
+func NewSqlSessionStore(sqlStore SqlStore) SessionStore {
 	us := &SqlSessionStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

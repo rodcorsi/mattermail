@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package api
@@ -7,17 +7,16 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/mattermost/platform/app"
 	"github.com/mattermost/platform/model"
 )
 
-var disableCliTests bool = false
-
 func TestCliVersion(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -version`)
+	cmd := exec.Command("bash", "-c", `go run ../cmd/platform/*.go version`)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
@@ -26,17 +25,17 @@ func TestCliVersion(t *testing.T) {
 }
 
 func TestCliCreateTeam(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitSystemAdmin()
 
 	id := model.NewId()
-	email := "success+" + id + "@simulator.amazonses.com"
 	name := "name" + id
+	displayName := "Name " + id
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -create_team -team_name="`+name+`" -email="`+email+`"`)
+	cmd := exec.Command("bash", "-c", `go run ../cmd/platform/*.go team create --name "`+name+`" --display_name "`+displayName+`"`)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
@@ -51,8 +50,8 @@ func TestCliCreateTeam(t *testing.T) {
 }
 
 func TestCliCreateUserWithTeam(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitSystemAdmin()
@@ -61,11 +60,18 @@ func TestCliCreateUserWithTeam(t *testing.T) {
 	email := "success+" + id + "@simulator.amazonses.com"
 	username := "name" + id
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -create_user -team_name="`+th.SystemAdminTeam.Name+`" -email="`+email+`" -password="mypassword1" -username="`+username+`"`)
+	cmd := exec.Command("bash", "-c", `go run ../cmd/platform/*.go user create --email "`+email+`" --password "mypassword1" --username "`+username+`"`)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
 		t.Fatal(err)
+	}
+
+	cmd2 := exec.Command("bash", "-c", `go run ../cmd/platform/*.go team add `+th.SystemAdminTeam.Id+" "+email)
+	output2, err2 := cmd2.CombinedOutput()
+	if err2 != nil {
+		t.Log(string(output2))
+		t.Fatal(err2)
 	}
 
 	profiles := th.SystemAdminClient.Must(th.SystemAdminClient.GetProfilesInTeam(th.SystemAdminTeam.Id, 0, 1000, "")).Data.(map[string]*model.User)
@@ -85,8 +91,8 @@ func TestCliCreateUserWithTeam(t *testing.T) {
 }
 
 func TestCliCreateUserWithoutTeam(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	Setup()
@@ -94,14 +100,14 @@ func TestCliCreateUserWithoutTeam(t *testing.T) {
 	email := "success+" + id + "@simulator.amazonses.com"
 	username := "name" + id
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -create_user -email="`+email+`" -password="mypassword1" -username="`+username+`"`)
+	cmd := exec.Command("bash", "-c", `go run ../cmd/platform/*.go user create --email "`+email+`" --password "mypassword1" --username "`+username+`"`)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
 		t.Fatal(err)
 	}
 
-	if result := <-Srv.Store.User().GetByEmail(email); result.Err != nil {
+	if result := <-app.Srv.Store.User().GetByEmail(email); result.Err != nil {
 		t.Fatal()
 	} else {
 		user := result.Data.(*model.User)
@@ -112,32 +118,32 @@ func TestCliCreateUserWithoutTeam(t *testing.T) {
 }
 
 func TestCliAssignRole(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -assign_role -email="`+th.BasicUser.Email+`" -role="system_user system_admin"`)
+	cmd := exec.Command("bash", "-c", "go run ../cmd/platform/*.go roles system_admin "+th.BasicUser.Email)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
 		t.Fatal(err)
 	}
 
-	if result := <-Srv.Store.User().GetByEmail(th.BasicUser.Email); result.Err != nil {
+	if result := <-app.Srv.Store.User().GetByEmail(th.BasicUser.Email); result.Err != nil {
 		t.Fatal()
 	} else {
 		user := result.Data.(*model.User)
-		if user.Roles != "system_user system_admin" {
+		if user.Roles != "system_admin system_user" {
 			t.Fatal()
 		}
 	}
 }
 
 func TestCliJoinChannel(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
@@ -145,7 +151,7 @@ func TestCliJoinChannel(t *testing.T) {
 
 	// These test cannot run since this feature requires an enteprise license
 
-	// cmd := exec.Command("bash", "-c", `go run ../mattermost.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
+	// cmd := exec.Command("bash", "-c", `go run ../*.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
 	// output, err := cmd.CombinedOutput()
 	// if err != nil {
 	// 	t.Log(string(output))
@@ -153,7 +159,7 @@ func TestCliJoinChannel(t *testing.T) {
 	// }
 
 	// // Joining twice should succeed
-	// cmd1 := exec.Command("bash", "-c", `go run ../mattermost.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
+	// cmd1 := exec.Command("bash", "-c", `go run ../*.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
 	// output1, err1 := cmd1.CombinedOutput()
 	// if err1 != nil {
 	// 	t.Log(string(output1))
@@ -161,7 +167,7 @@ func TestCliJoinChannel(t *testing.T) {
 	// }
 
 	// should fail because channel does not exist
-	cmd2 := exec.Command("bash", "-c", `go run ../mattermost.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`asdf" -email="`+th.BasicUser2.Email+`"`)
+	cmd2 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel add "+th.BasicTeam.Name+":"+channel.Name+"asdf "+th.BasicUser2.Email)
 	output2, err2 := cmd2.CombinedOutput()
 	if err2 == nil {
 		t.Log(string(output2))
@@ -169,7 +175,7 @@ func TestCliJoinChannel(t *testing.T) {
 	}
 
 	// should fail because channel does not have license
-	cmd3 := exec.Command("bash", "-c", `go run ../mattermost.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
+	cmd3 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel add "+th.BasicTeam.Name+":"+channel.Name+" "+th.BasicUser2.Email)
 	output3, err3 := cmd3.CombinedOutput()
 	if err3 == nil {
 		t.Log(string(output3))
@@ -178,8 +184,8 @@ func TestCliJoinChannel(t *testing.T) {
 }
 
 func TestCliRemoveChannel(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
@@ -187,14 +193,14 @@ func TestCliRemoveChannel(t *testing.T) {
 
 	// These test cannot run since this feature requires an enteprise license
 
-	// cmd := exec.Command("bash", "-c", `go run ../mattermost.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
+	// cmd := exec.Command("bash", "-c", `go run ../*.go -join_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
 	// output, err := cmd.CombinedOutput()
 	// if err != nil {
 	// 	t.Log(string(output))
 	// 	t.Fatal(err)
 	// }
 
-	// cmd0 := exec.Command("bash", "-c", `go run ../mattermost.go -leave_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
+	// cmd0 := exec.Command("bash", "-c", `go run ../*.go -leave_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
 	// output0, err0 := cmd0.CombinedOutput()
 	// if err0 != nil {
 	// 	t.Log(string(output0))
@@ -202,7 +208,7 @@ func TestCliRemoveChannel(t *testing.T) {
 	// }
 
 	// // Leaving twice should succeed
-	// cmd1 := exec.Command("bash", "-c", `go run ../mattermost.go -leave_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
+	// cmd1 := exec.Command("bash", "-c", `go run ../*.go -leave_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
 	// output1, err1 := cmd1.CombinedOutput()
 	// if err1 != nil {
 	// 	t.Log(string(output1))
@@ -210,7 +216,7 @@ func TestCliRemoveChannel(t *testing.T) {
 	// }
 
 	// cannot leave town-square
-	cmd1a := exec.Command("bash", "-c", `go run ../mattermost.go -leave_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="town-square" -email="`+th.BasicUser2.Email+`"`)
+	cmd1a := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel remove "+th.BasicTeam.Name+":town-square "+th.BasicUser2.Email)
 	output1a, err1a := cmd1a.CombinedOutput()
 	if err1a == nil {
 		t.Log(string(output1a))
@@ -218,7 +224,7 @@ func TestCliRemoveChannel(t *testing.T) {
 	}
 
 	// should fail because channel does not exist
-	cmd2 := exec.Command("bash", "-c", `go run ../mattermost.go -leave_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`asdf" -email="`+th.BasicUser2.Email+`"`)
+	cmd2 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel remove "+th.BasicTeam.Name+":doesnotexist "+th.BasicUser2.Email)
 	output2, err2 := cmd2.CombinedOutput()
 	if err2 == nil {
 		t.Log(string(output2))
@@ -226,7 +232,7 @@ func TestCliRemoveChannel(t *testing.T) {
 	}
 
 	// should fail because channel does not have license
-	cmd3 := exec.Command("bash", "-c", `go run ../mattermost.go -leave_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`" -email="`+th.BasicUser2.Email+`"`)
+	cmd3 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel remove "+th.BasicTeam.Name+":"+channel.Name+" "+th.BasicUser2.Email)
 	output3, err3 := cmd3.CombinedOutput()
 	if err3 == nil {
 		t.Log(string(output3))
@@ -235,8 +241,8 @@ func TestCliRemoveChannel(t *testing.T) {
 }
 
 func TestCliListChannels(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
@@ -245,7 +251,7 @@ func TestCliListChannels(t *testing.T) {
 
 	// These test cannot run since this feature requires an enteprise license
 
-	// cmd := exec.Command("bash", "-c", `go run ../mattermost.go -list_channels -team_name="`+th.BasicTeam.Name+`"`)
+	// cmd := exec.Command("bash", "-c", `go run ../*.go -list_channels -team_name="`+th.BasicTeam.Name+`"`)
 	// output, err := cmd.CombinedOutput()
 	// if err != nil {
 	// 	t.Log(string(output))
@@ -261,7 +267,7 @@ func TestCliListChannels(t *testing.T) {
 	// }
 
 	// should fail because channel does not have license
-	cmd3 := exec.Command("bash", "-c", `go run ../mattermost.go -list_channels -team_name="`+th.BasicTeam.Name+``)
+	cmd3 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel list "+th.BasicTeam.Name)
 	output3, err3 := cmd3.CombinedOutput()
 	if err3 == nil {
 		t.Log(string(output3))
@@ -270,8 +276,8 @@ func TestCliListChannels(t *testing.T) {
 }
 
 func TestCliRestoreChannel(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
@@ -280,7 +286,7 @@ func TestCliRestoreChannel(t *testing.T) {
 
 	// These test cannot run since this feature requires an enteprise license
 
-	// cmd := exec.Command("bash", "-c", `go run ../mattermost.go -restore_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`"`)
+	// cmd := exec.Command("bash", "-c", `go run ../*.go -restore_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`"`)
 	// output, err := cmd.CombinedOutput()
 	// if err != nil {
 	// 	t.Log(string(output))
@@ -288,7 +294,7 @@ func TestCliRestoreChannel(t *testing.T) {
 	// }
 
 	// // restoring twice should succeed
-	// cmd1 := exec.Command("bash", "-c", `go run ../mattermost.go -restore_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`"`)
+	// cmd1 := exec.Command("bash", "-c", `go run ../*.go -restore_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`"`)
 	// output1, err1 := cmd1.CombinedOutput()
 	// if err1 != nil {
 	// 	t.Log(string(output1))
@@ -296,7 +302,7 @@ func TestCliRestoreChannel(t *testing.T) {
 	// }
 
 	// should fail because channel does not have license
-	cmd3 := exec.Command("bash", "-c", `go run ../mattermost.go -restore_channel -team_name="`+th.BasicTeam.Name+`" -channel_name="`+channel.Name+`"`)
+	cmd3 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel restore "+th.BasicTeam.Name+":"+channel.Name)
 	output3, err3 := cmd3.CombinedOutput()
 	if err3 == nil {
 		t.Log(string(output3))
@@ -305,13 +311,13 @@ func TestCliRestoreChannel(t *testing.T) {
 }
 
 func TestCliJoinTeam(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitSystemAdmin().InitBasic()
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -join_team -team_name="`+th.SystemAdminTeam.Name+`" -email="`+th.BasicUser.Email+`"`)
+	cmd := exec.Command("bash", "-c", "go run ../cmd/platform/*.go team add "+th.SystemAdminTeam.Name+" "+th.BasicUser.Email)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
@@ -335,13 +341,13 @@ func TestCliJoinTeam(t *testing.T) {
 }
 
 func TestCliLeaveTeam(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -leave_team -team_name="`+th.BasicTeam.Name+`" -email="`+th.BasicUser.Email+`"`)
+	cmd := exec.Command("bash", "-c", "go run ../cmd/platform/*.go team remove "+th.BasicTeam.Name+" "+th.BasicUser.Email)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
@@ -363,7 +369,7 @@ func TestCliLeaveTeam(t *testing.T) {
 		t.Fatal("profile should not be on team")
 	}
 
-	if result := <-Srv.Store.Team().GetTeamsByUserId(th.BasicUser.Id); result.Err != nil {
+	if result := <-app.Srv.Store.Team().GetTeamsByUserId(th.BasicUser.Id); result.Err != nil {
 		teamMembers := result.Data.([]*model.TeamMember)
 		if len(teamMembers) > 0 {
 			t.Fatal("Shouldn't be in team")
@@ -372,13 +378,13 @@ func TestCliLeaveTeam(t *testing.T) {
 }
 
 func TestCliResetPassword(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
 
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -reset_password -email="`+th.BasicUser.Email+`" -password="password2"`)
+	cmd := exec.Command("bash", "-c", "go run ../cmd/platform/*.go user password "+th.BasicUser.Email+" password2")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
@@ -391,8 +397,8 @@ func TestCliResetPassword(t *testing.T) {
 }
 
 func TestCliCreateChannel(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
@@ -401,7 +407,7 @@ func TestCliCreateChannel(t *testing.T) {
 	name := "name" + id
 
 	// should fail because channel does not have license
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -create_channel -email="`+th.BasicUser.Email+`" -team_name="`+th.BasicTeam.Name+`" -channel_type="O" -channel_name="`+name+`"`)
+	cmd := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel create --display_name "+name+" --team "+th.BasicTeam.Name+" --name "+name)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
 		t.Log(string(output))
@@ -410,7 +416,7 @@ func TestCliCreateChannel(t *testing.T) {
 
 	// should fail because channel does not have license
 	name = name + "-private"
-	cmd2 := exec.Command("bash", "-c", `go run ../mattermost.go -create_channel -email="`+th.BasicUser.Email+`" -team_name="`+th.BasicTeam.Name+`" -channel_type="P" -channel_name="`+name+`"`)
+	cmd2 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go channel create --display_name="+name+" --team "+th.BasicTeam.Name+" --private --name "+name)
 	output2, err2 := cmd2.CombinedOutput()
 	if err2 == nil {
 		t.Log(string(output2))
@@ -419,14 +425,14 @@ func TestCliCreateChannel(t *testing.T) {
 }
 
 func TestCliMakeUserActiveAndInactive(t *testing.T) {
-	if disableCliTests {
-		return
+	if testing.Short() {
+		t.SkipNow()
 	}
 
 	th := Setup().InitBasic()
 
 	// first inactivate the user
-	cmd := exec.Command("bash", "-c", `go run ../mattermost.go -activate_user -inactive -email="`+th.BasicUser.Email+`"`)
+	cmd := exec.Command("bash", "-c", "go run ../cmd/platform/*.go user deactivate "+th.BasicUser.Email)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Log(string(output))
@@ -434,7 +440,7 @@ func TestCliMakeUserActiveAndInactive(t *testing.T) {
 	}
 
 	// activate the inactive user
-	cmd2 := exec.Command("bash", "-c", `go run ../mattermost.go -activate_user -email="`+th.BasicUser.Email+`"`)
+	cmd2 := exec.Command("bash", "-c", "go run ../cmd/platform/*.go user activate "+th.BasicUser.Email)
 	output2, err2 := cmd2.CombinedOutput()
 	if err2 != nil {
 		t.Log(string(output2))

@@ -1,4 +1,6 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -16,8 +18,8 @@ import * as Utils from 'utils/utils.jsx';
 export default class Integrations extends React.Component {
     static get propTypes() {
         return {
-            team: React.propTypes.object.isRequired,
-            user: React.PropTypes.object.isRequired
+            team: PropTypes.object,
+            user: PropTypes.object
         };
     }
 
@@ -142,6 +144,26 @@ export default class Integrations extends React.Component {
                             defaultMessage='Integrations'
                         />
                     </h1>
+                </div>
+                <div className='backstage-list__help'>
+                    <FormattedMessage
+                        id='integrations.help'
+                        defaultMessage='Visit the {appDirectory} to find self-hosted, third-party apps and integrations for Mattermost.'
+                        values={{
+                            appDirectory: (
+                                <a
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    href='https://about.mattermost.com/default-app-directory/'
+                                >
+                                    <FormattedMessage
+                                        id='integrations.help.appDirectory'
+                                        defaultMessage='App Directory'
+                                    />
+                                </a>
+                            )
+                        }}
+                    />
                 </div>
                 <div>
                     {options}

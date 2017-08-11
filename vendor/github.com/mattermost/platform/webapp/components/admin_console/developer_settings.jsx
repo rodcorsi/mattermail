@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -33,12 +33,10 @@ export default class DeveloperSettings extends AdminSettings {
 
     renderTitle() {
         return (
-            <h3>
-                <FormattedMessage
-                    id='admin.developer.title'
-                    defaultMessage='Developer Settings'
-                />
-            </h3>
+            <FormattedMessage
+                id='admin.developer.title'
+                defaultMessage='Developer Settings'
+            />
         );
     }
 
@@ -56,7 +54,7 @@ export default class DeveloperSettings extends AdminSettings {
                     helpText={
                         <FormattedMessage
                             id='admin.service.testingDescription'
-                            defaultMessage='When true, /loadtest slash command is enabled to load test accounts, data and text formatting. Changing this requires a server restart before taking effect.'
+                            defaultMessage='When true, /test slash command is enabled to load test accounts, data and text formatting. Changing this requires a server restart before taking effect.'
                         />
                     }
                     value={this.state.enableTesting}
@@ -73,7 +71,7 @@ export default class DeveloperSettings extends AdminSettings {
                     helpText={
                         <FormattedMessage
                             id='admin.service.developerDesc'
-                            defaultMessage='When true, Javascript errors are shown in a red bar at the top of the user interface. Not recommended for use in production. '
+                            defaultMessage='When true, JavaScript errors are shown in a purple bar at the top of the user interface. Not recommended for use in production. '
                         />
                     }
                     value={this.state.enableDeveloper}

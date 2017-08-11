@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import $ from 'jquery';
@@ -7,11 +7,11 @@ import SettingItemMax from '../setting_item_max.jsx';
 import ManageLanguages from './manage_languages.jsx';
 import ThemeSetting from './user_settings_theme.jsx';
 
-import * as AsyncClient from 'utils/async_client.jsx';
 import PreferenceStore from 'stores/preference_store.jsx';
 import UserStore from 'stores/user_store.jsx';
 import * as Utils from 'utils/utils.jsx';
 import * as I18n from 'i18n/i18n.jsx';
+import {savePreferences} from 'actions/user_actions.jsx';
 
 import Constants from 'utils/constants.jsx';
 const Preferences = Constants.Preferences;
@@ -21,8 +21,6 @@ import {FormattedMessage} from 'react-intl';
 function getDisplayStateFromStores() {
     return {
         militaryTime: PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, 'use_military_time', 'false'),
-        nameFormat: PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, 'name_format', 'username'),
-        selectedFont: PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, 'selected_font', Constants.DEFAULT_FONT),
         channelDisplayMode: PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, Preferences.CHANNEL_DISPLAY_MODE, Preferences.CHANNEL_DISPLAY_MODE_DEFAULT),
         messageDisplay: PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, Preferences.MESSAGE_DISPLAY, Preferences.MESSAGE_DISPLAY_DEFAULT),
         collapseDisplay: PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, Preferences.COLLAPSE_DISPLAY, Preferences.COLLAPSE_DISPLAY_DEFAULT)
@@ -30,6 +28,7 @@ function getDisplayStateFromStores() {
 }
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
 export default class UserSettingsDisplay extends React.Component {
     constructor(props) {
@@ -37,17 +36,11 @@ export default class UserSettingsDisplay extends React.Component {
 
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleClockRadio = this.handleClockRadio.bind(this);
-        this.handleNameRadio = this.handleNameRadio.bind(this);
-        this.handleFont = this.handleFont.bind(this);
         this.updateSection = this.updateSection.bind(this);
         this.updateState = this.updateState.bind(this);
         this.createCollapseSection = this.createCollapseSection.bind(this);
 
         this.state = getDisplayStateFromStores();
-    }
-
-    componentWillUnmount() {
-        Utils.applyFont(PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, 'selected_font', Constants.DEFAULT_FONT));
     }
 
     handleSubmit() {
@@ -59,18 +52,7 @@ export default class UserSettingsDisplay extends React.Component {
             name: 'use_military_time',
             value: this.state.militaryTime
         };
-        const namePreference = {
-            user_id: userId,
-            category: Preferences.CATEGORY_DISPLAY_SETTINGS,
-            name: 'name_format',
-            value: this.state.nameFormat
-        };
-        const fontPreference = {
-            user_id: userId,
-            category: Preferences.CATEGORY_DISPLAY_SETTINGS,
-            name: 'selected_font',
-            value: this.state.selectedFont
-        };
+
         const channelDisplayModePreference = {
             user_id: userId,
             category: Preferences.CATEGORY_DISPLAY_SETTINGS,
@@ -90,12 +72,9 @@ export default class UserSettingsDisplay extends React.Component {
             value: this.state.collapseDisplay
         };
 
-        AsyncClient.savePreferences([timePreference, namePreference, fontPreference, channelDisplayModePreference, messageDisplayPreference, collapseDisplayPreference],
+        savePreferences([timePreference, channelDisplayModePreference, messageDisplayPreference, collapseDisplayPreference],
             () => {
                 this.updateSection('');
-            },
-            (err) => {
-                this.setState({serverError: err.message});
             }
         );
     }
@@ -104,21 +83,12 @@ export default class UserSettingsDisplay extends React.Component {
         this.setState({militaryTime});
     }
 
-    handleNameRadio(nameFormat) {
-        this.setState({nameFormat});
-    }
-
     handleChannelDisplayModeRadio(channelDisplayMode) {
         this.setState({channelDisplayMode});
     }
 
     handlemessageDisplayRadio(messageDisplay) {
         this.setState({messageDisplay});
-    }
-
-    handleFont(selectedFont) {
-        Utils.applyFont(selectedFont);
-        this.setState({selectedFont});
     }
 
     handleCollapseRadio(collapseDisplay) {
@@ -136,7 +106,6 @@ export default class UserSettingsDisplay extends React.Component {
     updateState() {
         const newState = getDisplayStateFromStores();
         if (!Utils.areObjectsEqual(newState, this.state)) {
-            this.handleFont(newState.selectedFont);
             this.setState(newState);
         }
     }
@@ -160,6 +129,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='collapseFormat'
                                 type='radio'
                                 name='collapseFormat'
                                 checked={collapseFormat[0]}
@@ -175,6 +145,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='collapseFormatOff'
                                 type='radio'
                                 name='collapseFormat'
                                 checked={collapseFormat[1]}
@@ -191,7 +162,7 @@ export default class UserSettingsDisplay extends React.Component {
                         <br/>
                         <FormattedMessage
                             id='user.settings.display.collapseDesc'
-                            defaultMessage='Expand links to show a preview of content, when available.'
+                            defaultMessage='Set whether previews of image links show as expanded or collapsed by default. This setting can also be controlled using the slash commands /expand and /collapse.'
                         />
                     </div>
                 </div>
@@ -202,7 +173,7 @@ export default class UserSettingsDisplay extends React.Component {
                     title={
                         <FormattedMessage
                             id='user.settings.display.collapseDisplay'
-                            defaultMessage='Link previews'
+                            defaultMessage='Default appearance of image link previews'
                         />
                     }
                     inputs={inputs}
@@ -218,14 +189,14 @@ export default class UserSettingsDisplay extends React.Component {
             describe = (
                 <FormattedMessage
                     id='user.settings.display.collapseOn'
-                    defaultMessage='On'
+                    defaultMessage='Expanded'
                 />
             );
         } else {
             describe = (
                 <FormattedMessage
                     id='user.settings.display.collapseOff'
-                    defaultMessage='Off'
+                    defaultMessage='Collapsed'
                 />
             );
         }
@@ -239,7 +210,7 @@ export default class UserSettingsDisplay extends React.Component {
                 title={
                     <FormattedMessage
                         id='user.settings.display.collapseDisplay'
-                        defaultMessage='Link previews'
+                        defaultMessage='Default appearance of image link previews'
                     />
                 }
                 describe={describe}
@@ -251,9 +222,7 @@ export default class UserSettingsDisplay extends React.Component {
     render() {
         const serverError = this.state.serverError || null;
         let clockSection;
-        let nameFormatSection;
         let channelDisplayModeSection;
-        let fontSection;
         let languagesSection;
         let messageDisplaySection;
 
@@ -277,6 +246,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='clockFormat12h'
                                 type='radio'
                                 name='clockFormat'
                                 checked={clockFormat[0]}
@@ -292,6 +262,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='clockFormat24h'
                                 type='radio'
                                 name='clockFormat'
                                 checked={clockFormat[1]}
@@ -364,140 +335,6 @@ export default class UserSettingsDisplay extends React.Component {
             );
         }
 
-        const showUsername = (
-            <FormattedMessage
-                id='user.settings.display.showUsername'
-                defaultMessage='Show username (default)'
-            />
-        );
-        const showNickname = (
-            <FormattedMessage
-                id='user.settings.display.showNickname'
-                defaultMessage='Show nickname if one exists, otherwise show first and last name'
-            />
-        );
-        const showFullName = (
-            <FormattedMessage
-                id='user.settings.display.showFullname'
-                defaultMessage='Show first and last name'
-            />
-        );
-        if (this.props.activeSection === 'name_format') {
-            const nameFormat = [false, false, false];
-            if (this.state.nameFormat === 'nickname_full_name') {
-                nameFormat[0] = true;
-            } else if (this.state.nameFormat === 'full_name') {
-                nameFormat[2] = true;
-            } else {
-                nameFormat[1] = true;
-            }
-
-            const inputs = [
-                <div key='userDisplayNameOptions'>
-                    <div className='radio'>
-                        <label>
-                            <input
-                                type='radio'
-                                name='nameFormat'
-                                checked={nameFormat[1]}
-                                onChange={this.handleNameRadio.bind(this, 'username')}
-                            />
-                            {showUsername}
-                        </label>
-                        <br/>
-                    </div>
-                    <div className='radio'>
-                        <label>
-                            <input
-                                type='radio'
-                                name='nameFormat'
-                                checked={nameFormat[0]}
-                                onChange={this.handleNameRadio.bind(this, 'nickname_full_name')}
-                            />
-                            {showNickname}
-                        </label>
-                        <br/>
-                    </div>
-                    <div className='radio'>
-                        <label>
-                            <input
-                                type='radio'
-                                name='nameFormat'
-                                checked={nameFormat[2]}
-                                onChange={this.handleNameRadio.bind(this, 'full_name')}
-                            />
-                            {showFullName}
-                        </label>
-                        <br/>
-                    </div>
-                    <div>
-                        <br/>
-                        <FormattedMessage
-                            id='user.settings.display.nameOptsDesc'
-                            defaultMessage="Set how to display other user's names in posts and the Direct Messages list."
-                        />
-                    </div>
-                </div>
-            ];
-
-            nameFormatSection = (
-                <SettingItemMax
-                    title={
-                        <FormattedMessage
-                            id='user.settings.display.teammateDisplay'
-                            defaultMessage='Teammate Name Display'
-                        />
-                    }
-                    inputs={inputs}
-                    submit={this.handleSubmit}
-                    server_error={serverError}
-                    updateSection={(e) => {
-                        this.updateSection('');
-                        e.preventDefault();
-                    }}
-                />
-            );
-        } else {
-            let describe;
-            if (this.state.nameFormat === 'username') {
-                describe = (
-                    <FormattedMessage
-                        id='user.settings.display.showUsername'
-                        defaultMessage='Show username (default)'
-                    />
-                );
-            } else if (this.state.nameFormat === 'full_name') {
-                describe = (
-                    <FormattedMessage
-                        id='user.settings.display.showFullname'
-                        defaultMessage='Show first and last name'
-                    />
-                );
-            } else {
-                describe = (
-                    <FormattedMessage
-                        id='user.settings.display.showNickname'
-                        defaultMessage='Show nickname if one exists, otherwise show first and last name'
-                    />
-                );
-            }
-
-            nameFormatSection = (
-                <SettingItemMin
-                    title={
-                        <FormattedMessage
-                            id='user.settings.display.teammateDisplay'
-                            defaultMessage='Teammate Name Display'
-                        />
-                    }
-                    describe={describe}
-                    updateSection={() => {
-                        this.props.updateSection('name_format');
-                    }}
-                />
-            );
-        }
-
         if (this.props.activeSection === Preferences.MESSAGE_DISPLAY) {
             const messageDisplay = [false, false];
             if (this.state.messageDisplay === Preferences.MESSAGE_DISPLAY_CLEAN) {
@@ -511,6 +348,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='messageFormatStandard'
                                 type='radio'
                                 name='messageDisplay'
                                 checked={messageDisplay[0]}
@@ -533,6 +371,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='messageFormatCompact'
                                 type='radio'
                                 name='messageDisplay'
                                 checked={messageDisplay[1]}
@@ -626,6 +465,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='channelDisplayFormatFullScreen'
                                 type='radio'
                                 name='channelDisplayMode'
                                 checked={channelDisplayMode[0]}
@@ -641,6 +481,7 @@ export default class UserSettingsDisplay extends React.Component {
                     <div className='radio'>
                         <label>
                             <input
+                                id='channelDisplayFormatCentered'
                                 type='radio'
                                 name='channelDisplayMode'
                                 checked={channelDisplayMode[1]}
@@ -714,79 +555,6 @@ export default class UserSettingsDisplay extends React.Component {
             );
         }
 
-        if (this.props.activeSection === 'font') {
-            const options = [];
-            Object.keys(Constants.FONTS).forEach((fontName, idx) => {
-                const className = Constants.FONTS[fontName];
-                options.push(
-                    <option
-                        key={'font_' + idx}
-                        value={fontName}
-                        className={className}
-                    >
-                        {fontName}
-                    </option>
-                );
-            });
-
-            const inputs = [
-                <div key='userDisplayNameOptions'>
-                    <div
-                        className='dropdown'
-                    >
-                        <select
-                            className='form-control'
-                            type='text'
-                            value={this.state.selectedFont}
-                            onChange={(e) => this.handleFont(e.target.value)}
-                        >
-                            {options}
-                        </select>
-                    </div>
-                    <div>
-                        <br/>
-                        <FormattedMessage
-                            id='user.settings.display.fontDesc'
-                            defaultMessage='Select the font displayed in the Mattermost user interface.'
-                        />
-                    </div>
-                </div>
-            ];
-
-            fontSection = (
-                <SettingItemMax
-                    title={
-                        <FormattedMessage
-                            id='user.settings.display.fontTitle'
-                            defaultMessage='Display Font'
-                        />
-                    }
-                    inputs={inputs}
-                    submit={this.handleSubmit}
-                    server_error={serverError}
-                    updateSection={(e) => {
-                        this.updateSection('');
-                        e.preventDefault();
-                    }}
-                />
-            );
-        } else {
-            fontSection = (
-                <SettingItemMin
-                    title={
-                        <FormattedMessage
-                            id='user.settings.display.fontTitle'
-                            defaultMessage='Display Font'
-                        />
-                    }
-                    describe={this.state.selectedFont}
-                    updateSection={() => {
-                        this.props.updateSection('font');
-                    }}
-                />
-            );
-        }
-
         const userLocale = this.props.user.locale;
         if (this.props.activeSection === 'languages') {
             if (!I18n.isLanguageAvailable(userLocale)) {
@@ -830,6 +598,7 @@ export default class UserSettingsDisplay extends React.Component {
             <div>
                 <div className='modal-header'>
                     <button
+                        id='closeButton'
                         type='button'
                         className='close'
                         data-dismiss='modal'
@@ -869,11 +638,7 @@ export default class UserSettingsDisplay extends React.Component {
                         setEnforceFocus={this.props.setEnforceFocus}
                     />
                     <div className='divider-dark'/>
-                    {fontSection}
-                    <div className='divider-dark'/>
                     {clockSection}
-                    <div className='divider-dark'/>
-                    {nameFormatSection}
                     <div className='divider-dark'/>
                     {collapseSection}
                     <div className='divider-dark'/>
@@ -889,12 +654,12 @@ export default class UserSettingsDisplay extends React.Component {
 }
 
 UserSettingsDisplay.propTypes = {
-    user: React.PropTypes.object,
-    updateSection: React.PropTypes.func,
-    updateTab: React.PropTypes.func,
-    activeSection: React.PropTypes.string,
-    closeModal: React.PropTypes.func.isRequired,
-    collapseModal: React.PropTypes.func.isRequired,
-    setRequireConfirm: React.PropTypes.func.isRequired,
-    setEnforceFocus: React.PropTypes.func.isRequired
+    user: PropTypes.object,
+    updateSection: PropTypes.func,
+    updateTab: PropTypes.func,
+    activeSection: PropTypes.string,
+    closeModal: PropTypes.func.isRequired,
+    collapseModal: PropTypes.func.isRequired,
+    setRequireConfirm: PropTypes.func.isRequired,
+    setEnforceFocus: PropTypes.func.isRequired
 };

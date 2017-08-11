@@ -86,6 +86,11 @@ func testAgent(t *testing.T, key interface{}, cert *ssh.Certificate, lifetimeSec
 	testAgentInterface(t, agent, key, cert, lifetimeSecs)
 }
 
+func testKeyring(t *testing.T, key interface{}, cert *ssh.Certificate, lifetimeSecs uint32) {
+	a := NewKeyring()
+	testAgentInterface(t, a, key, cert, lifetimeSecs)
+}
+
 func testAgentInterface(t *testing.T, agent Agent, key interface{}, cert *ssh.Certificate, lifetimeSecs uint32) {
 	signer, err := ssh.NewSignerFromKey(key)
 	if err != nil {
@@ -137,11 +142,25 @@ func testAgentInterface(t *testing.T, agent Agent, key interface{}, cert *ssh.Ce
 	if err := pubKey.Verify(data, sig); err != nil {
 		t.Fatalf("Verify(%s): %v", pubKey.Type(), err)
 	}
+
+	// If the key has a lifetime, is it removed when it should be?
+	if lifetimeSecs > 0 {
+		time.Sleep(time.Second*time.Duration(lifetimeSecs) + 100*time.Millisecond)
+		keys, err := agent.List()
+		if err != nil {
+			t.Fatalf("List: %v", err)
+		}
+		if len(keys) > 0 {
+			t.Fatalf("key not expired")
+		}
+	}
+
 }
 
 func TestAgent(t *testing.T) {
 	for _, keyType := range []string{"rsa", "dsa", "ecdsa", "ed25519"} {
 		testAgent(t, testPrivateKeys[keyType], nil, 0)
+		testKeyring(t, testPrivateKeys[keyType], nil, 1)
 	}
 }
 
@@ -154,10 +173,7 @@ func TestCert(t *testing.T) {
 	cert.SignCert(rand.Reader, testSigners["ecdsa"])
 
 	testAgent(t, testPrivateKeys["rsa"], cert, 0)
-}
-
-func TestConstraints(t *testing.T) {
-	testAgent(t, testPrivateKeys["rsa"], nil, 3600 /* lifetime in seconds */)
+	testKeyring(t, testPrivateKeys["rsa"], cert, 1)
 }
 
 // netPipe is analogous to net.Pipe, but it uses a real net.Conn, and
@@ -166,7 +182,10 @@ func TestConstraints(t *testing.T) {
 func netPipe() (net.Conn, net.Conn, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return nil, nil, err
+		listener, err = net.Listen("tcp", "[::1]:0")
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	defer listener.Close()
 	c1, err := net.Dial("tcp", listener.Addr().String())
@@ -184,6 +203,9 @@ func netPipe() (net.Conn, net.Conn, error) {
 }
 
 func TestAuth(t *testing.T) {
+	agent, _, cleanup := startAgent(t)
+	defer cleanup()
+
 	a, b, err := netPipe()
 	if err != nil {
 		t.Fatalf("netPipe: %v", err)
@@ -191,9 +213,6 @@ func TestAuth(t *testing.T) {
 
 	defer a.Close()
 	defer b.Close()
-
-	agent, _, cleanup := startAgent(t)
-	defer cleanup()
 
 	if err := agent.Add(AddedKey{PrivateKey: testPrivateKeys["rsa"], Comment: "comment"}); err != nil {
 		t.Errorf("Add: %v", err)
@@ -217,7 +236,9 @@ func TestAuth(t *testing.T) {
 		conn.Close()
 	}()
 
-	conf := ssh.ClientConfig{}
+	conf := ssh.ClientConfig{
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
 	conf.Auth = append(conf.Auth, ssh.PublicKeysCallback(agent.Signers))
 	conn, _, _, err := ssh.NewClientConn(b, "", &conf)
 	if err != nil {

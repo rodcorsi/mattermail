@@ -45,11 +45,11 @@ import (
 // If we exhaust all the known types, code proceeds to use stream as
 // is where each part is re-downloaded, checksummed and verified
 // before upload.
-func (c Client) putObjectMultipart(bucketName, objectName string, reader io.Reader, size int64, contentType string, progress io.Reader) (n int64, err error) {
+func (c Client) putObjectMultipart(bucketName, objectName string, reader io.Reader, size int64, metaData map[string][]string, progress io.Reader) (n int64, err error) {
 	if size > 0 && size > minPartSize {
 		// Verify if reader is *os.File, then use file system functionalities.
 		if isFile(reader) {
-			return c.putObjectMultipartFromFile(bucketName, objectName, reader.(*os.File), size, contentType, progress)
+			return c.putObjectMultipartFromFile(bucketName, objectName, reader.(*os.File), size, metaData, progress)
 		}
 		// Verify if reader is *minio.Object or io.ReaderAt.
 		// NOTE: Verification of object is kept for a specific purpose
@@ -58,17 +58,123 @@ func (c Client) putObjectMultipart(bucketName, objectName string, reader io.Read
 		// and such a functionality is used in the subsequent code
 		// path.
 		if isObject(reader) || isReadAt(reader) {
-			return c.putObjectMultipartFromReadAt(bucketName, objectName, reader.(io.ReaderAt), size, contentType, progress)
+			return c.putObjectMultipartFromReadAt(bucketName, objectName, reader.(io.ReaderAt), size, metaData, progress)
 		}
 	}
 	// For any other data size and reader type we do generic multipart
 	// approach by staging data in temporary files and uploading them.
-	return c.putObjectMultipartStream(bucketName, objectName, reader, size, contentType, progress)
+	return c.putObjectMultipartStream(bucketName, objectName, reader, size, metaData, progress)
 }
 
-// putObjectStream uploads files bigger than 5MiB, and also supports
+// putObjectMultipartStreamNoChecksum - upload a large object using
+// multipart upload and streaming signature for signing payload.
+// N B We don't resume an incomplete multipart upload, we overwrite
+// existing parts of an incomplete upload.
+func (c Client) putObjectMultipartStreamNoChecksum(bucketName, objectName string,
+	reader io.Reader, size int64, metadata map[string][]string, progress io.Reader) (int64, error) {
+
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return 0, err
+	}
+	if err := isValidObjectName(objectName); err != nil {
+		return 0, err
+	}
+
+	// Get the upload id of a previously partially uploaded object or initiate a new multipart upload
+	uploadID, err := c.findUploadID(bucketName, objectName)
+	if err != nil {
+		return 0, err
+	}
+	if uploadID == "" {
+		// Initiates a new multipart request
+		uploadID, err = c.newUploadID(bucketName, objectName, metadata)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	// Calculate the optimal parts info for a given size.
+	totalPartsCount, partSize, lastPartSize, err := optimalPartInfo(size)
+	if err != nil {
+		return 0, err
+	}
+
+	// Total data read and written to server. should be equal to 'size' at the end of the call.
+	var totalUploadedSize int64
+
+	// Initialize parts uploaded map.
+	partsInfo := make(map[int]ObjectPart)
+
+	// Part number always starts with '1'.
+	var partNumber int
+	for partNumber = 1; partNumber <= totalPartsCount; partNumber++ {
+		// Update progress reader appropriately to the latest offset
+		// as we read from the source.
+		hookReader := newHook(reader, progress)
+
+		// Proceed to upload the part.
+		if partNumber == totalPartsCount {
+			partSize = lastPartSize
+		}
+
+		var objPart ObjectPart
+		objPart, err = c.uploadPart(bucketName, objectName, uploadID,
+			io.LimitReader(hookReader, partSize), partNumber, nil, nil, partSize)
+		// For unknown size, Read EOF we break away.
+		// We do not have to upload till totalPartsCount.
+		if err == io.EOF && size < 0 {
+			break
+		}
+
+		if err != nil {
+			return totalUploadedSize, err
+		}
+
+		// Save successfully uploaded part metadata.
+		partsInfo[partNumber] = objPart
+
+		// Save successfully uploaded size.
+		totalUploadedSize += partSize
+	}
+
+	// Verify if we uploaded all the data.
+	if size > 0 {
+		if totalUploadedSize != size {
+			return totalUploadedSize, ErrUnexpectedEOF(totalUploadedSize, size, bucketName, objectName)
+		}
+	}
+
+	// Complete multipart upload.
+	var complMultipartUpload completeMultipartUpload
+
+	// Loop over total uploaded parts to save them in
+	// Parts array before completing the multipart request.
+	for i := 1; i < partNumber; i++ {
+		part, ok := partsInfo[i]
+		if !ok {
+			return 0, ErrInvalidArgument(fmt.Sprintf("Missing part number %d", i))
+		}
+		complMultipartUpload.Parts = append(complMultipartUpload.Parts, CompletePart{
+			ETag:       part.ETag,
+			PartNumber: part.PartNumber,
+		})
+	}
+
+	// Sort all completed parts.
+	sort.Sort(completedParts(complMultipartUpload.Parts))
+	_, err = c.completeMultipartUpload(bucketName, objectName, uploadID, complMultipartUpload)
+	if err != nil {
+		return totalUploadedSize, err
+	}
+
+	// Return final size.
+	return totalUploadedSize, nil
+}
+
+// putObjectStream uploads files bigger than 64MiB, and also supports
 // special case where size is unknown i.e '-1'.
-func (c Client) putObjectMultipartStream(bucketName, objectName string, reader io.Reader, size int64, contentType string, progress io.Reader) (n int64, err error) {
+func (c Client) putObjectMultipartStream(bucketName, objectName string, reader io.Reader, size int64, metaData map[string][]string, progress io.Reader) (n int64, err error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return 0, err
@@ -83,25 +189,10 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 	// Complete multipart upload.
 	var complMultipartUpload completeMultipartUpload
 
-	// A map of all previously uploaded parts.
-	var partsInfo = make(map[int]objectPart)
-
-	// getUploadID for an object, initiates a new multipart request
-	// if it cannot find any previously partially uploaded object.
-	uploadID, isNew, err := c.getUploadID(bucketName, objectName, contentType)
+	// Get the upload id of a previously partially uploaded object or initiate a new multipart upload
+	uploadID, partsInfo, err := c.getMpartUploadSession(bucketName, objectName, metaData)
 	if err != nil {
 		return 0, err
-	}
-
-	// If This session is a continuation of a previous session fetch all
-	// previously uploaded parts info and as a special case only fetch partsInfo
-	// for only known upload size.
-	if !isNew {
-		// Fetch previously uploaded parts and maximum part size.
-		partsInfo, err = c.listObjectParts(bucketName, objectName, uploadID)
-		if err != nil {
-			return 0, err
-		}
 	}
 
 	// Calculate the optimal parts info for a given size.
@@ -128,10 +219,8 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 
 		// Calculates hash sums while copying partSize bytes into tmpBuffer.
 		prtSize, rErr := hashCopyN(hashAlgos, hashSums, tmpBuffer, reader, partSize)
-		if rErr != nil {
-			if rErr != io.EOF {
-				return 0, rErr
-			}
+		if rErr != nil && rErr != io.EOF {
+			return 0, rErr
 		}
 
 		var reader io.Reader
@@ -139,14 +228,16 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 		// as we read from the source.
 		reader = newHook(tmpBuffer, progress)
 
+		part, ok := partsInfo[partNumber]
+
 		// Verify if part should be uploaded.
-		if shouldUploadPart(objectPart{
+		if !ok || shouldUploadPart(ObjectPart{
 			ETag:       hex.EncodeToString(hashSums["md5"]),
 			PartNumber: partNumber,
 			Size:       prtSize,
-		}, partsInfo) {
+		}, uploadPartReq{PartNum: partNumber, Part: &part}) {
 			// Proceed to upload the part.
-			var objPart objectPart
+			var objPart ObjectPart
 			objPart, err = c.uploadPart(bucketName, objectName, uploadID, reader, partNumber, hashSums["md5"], hashSums["sha256"], prtSize)
 			if err != nil {
 				// Reset the temporary buffer upon any error.
@@ -194,7 +285,7 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 		if !ok {
 			return 0, ErrInvalidArgument(fmt.Sprintf("Missing part number %d", i))
 		}
-		complMultipartUpload.Parts = append(complMultipartUpload.Parts, completePart{
+		complMultipartUpload.Parts = append(complMultipartUpload.Parts, CompletePart{
 			ETag:       part.ETag,
 			PartNumber: part.PartNumber,
 		})
@@ -212,7 +303,7 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 }
 
 // initiateMultipartUpload - Initiates a multipart upload and returns an upload ID.
-func (c Client) initiateMultipartUpload(bucketName, objectName, contentType string) (initiateMultipartUploadResult, error) {
+func (c Client) initiateMultipartUpload(bucketName, objectName string, metaData map[string][]string) (initiateMultipartUploadResult, error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return initiateMultipartUploadResult{}, err
@@ -225,13 +316,18 @@ func (c Client) initiateMultipartUpload(bucketName, objectName, contentType stri
 	urlValues := make(url.Values)
 	urlValues.Set("uploads", "")
 
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-
 	// Set ContentType header.
 	customHeader := make(http.Header)
-	customHeader.Set("Content-Type", contentType)
+	for k, v := range metaData {
+		if len(v) > 0 {
+			customHeader.Set(k, v[0])
+		}
+	}
+
+	// Set a default content-type header if the latter is not provided
+	if v, ok := metaData["Content-Type"]; !ok || len(v) == 0 {
+		customHeader.Set("Content-Type", "application/octet-stream")
+	}
 
 	reqMetadata := requestMetadata{
 		bucketName:   bucketName,
@@ -261,25 +357,25 @@ func (c Client) initiateMultipartUpload(bucketName, objectName, contentType stri
 }
 
 // uploadPart - Uploads a part in a multipart upload.
-func (c Client) uploadPart(bucketName, objectName, uploadID string, reader io.Reader, partNumber int, md5Sum, sha256Sum []byte, size int64) (objectPart, error) {
+func (c Client) uploadPart(bucketName, objectName, uploadID string, reader io.Reader, partNumber int, md5Sum, sha256Sum []byte, size int64) (ObjectPart, error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
-		return objectPart{}, err
+		return ObjectPart{}, err
 	}
 	if err := isValidObjectName(objectName); err != nil {
-		return objectPart{}, err
+		return ObjectPart{}, err
 	}
 	if size > maxPartSize {
-		return objectPart{}, ErrEntityTooLarge(size, maxPartSize, bucketName, objectName)
+		return ObjectPart{}, ErrEntityTooLarge(size, maxPartSize, bucketName, objectName)
 	}
 	if size <= -1 {
-		return objectPart{}, ErrEntityTooSmall(size, bucketName, objectName)
+		return ObjectPart{}, ErrEntityTooSmall(size, bucketName, objectName)
 	}
 	if partNumber <= 0 {
-		return objectPart{}, ErrInvalidArgument("Part number cannot be negative or equal to zero.")
+		return ObjectPart{}, ErrInvalidArgument("Part number cannot be negative or equal to zero.")
 	}
 	if uploadID == "" {
-		return objectPart{}, ErrInvalidArgument("UploadID cannot be empty.")
+		return ObjectPart{}, ErrInvalidArgument("UploadID cannot be empty.")
 	}
 
 	// Get resources properly escaped and lined up before using them in http request.
@@ -303,15 +399,15 @@ func (c Client) uploadPart(bucketName, objectName, uploadID string, reader io.Re
 	resp, err := c.executeMethod("PUT", reqMetadata)
 	defer closeResponse(resp)
 	if err != nil {
-		return objectPart{}, err
+		return ObjectPart{}, err
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return objectPart{}, httpRespToErrorResponse(resp, bucketName, objectName)
+			return ObjectPart{}, httpRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
 	// Once successfully uploaded, return completed part.
-	objPart := objectPart{}
+	objPart := ObjectPart{}
 	objPart.Size = size
 	objPart.PartNumber = partNumber
 	// Trim off the odd double quotes from ETag in the beginning and end.

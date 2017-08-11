@@ -1,7 +1,8 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import UserStore from 'stores/user_store.jsx';
 import IntegrationStore from 'stores/integration_store.jsx';
@@ -15,7 +16,7 @@ import InstalledOAuthApp from './installed_oauth_app.jsx';
 export default class InstalledOAuthApps extends React.Component {
     static get propTypes() {
         return {
-            team: React.propTypes.object.isRequired
+            team: PropTypes.object
         };
     }
 
@@ -26,11 +27,9 @@ export default class InstalledOAuthApps extends React.Component {
 
         this.deleteOAuthApp = this.deleteOAuthApp.bind(this);
 
-        const userId = UserStore.getCurrentId();
-
         this.state = {
-            oauthApps: IntegrationStore.getOAuthApps(userId),
-            loading: !IntegrationStore.hasReceivedOAuthApps(userId)
+            oauthApps: IntegrationStore.getOAuthApps(),
+            loading: !IntegrationStore.hasReceivedOAuthApps()
         };
     }
 
@@ -38,7 +37,7 @@ export default class InstalledOAuthApps extends React.Component {
         IntegrationStore.addChangeListener(this.handleIntegrationChange);
 
         if (window.mm_config.EnableOAuthServiceProvider === 'true') {
-            OAuthActions.listOAuthApps(UserStore.getCurrentId());
+            OAuthActions.listOAuthApps(() => this.setState({loading: false}));
         }
     }
 
@@ -47,21 +46,31 @@ export default class InstalledOAuthApps extends React.Component {
     }
 
     handleIntegrationChange() {
-        const userId = UserStore.getCurrentId();
-
         this.setState({
-            oauthApps: IntegrationStore.getOAuthApps(userId),
-            loading: !IntegrationStore.hasReceivedOAuthApps(userId)
+            oauthApps: IntegrationStore.getOAuthApps()
         });
     }
 
     deleteOAuthApp(app) {
-        const userId = UserStore.getCurrentId();
-        OAuthActions.deleteOAuthApp(app.id, userId);
+        OAuthActions.deleteOAuthApp(app.id);
+    }
+
+    oauthAppCompare(a, b) {
+        let nameA = a.name;
+        if (!nameA) {
+            nameA = localizeMessage('installed_integrations.unnamed_oauth_app', 'Unnamed OAuth 2.0 Application');
+        }
+
+        let nameB = b.name;
+        if (!nameB) {
+            nameB = localizeMessage('installed_integrations.unnamed_oauth_app', 'Unnamed OAuth 2.0 Application');
+        }
+
+        return nameA.localeCompare(nameB);
     }
 
     render() {
-        const oauthApps = this.state.oauthApps.map((app) => {
+        const oauthApps = this.state.oauthApps.sort(this.oauthAppCompare).map((app) => {
             return (
                 <InstalledOAuthApp
                     key={app.id}
@@ -93,17 +102,29 @@ export default class InstalledOAuthApps extends React.Component {
                 helpText={
                     <FormattedMessage
                         id='installed_oauth_apps.help'
-                        defaultMessage='Create OAuth 2.0 applications to securely integrate bots and third-party applications with Mattermost. Please see {link} to learn more.'
+                        defaultMessage='Create {oauthApplications} to securely integrate bots and third-party apps with Mattermost. Visit the {appDirectory} to find available self-hosted apps.'
                         values={{
-                            link: (
+                            oauthApplications: (
                                 <a
                                     target='_blank'
                                     rel='noopener noreferrer'
                                     href='https://docs.mattermost.com/developer/oauth-2-0-applications.html'
                                 >
                                     <FormattedMessage
-                                        id='installed_oauth_apps.helpLink'
-                                        defaultMessage='documentation'
+                                        id='installed_oauth_apps.help.oauthApplications'
+                                        defaultMessage='OAuth 2.0 applications'
+                                    />
+                                </a>
+                            ),
+                            appDirectory: (
+                                <a
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    href='https://about.mattermost.com/default-app-directory/'
+                                >
+                                    <FormattedMessage
+                                        id='installed_oauth_apps.help.appDirectory'
+                                        defaultMessage='App Directory'
                                     />
                                 </a>
                             )

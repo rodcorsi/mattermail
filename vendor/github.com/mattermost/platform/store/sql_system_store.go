@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package store
@@ -8,10 +8,10 @@ import (
 )
 
 type SqlSystemStore struct {
-	*SqlStore
+	SqlStore
 }
 
-func NewSqlSystemStore(sqlStore *SqlStore) SystemStore {
+func NewSqlSystemStore(sqlStore SqlStore) SystemStore {
 	s := &SqlSystemStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {
@@ -34,7 +34,7 @@ func (s SqlSystemStore) Save(system *model.System) StoreChannel {
 		result := StoreResult{}
 
 		if err := s.GetMaster().Insert(system); err != nil {
-			result.Err = model.NewLocAppError("SqlSystemStore.Save", "store.sql_system.save.app_error", nil, "")
+			result.Err = model.NewLocAppError("SqlSystemStore.Save", "store.sql_system.save.app_error", nil, err.Error())
 		}
 
 		storeChannel <- result

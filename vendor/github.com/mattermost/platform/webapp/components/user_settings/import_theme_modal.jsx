@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import ModalStore from 'stores/modal_store.jsx';
@@ -167,12 +167,13 @@ export default class ImportThemeModal extends React.Component {
                             <p>
                                 <FormattedMessage
                                     id='user.settings.import_theme.importBody'
-                                    defaultMessage='To import a theme, go to a Slack team and look for “Preferences -> Sidebar Theme”. Open the custom theme option, copy the theme color values and paste them here:'
+                                    defaultMessage='To import a theme, go to a Slack team and look for "Preferences -> Sidebar Theme". Open the custom theme option, copy the theme color values and paste them here:'
                                 />
                             </p>
                             <div className='form-group less'>
-                                <div className='col-sm-9'>
+                                <div className='col-sm-12'>
                                     <input
+                                        id='themeVector'
                                         type='text'
                                         className='form-control'
                                         value={this.state.value}
@@ -186,6 +187,7 @@ export default class ImportThemeModal extends React.Component {
                         </Modal.Body>
                         <Modal.Footer>
                             <button
+                                id='cancelButton'
                                 type='button'
                                 className='btn btn-default'
                                 onClick={() => this.setState({show: false})}
@@ -196,6 +198,7 @@ export default class ImportThemeModal extends React.Component {
                                 />
                             </button>
                             <button
+                                id='submitButton'
                                 onClick={this.handleSubmit}
                                 type='submit'
                                 className='btn btn-primary'

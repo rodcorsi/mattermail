@@ -1,50 +1,74 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import UserProfile from './user_profile.jsx';
-import FileAttachmentListContainer from './file_attachment_list_container.jsx';
-import PendingPostOptions from 'components/post_view/components/pending_post_options.jsx';
-import PostMessageContainer from 'components/post_view/components/post_message_container.jsx';
+import FileAttachmentListContainer from 'components/file_attachment_list';
+import PostMessageContainer from 'components/post_view/post_message_view';
 import ProfilePicture from 'components/profile_picture.jsx';
-import RhsDropdown from 'components/rhs_dropdown.jsx';
+import ReactionListContainer from 'components/post_view/reaction_list';
+import PostFlagIcon from 'components/post_view/post_flag_icon.jsx';
+import FailedPostOptions from 'components/post_view/failed_post_options';
+import DotMenu from 'components/dot_menu';
+import EmojiPickerOverlay from 'components/emoji_picker/emoji_picker_overlay.jsx';
+
+import {addReaction} from 'actions/post_actions.jsx';
 
 import TeamStore from 'stores/team_store.jsx';
-import UserStore from 'stores/user_store.jsx';
-
-import * as GlobalActions from 'actions/global_actions.jsx';
-import {flagPost, unflagPost} from 'actions/post_actions.jsx';
 
 import * as Utils from 'utils/utils.jsx';
 import * as PostUtils from 'utils/post_utils.jsx';
 
 import Constants from 'utils/constants.jsx';
-import {Tooltip, OverlayTrigger} from 'react-bootstrap';
-
-import {FormattedMessage} from 'react-intl';
-
-import loadingGif from 'images/load.gif';
 
 import React from 'react';
+import PropTypes from 'prop-types';
+import {Link} from 'react-router/es6';
+import {FormattedMessage} from 'react-intl';
 
 export default class RhsComment extends React.Component {
+    static propTypes = {
+        post: PropTypes.object,
+        lastPostCount: PropTypes.number,
+        user: PropTypes.object.isRequired,
+        currentUser: PropTypes.object.isRequired,
+        compactDisplay: PropTypes.bool,
+        useMilitaryTime: PropTypes.bool.isRequired,
+        isFlagged: PropTypes.bool,
+        status: PropTypes.string,
+        isBusy: PropTypes.bool,
+        removePost: PropTypes.func.isRequired
+    };
+
     constructor(props) {
         super(props);
 
-        this.handlePermalink = this.handlePermalink.bind(this);
         this.removePost = this.removePost.bind(this);
-        this.flagPost = this.flagPost.bind(this);
-        this.unflagPost = this.unflagPost.bind(this);
+        this.reactEmojiClick = this.reactEmojiClick.bind(this);
+        this.handleDropdownOpened = this.handleDropdownOpened.bind(this);
 
-        this.state = {};
+        this.state = {
+            currentTeamDisplayName: TeamStore.getCurrent().name,
+            width: '',
+            height: '',
+            showEmojiPicker: false,
+            dropdownOpened: false
+        };
     }
 
-    handlePermalink(e) {
-        e.preventDefault();
-        GlobalActions.showGetPostLinkModal(this.props.post);
+    componentDidMount() {
+        window.addEventListener('resize', () => {
+            Utils.updateWindowDimensions(this);
+        });
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('resize', () => {
+            Utils.updateWindowDimensions(this);
+        });
     }
 
     removePost() {
-        GlobalActions.emitRemovePost(this.props.post);
+        this.props.removePost(this.props.post);
     }
 
     createRemovePostButton() {
@@ -60,8 +84,12 @@ export default class RhsComment extends React.Component {
         );
     }
 
-    shouldComponentUpdate(nextProps) {
+    shouldComponentUpdate(nextProps, nextState) {
         if (nextProps.status !== this.props.status) {
+            return true;
+        }
+
+        if (nextProps.isBusy !== this.props.isBusy) {
             return true;
         }
 
@@ -85,205 +113,215 @@ export default class RhsComment extends React.Component {
             return true;
         }
 
+        if (this.state.showEmojiPicker !== nextState.showEmojiPicker) {
+            return true;
+        }
+
+        if (nextProps.lastPostCount !== this.props.lastPostCount) {
+            return true;
+        }
+
+        if (this.state.dropdownOpened !== nextState.dropdownOpened) {
+            return true;
+        }
+
         return false;
     }
 
-    flagPost(e) {
-        e.preventDefault();
-        flagPost(this.props.post.id);
-    }
-
-    unflagPost(e) {
-        e.preventDefault();
-        unflagPost(this.props.post.id);
-    }
-
-    createDropdown() {
-        const post = this.props.post;
-
-        if (post.state === Constants.POST_FAILED || post.state === Constants.POST_LOADING) {
-            return '';
-        }
-
-        const isOwner = this.props.currentUser.id === post.user_id;
-        var isAdmin = TeamStore.isTeamAdminForCurrentTeam() || UserStore.isSystemAdminForCurrentUser();
-
-        var dropdownContents = [];
-
-        if (Utils.isMobile()) {
-            if (this.props.isFlagged) {
-                dropdownContents.push(
-                    <li
-                        key='mobileFlag'
-                        role='presentation'
-                    >
-                        <a
-                            href='#'
-                            onClick={this.unflagPost}
-                        >
-                            <FormattedMessage
-                                id='rhs_root.mobile.unflag'
-                                defaultMessage='Unflag'
-                            />
-                        </a>
-                    </li>
-                );
-            } else {
-                dropdownContents.push(
-                    <li
-                        key='mobileFlag'
-                        role='presentation'
-                    >
-                        <a
-                            href='#'
-                            onClick={this.flagPost}
-                        >
-                            <FormattedMessage
-                                id='rhs_root.mobile.flag'
-                                defaultMessage='Flag'
-                            />
-                        </a>
-                    </li>
-                );
-            }
-        }
-
-        dropdownContents.push(
-            <li
-                key='rhs-root-permalink'
-                role='presentation'
-            >
-                <a
-                    href='#'
-                    onClick={this.handlePermalink}
-                >
-                    <FormattedMessage
-                        id='rhs_comment.permalink'
-                        defaultMessage='Permalink'
-                    />
-                </a>
-            </li>
-        );
-
-        if (isOwner) {
-            dropdownContents.push(
-                <li
-                    role='presentation'
-                    key='edit-button'
-                >
-                    <a
-                        href='#'
-                        role='menuitem'
-                        data-toggle='modal'
-                        data-target='#edit_post'
-                        data-refocusid='#reply_textbox'
-                        data-title={Utils.localizeMessage('rhs_comment.comment', 'Comment')}
-                        data-message={post.message}
-                        data-postid={post.id}
-                        data-channelid={post.channel_id}
-                    >
-                        <FormattedMessage
-                            id='rhs_comment.edit'
-                            defaultMessage='Edit'
-                        />
-                    </a>
-                </li>
-            );
-        }
-
-        if (isOwner || isAdmin) {
-            dropdownContents.push(
-                <li
-                    role='presentation'
-                    key='delete-button'
-                >
-                    <a
-                        href='#'
-                        role='menuitem'
-                        onClick={(e) => {
-                            e.preventDefault();
-                            GlobalActions.showDeletePostModal(post, 0);
-                        }}
-                    >
-                        <FormattedMessage
-                            id='rhs_comment.del'
-                            defaultMessage='Delete'
-                        />
-                    </a>
-                </li>
-            );
-        }
-
-        if (dropdownContents.length === 0) {
-            return '';
-        }
-
+    timeTag(post, timeOptions) {
         return (
-            <RhsDropdown dropdownContents={dropdownContents}/>
+            <time
+                className='post__time'
+                dateTime={Utils.getDateForUnixTicks(post.create_at).toISOString()}
+            >
+                {Utils.getDateForUnixTicks(post.create_at).toLocaleString('en', timeOptions)}
+            </time>
         );
+    }
+
+    renderTimeTag(post, timeOptions) {
+        return Utils.isMobile() ?
+            this.timeTag(post, timeOptions) :
+            (
+                <Link
+                    to={`/${this.state.currentTeamDisplayName}/pl/${post.id}`}
+                    target='_blank'
+                    className='post__permalink'
+                >
+                    {this.timeTag(post, timeOptions)}
+                </Link>
+            );
+    }
+
+    toggleEmojiPicker = () => {
+        const showEmojiPicker = !this.state.showEmojiPicker;
+
+        this.setState({
+            showEmojiPicker,
+            dropdownOpened: showEmojiPicker
+        });
+    }
+
+    reactEmojiClick(emoji) {
+        this.setState({showEmojiPicker: false});
+        const emojiName = emoji.name || emoji.aliases[0];
+        addReaction(this.props.post.channel_id, this.props.post.id, emojiName);
+    }
+
+    getClassName = (post, isSystemMessage) => {
+        let className = 'post post--thread';
+
+        if (this.props.currentUser.id === post.user_id) {
+            className += ' current--user';
+        }
+
+        if (isSystemMessage) {
+            className += ' post--system';
+        }
+
+        if (this.props.compactDisplay) {
+            className += ' post--compact';
+        }
+
+        if (post.is_pinned) {
+            className += ' post--pinned';
+        }
+
+        if (this.state.dropdownOpened) {
+            className += ' post--hovered';
+        }
+
+        return className;
+    }
+
+    handleDropdownOpened(isOpened) {
+        this.setState({
+            dropdownOpened: isOpened
+        });
     }
 
     render() {
         const post = this.props.post;
-        const flagIcon = Constants.FLAG_ICON_SVG;
+        const mattermostLogo = Constants.MATTERMOST_ICON_SVG;
 
-        var currentUserCss = '';
-        if (this.props.currentUser === post.user_id) {
-            currentUserCss = 'current--user';
+        let idCount = -1;
+        if (this.props.lastPostCount >= 0 && this.props.lastPostCount < Constants.TEST_ID_COUNT) {
+            idCount = this.props.lastPostCount;
         }
 
-        var timestamp = this.props.currentUser.update_at;
+        const isEphemeral = Utils.isPostEphemeral(post);
+        const isSystemMessage = PostUtils.isSystemMessage(post);
+
+        var timestamp = this.props.currentUser.last_picture_update;
+
+        let status = this.props.status;
+        if (post.props && post.props.from_webhook === 'true') {
+            status = null;
+        }
 
         let botIndicator;
+        let userProfile = (
+            <UserProfile
+                user={this.props.user}
+                status={status}
+                isBusy={this.props.isBusy}
+            />
+        );
 
         if (post.props && post.props.from_webhook) {
-            botIndicator = <li className='bot-indicator'>{Constants.BOT_NAME}</li>;
-        }
-        let loading;
-        let postClass = '';
-        let message = <PostMessageContainer post={post}/>;
+            if (post.props.override_username && global.window.mm_config.EnablePostUsernameOverride === 'true') {
+                userProfile = (
+                    <UserProfile
+                        user={this.props.user}
+                        overwriteName={post.props.override_username}
+                        disablePopover={true}
+                    />
+                );
+            } else {
+                userProfile = (
+                    <UserProfile
+                        user={this.props.user}
+                        disablePopover={true}
+                    />
+                );
+            }
 
-        if (post.state === Constants.POST_FAILED) {
-            postClass += ' post-fail';
-            loading = <PendingPostOptions post={this.props.post}/>;
-        } else if (post.state === Constants.POST_LOADING) {
-            postClass += ' post-waiting';
-            loading = (
-                <img
-                    className='post-loading-gif pull-right'
-                    src={loadingGif}
+            botIndicator = <div className='col col__name bot-indicator'>{'BOT'}</div>;
+        } else if (isSystemMessage) {
+            userProfile = (
+                <UserProfile
+                    user={{}}
+                    overwriteName={
+                        <FormattedMessage
+                            id='post_info.system'
+                            defaultMessage='System'
+                        />
+                    }
+                    overwriteImage={Constants.SYSTEM_MESSAGE_PROFILE_IMAGE}
+                    disablePopover={true}
                 />
             );
-        } else if (this.props.post.state === Constants.POST_DELETED) {
-            message = (
-                <FormattedMessage
-                    id='post_body.deleted'
-                    defaultMessage='(message deleted)'
-                />
-            );
+        }
+
+        let failedPostOptions;
+        let postClass = '';
+
+        if (post.failed) {
+            postClass += ' post-failed';
+            failedPostOptions = <FailedPostOptions post={this.props.post}/>;
+        }
+
+        if (PostUtils.isEdited(this.props.post)) {
+            postClass += ' post--edited';
         }
 
         let profilePic = (
             <ProfilePicture
                 src={PostUtils.getProfilePicSrcForPost(post, timestamp)}
-                status={this.props.status}
+                status={status}
                 width='36'
                 height='36'
                 user={this.props.user}
+                isBusy={this.props.isBusy}
             />
         );
 
-        let compactClass = '';
-        if (this.props.compactDisplay) {
-            compactClass = 'post--compact';
-
+        if (post.props && post.props.from_webhook) {
             profilePic = (
                 <ProfilePicture
-                    src=''
-                    status={this.props.status}
-                    user={this.props.user}
+                    src={PostUtils.getProfilePicSrcForPost(post, timestamp)}
+                    width='36'
+                    height='36'
                 />
             );
+        }
+
+        if (isSystemMessage) {
+            profilePic = (
+                <span
+                    className='icon'
+                    dangerouslySetInnerHTML={{__html: mattermostLogo}}
+                />
+            );
+        }
+
+        if (this.props.compactDisplay) {
+            if (post.props && post.props.from_webhook) {
+                profilePic = (
+                    <ProfilePicture
+                        src=''
+                    />
+                );
+            } else {
+                profilePic = (
+                    <ProfilePicture
+                        src=''
+                        status={status}
+                        user={this.props.user}
+                        isBusy={this.props.isBusy}
+                    />
+                );
+            }
         }
 
         const profilePicContainer = (<div className='post__img'>{profilePic}</div>);
@@ -298,112 +336,112 @@ export default class RhsComment extends React.Component {
             );
         }
 
-        let flag;
-        let flagFunc;
-        let flagVisible = '';
-        let flagTooltip = (
-            <Tooltip id='flagTooltip'>
-                <FormattedMessage
-                    id='flag_post.flag'
-                    defaultMessage='Flag for follow up'
-                />
-            </Tooltip>
-        );
-        if (this.props.isFlagged) {
-            flagVisible = 'visible';
-            flag = (
-                <span
-                    className='icon'
-                    dangerouslySetInnerHTML={{__html: flagIcon}}
-                />
-            );
-            flagFunc = this.unflagPost;
-            flagTooltip = (
-                <Tooltip id='flagTooltip'>
-                    <FormattedMessage
-                        id='flag_post.unflag'
-                        defaultMessage='Unflag'
-                    />
-                </Tooltip>
-            );
-        } else {
-            flag = (
-                <span
-                    className='icon'
-                    dangerouslySetInnerHTML={{__html: flagIcon}}
-                />
-            );
-            flagFunc = this.flagPost;
-        }
+        let react;
 
-        let flagTrigger;
-        if (!Utils.isPostEphemeral(post)) {
-            flagTrigger = (
-                <OverlayTrigger
-                    key={'commentflagtooltipkey' + flagVisible}
-                    delayShow={Constants.OVERLAY_TIME_DELAY}
-                    placement='top'
-                    overlay={flagTooltip}
-                >
+        if (!isEphemeral && !post.failed && !isSystemMessage && window.mm_config.EnableEmojiPicker === 'true') {
+            react = (
+                <span>
+                    <EmojiPickerOverlay
+                        show={this.state.showEmojiPicker}
+                        onHide={this.toggleEmojiPicker}
+                        target={() => this.refs.dotMenu}
+                        onEmojiClick={this.reactEmojiClick}
+                        rightOffset={15}
+                        spaceRequiredAbove={342}
+                        spaceRequiredBelow={342}
+                    />
                     <a
                         href='#'
-                        className={'flag-icon__container ' + flagVisible}
-                        onClick={flagFunc}
-                    >
-                        {flag}
+                        className='reacticon__container reaction'
+                        onClick={this.toggleEmojiPicker}
+                        ref={'rhs_reacticon_' + post.id}
+                    ><i className='fa fa-smile-o'/>
                     </a>
-                </OverlayTrigger>
+                </span>
+
             );
         }
 
         let options;
-        if (Utils.isPostEphemeral(post)) {
+        if (isEphemeral) {
             options = (
-                <li className='col col__remove'>
+                <div className='col col__remove'>
                     {this.createRemovePostButton()}
-                </li>
+                </div>
             );
-        } else if (!PostUtils.isSystemMessage(post)) {
+        } else if (!isSystemMessage) {
+            const dotMenu = (
+                <DotMenu
+                    idPrefix={Constants.RHS}
+                    idCount={idCount}
+                    post={this.props.post}
+                    isFlagged={this.props.isFlagged}
+                    handleDropdownOpened={this.handleDropdownOpened}
+                />
+            );
+
             options = (
-                <li className='col col__reply'>
-                    {this.createDropdown()}
-                </li>
+                <div
+                    ref='dotMenu'
+                    className='col col__reply'
+                >
+                    {dotMenu}
+                    {react}
+                </div>
+            );
+        }
+
+        let pinnedBadge;
+        if (post.is_pinned) {
+            pinnedBadge = (
+                <span className='post__pinned-badge'>
+                    <FormattedMessage
+                        id='post_info.pinned'
+                        defaultMessage='Pinned'
+                    />
+                </span>
             );
         }
 
         const timeOptions = {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
             hour12: !this.props.useMilitaryTime
         };
 
         return (
-            <div className={'post post--thread ' + currentUserCss + ' ' + compactClass}>
+            <div
+                ref={'post_body_' + post.id}
+                className={this.getClassName(post, isSystemMessage)}
+            >
                 <div className='post__content'>
                     {profilePicContainer}
                     <div>
-                        <ul className='post__header'>
-                            <li className='col col__name'>
-                                <strong><UserProfile user={this.props.user}/></strong>
-                            </li>
+                        <div className='post__header'>
+                            <div className='col col__name'>
+                                <strong>{userProfile}</strong>
+                            </div>
                             {botIndicator}
-                            <li className='col'>
-                                <time className='post__time'>
-                                    {Utils.getDateForUnixTicks(post.create_at).toLocaleString('en', timeOptions)}
-                                </time>
-                                {flagTrigger}
-                            </li>
+                            <div className='col'>
+                                {this.renderTimeTag(post, timeOptions)}
+                                {pinnedBadge}
+                                <PostFlagIcon
+                                    idPrefix={'rhsCommentFlag'}
+                                    idCount={idCount}
+                                    postId={post.id}
+                                    isFlagged={this.props.isFlagged}
+                                    isEphemeral={isEphemeral}
+                                />
+                            </div>
                             {options}
-                        </ul>
-                        <div className='post__body'>
+                        </div>
+                        <div className='post__body' >
                             <div className={postClass}>
-                                {loading}
-                                {message}
+                                {failedPostOptions}
+                                <PostMessageContainer post={post}/>
                             </div>
                             {fileAttachment}
+                            <ReactionListContainer post={post}/>
                         </div>
                     </div>
                 </div>
@@ -411,13 +449,3 @@ export default class RhsComment extends React.Component {
         );
     }
 }
-
-RhsComment.propTypes = {
-    post: React.PropTypes.object,
-    user: React.PropTypes.object.isRequired,
-    currentUser: React.PropTypes.object.isRequired,
-    compactDisplay: React.PropTypes.bool,
-    useMilitaryTime: React.PropTypes.bool.isRequired,
-    isFlagged: React.PropTypes.bool,
-    status: React.PropTypes.string
-};

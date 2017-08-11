@@ -1,19 +1,21 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
-
-import * as AsyncClient from 'utils/async_client.jsx';
-import Client from 'client/web_client.jsx';
+import PropTypes from 'prop-types';
 
 import FormError from 'components/form_error.jsx';
 import SaveButton from 'components/admin_console/save_button.jsx';
 
+import {saveConfig} from 'actions/admin_actions.jsx';
+
 export default class AdminSettings extends React.Component {
-    static get propTypes() {
-        return {
-            config: React.PropTypes.object
-        };
+    static propTypes = {
+
+        /*
+         * Object representing the config file
+         */
+        config: PropTypes.object
     }
 
     constructor(props) {
@@ -53,12 +55,10 @@ export default class AdminSettings extends React.Component {
         let config = JSON.parse(JSON.stringify(this.props.config));
         config = this.getConfigFromState(config);
 
-        Client.saveConfig(
+        saveConfig(
             config,
-            () => {
-                AsyncClient.getConfig((savedConfig) => {
-                    this.setState(this.getStateFromConfig(savedConfig));
-                });
+            (savedConfig) => {
+                this.setState(this.getStateFromConfig(savedConfig));
 
                 this.setState({
                     saveNeeded: false,
@@ -67,6 +67,10 @@ export default class AdminSettings extends React.Component {
 
                 if (callback) {
                     callback();
+                }
+
+                if (this.handleSaved) {
+                    this.handleSaved(config);
                 }
             },
             (err) => {
@@ -77,6 +81,10 @@ export default class AdminSettings extends React.Component {
 
                 if (callback) {
                     callback();
+                }
+
+                if (this.handleSaved) {
+                    this.handleSaved(config);
                 }
             }
         );
@@ -111,7 +119,9 @@ export default class AdminSettings extends React.Component {
     render() {
         return (
             <div className='wrapper--fixed'>
-                {this.renderTitle()}
+                <h3 className='admin-console-header'>
+                    {this.renderTitle()}
+                </h3>
                 <form
                     className='form-horizontal'
                     role='form'

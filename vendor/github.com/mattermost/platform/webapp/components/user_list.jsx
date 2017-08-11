@@ -1,13 +1,29 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import UserListRow from './user_list_row.jsx';
 import LoadingScreen from 'components/loading_screen.jsx';
 
+import PropTypes from 'prop-types';
+
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
+import Constants from 'utils/constants.jsx';
+
 export default class UserList extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.scrollToTop = this.scrollToTop.bind(this);
+    }
+
+    scrollToTop() {
+        if (this.refs.container) {
+            this.refs.container.scrollTop = 0;
+        }
+    }
+
     render() {
         const users = this.props.users;
 
@@ -15,7 +31,7 @@ export default class UserList extends React.Component {
         if (users == null) {
             return <LoadingScreen/>;
         } else if (users.length > 0) {
-            content = users.map((user) => {
+            content = users.map((user, index) => {
                 return (
                     <UserListRow
                         key={user.id}
@@ -24,6 +40,7 @@ export default class UserList extends React.Component {
                         actions={this.props.actions}
                         actionProps={this.props.actionProps}
                         actionUserProps={this.props.actionUserProps[user.id]}
+                        userCount={(index >= 0 && index < Constants.TEST_ID_COUNT) ? index : -1}
                     />
                 );
             });
@@ -31,12 +48,12 @@ export default class UserList extends React.Component {
             content = (
                 <div
                     key='no-users-found'
-                    className='no-channel-message'
+                    className='more-modal__placeholder-row'
                 >
-                    <p className='primary-message'>
+                    <p>
                         <FormattedMessage
                             id='user_list.notFound'
-                            defaultMessage='No users found :('
+                            defaultMessage='No users found'
                         />
                     </p>
                 </div>
@@ -44,7 +61,7 @@ export default class UserList extends React.Component {
         }
 
         return (
-            <div>
+            <div ref='container'>
                 {content}
             </div>
         );
@@ -59,9 +76,9 @@ UserList.defaultProps = {
 };
 
 UserList.propTypes = {
-    users: React.PropTypes.arrayOf(React.PropTypes.object),
-    extraInfo: React.PropTypes.object,
-    actions: React.PropTypes.arrayOf(React.PropTypes.func),
-    actionProps: React.PropTypes.object,
-    actionUserProps: React.PropTypes.object
+    users: PropTypes.arrayOf(PropTypes.object),
+    extraInfo: PropTypes.object,
+    actions: PropTypes.arrayOf(PropTypes.func),
+    actionProps: PropTypes.object,
+    actionUserProps: PropTypes.object
 };

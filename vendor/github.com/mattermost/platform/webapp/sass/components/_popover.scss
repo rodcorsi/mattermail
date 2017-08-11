@@ -4,6 +4,7 @@
 .popover {
     @include border-radius($border-rad);
     color: lighten($black, 25%);
+    padding: 0;
 
     &.bottom,
     &.right,
@@ -17,6 +18,7 @@
     }
 
     .popover-title {
+        @include border-radius(0);
         background: alpha-color($black, .05);
         max-width: 100%;
         overflow: hidden;
@@ -30,6 +32,26 @@
         p {
             &:last-child {
                 margin-bottom: 5px;
+            }
+        }
+    }
+
+    .popover__row {
+        margin: 0 -15px 0;
+        padding: 9px 15px 0;
+
+        &.first {
+            border-top: 1px solid transparent;
+            margin-top: 9px;
+        }
+
+        > a {
+            > i {
+                margin-right: 5px;
+            }
+
+            > span {
+                text-transform: capitalize;
             }
         }
     }
@@ -63,6 +85,17 @@
     max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    &[disabled] {
+        color: $video-circle-offline;
+
+        &:focus,
+        &:hover {
+            color: $video-circle-offline;
+            text-decoration: none;
+        }
+    }
+
 }
 
 .search-help-popover {
@@ -188,9 +221,72 @@
 .member-list__popover {
     max-width: initial;
 
+    .more-modal__header {
+        padding: 14px 0;
+
+        .icon {
+            @include opacity(.8);
+            margin: 0 38px 0 24px;
+            position: relative;
+            top: 2px;
+        }
+
+        span {
+            font-weight: 500;
+        }
+    }
+
     .more-modal__list {
         .more-modal__row {
-            min-height: inherit;
+            border-bottom: none;
+            border-top: 1px solid;
+            cursor: pointer;
+            height: 45px;
+            overflow: hidden;
+            padding: 5px 19px 5px 17px;
+
+            &:hover {
+                border-left: 3px solid transparent;
+                padding-left: 14px;
+
+                .more-modal__actions {
+                    @include opacity(1);
+                }
+            }
+
+            &.more-modal__row--button {
+                border-left: none;
+                height: 40px;
+                position: relative;
+
+                button {
+                    font-weight: 500;
+                    height: 100%;
+                    left: 0;
+                    position: absolute;
+                    top: 0;
+                    width: 100%;
+                }
+            }
+        }
+
+        .more-modal__name {
+            line-height: 33px;
+        }
+
+        .more-modal__image {
+            margin: 0;
+        }
+
+        .more-modal__details {
+            line-height: 32px;
+            padding-left: 30px;
+        }
+
+        .more-modal__actions {
+            @include opacity(0);
+            line-height: 42px;
+            margin: 0;
         }
     }
 

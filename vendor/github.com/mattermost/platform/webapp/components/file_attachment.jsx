@@ -1,11 +1,13 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import Constants from 'utils/constants.jsx';
-import FileStore from 'stores/file_store.jsx';
+import {getFileUrl, getFileThumbnailUrl} from 'mattermost-redux/utils/file_utils';
 import * as Utils from 'utils/utils.jsx';
 
 import {Tooltip, OverlayTrigger} from 'react-bootstrap';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -44,7 +46,7 @@ export default class FileAttachment extends React.Component {
         const fileType = Utils.getFileType(fileInfo.extension);
 
         if (fileType === 'image') {
-            const thumbnailUrl = FileStore.getFileThumbnailUrl(fileInfo.id);
+            const thumbnailUrl = getFileThumbnailUrl(fileInfo.id);
 
             const img = new Image();
             img.onload = () => {
@@ -62,7 +64,7 @@ export default class FileAttachment extends React.Component {
     render() {
         const fileInfo = this.props.fileInfo;
         const fileName = fileInfo.name;
-        const fileUrl = FileStore.getFileUrl(fileInfo.id);
+        const fileUrl = getFileUrl(fileInfo.id);
 
         let thumbnail;
         if (this.state.loaded) {
@@ -81,7 +83,7 @@ export default class FileAttachment extends React.Component {
                     <div
                         className={className}
                         style={{
-                            backgroundImage: `url(${FileStore.getFileThumbnailUrl(fileInfo.id)})`
+                            backgroundImage: `url(${getFileThumbnailUrl(fileInfo.id)})`
                         }}
                     />
                 );
@@ -103,6 +105,7 @@ export default class FileAttachment extends React.Component {
         if (this.props.compactDisplay) {
             filenameOverlay = (
                 <OverlayTrigger
+                    trigger={['hover', 'focus']}
                     delayShow={1000}
                     placement='top'
                     overlay={<Tooltip id='file-name__tooltip'>{fileName}</Tooltip>}
@@ -124,6 +127,7 @@ export default class FileAttachment extends React.Component {
         } else {
             filenameOverlay = (
                 <OverlayTrigger
+                    trigger={['hover', 'focus']}
                     delayShow={1000}
                     placement='top'
                     overlay={<Tooltip id='file-name__tooltip'>{Utils.localizeMessage('file_attachment.download', 'Download') + ' "' + fileName + '"'}</Tooltip>}
@@ -172,13 +176,13 @@ export default class FileAttachment extends React.Component {
 }
 
 FileAttachment.propTypes = {
-    fileInfo: React.PropTypes.object.isRequired,
+    fileInfo: PropTypes.object.isRequired,
 
     // the index of this attachment preview in the parent FileAttachmentList
-    index: React.PropTypes.number.isRequired,
+    index: PropTypes.number.isRequired,
 
     // handler for when the thumbnail is clicked passed the index above
-    handleImageClick: React.PropTypes.func,
+    handleImageClick: PropTypes.func,
 
-    compactDisplay: React.PropTypes.bool
+    compactDisplay: PropTypes.bool
 };

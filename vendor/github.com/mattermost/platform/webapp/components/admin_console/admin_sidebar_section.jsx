@@ -1,21 +1,24 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
 
 import {Link} from 'react-router/es6';
+import * as Utils from 'utils/utils.jsx';
 
 export default class AdminSidebarSection extends React.Component {
     static get propTypes() {
         return {
-            name: React.PropTypes.string.isRequired,
-            title: React.PropTypes.node.isRequired,
-            type: React.PropTypes.string,
-            parentLink: React.PropTypes.string,
-            subsection: React.PropTypes.bool,
-            children: React.PropTypes.arrayOf(React.PropTypes.element),
-            action: React.PropTypes.node,
-            onlyActiveOnIndex: React.PropTypes.bool
+            name: PropTypes.string.isRequired,
+            title: PropTypes.node.isRequired,
+            type: PropTypes.string,
+            parentLink: PropTypes.string,
+            subsection: PropTypes.bool,
+            children: PropTypes.node,
+            action: PropTypes.node,
+            onlyActiveOnIndex: PropTypes.bool
         };
     }
 
@@ -36,7 +39,7 @@ export default class AdminSidebarSection extends React.Component {
         const link = this.getLink();
 
         let clonedChildren = null;
-        if (this.props.children.length > 0) {
+        if (this.props.children) {
             clonedChildren = (
                 <ul className='nav nav__sub-menu subsections'>
                     {
@@ -62,6 +65,7 @@ export default class AdminSidebarSection extends React.Component {
 
         let sidebarItem = (
             <Link
+                id={Utils.createSafeId(this.props.name)}
                 className={`${className}-title`}
                 activeClassName={`${className}-title ${className}-title--active`}
                 onlyActiveOnIndex={this.props.onlyActiveOnIndex}
@@ -79,8 +83,6 @@ export default class AdminSidebarSection extends React.Component {
             sidebarItem = (
                 <div
                     className={`${className}-title`}
-                    activeClassName={`${className}-title ${className}-title--active`}
-                    onlyActiveOnIndex={this.props.onlyActiveOnIndex}
                 >
                     <span className={`${className}-title__text`}>
                         {this.props.title}

@@ -1,9 +1,11 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import {Modal} from 'react-bootstrap';
 
 import {FormattedMessage} from 'react-intl';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import Constants from 'utils/constants.jsx';
@@ -140,7 +142,7 @@ export default class AboutBuildModal extends React.Component {
                                         id='about.version'
                                         defaultMessage='Version:'
                                     />
-                                    {version}
+                                    <span id='versionString'>{version}</span>
                                 </div>
                                 <div>
                                     <FormattedMessage
@@ -158,7 +160,10 @@ export default class AboutBuildModal extends React.Component {
                         <div className='form-group about-modal__copyright'>
                             <FormattedMessage
                                 id='about.copyright'
-                                defaultMessage='Copyright 2016 Mattermost, Inc. All rights reserved'
+                                defaultMessage='Copyright 2015 - {currentYear} Mattermost, Inc. All rights reserved'
+                                values={{
+                                    currentYear: new Date().getFullYear()
+                                }}
                             />
                         </div>
                     </div>
@@ -195,6 +200,6 @@ AboutBuildModal.defaultProps = {
 };
 
 AboutBuildModal.propTypes = {
-    show: React.PropTypes.bool.isRequired,
-    onModalDismissed: React.PropTypes.func.isRequired
+    show: PropTypes.bool.isRequired,
+    onModalDismissed: PropTypes.func.isRequired
 };

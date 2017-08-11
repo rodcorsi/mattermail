@@ -1,4 +1,6 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -10,18 +12,18 @@ import LoadingScreen from 'components/loading_screen.jsx';
 
 export default class BackstageList extends React.Component {
     static propTypes = {
-        children: React.PropTypes.node,
-        header: React.PropTypes.node.isRequired,
-        addLink: React.PropTypes.string,
-        addText: React.PropTypes.node,
-        emptyText: React.PropTypes.node,
-        helpText: React.PropTypes.node,
-        loading: React.PropTypes.bool.isRequired,
-        searchPlaceholder: React.PropTypes.string
+        children: PropTypes.node,
+        header: PropTypes.node.isRequired,
+        addLink: PropTypes.string,
+        addText: PropTypes.node,
+        emptyText: PropTypes.node,
+        helpText: PropTypes.node,
+        loading: PropTypes.bool.isRequired,
+        searchPlaceholder: PropTypes.string
     }
 
     static defaultProps = {
-        searchPlaceholder: Utils.localizeMessage('backstage.search', 'Search')
+        searchPlaceholder: Utils.localizeMessage('backstage_list.search', 'Search')
     }
 
     constructor(props) {

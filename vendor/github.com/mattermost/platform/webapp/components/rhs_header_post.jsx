@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import AppDispatcher from '../dispatcher/app_dispatcher.jsx';
@@ -6,11 +6,13 @@ import Constants from 'utils/constants.jsx';
 import {Tooltip, OverlayTrigger} from 'react-bootstrap';
 
 import * as GlobalActions from 'actions/global_actions.jsx';
-import {getFlaggedPosts} from 'actions/post_actions.jsx';
+import {getFlaggedPosts, getPinnedPosts} from 'actions/post_actions.jsx';
 
 import {FormattedMessage} from 'react-intl';
 
 const ActionTypes = Constants.ActionTypes;
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -24,15 +26,18 @@ export default class RhsHeaderPost extends React.Component {
 
         this.state = {};
     }
+
     handleClose(e) {
         e.preventDefault();
         GlobalActions.emitCloseRightHandSide();
         this.props.shrink();
     }
+
     toggleSize(e) {
         e.preventDefault();
         this.props.toggleSize();
     }
+
     handleBack(e) {
         e.preventDefault();
 
@@ -50,8 +55,11 @@ export default class RhsHeaderPost extends React.Component {
             });
         } else if (this.props.fromFlaggedPosts) {
             getFlaggedPosts();
+        } else if (this.props.fromPinnedPosts) {
+            getPinnedPosts();
         }
     }
+
     render() {
         let back;
         const closeSidebarTooltip = (
@@ -91,6 +99,15 @@ export default class RhsHeaderPost extends React.Component {
                     />
                 </Tooltip>
             );
+        } else if (this.props.fromPinnedPosts) {
+            backToResultsTooltip = (
+                <Tooltip id='backToResultsTooltip'>
+                    <FormattedMessage
+                        id='rhs_header.backToPinnedTooltip'
+                        defaultMessage='Back to Pinned Posts'
+                    />
+                </Tooltip>
+            );
         }
 
         const expandSidebarTooltip = (
@@ -111,7 +128,7 @@ export default class RhsHeaderPost extends React.Component {
             </Tooltip>
         );
 
-        if (this.props.fromSearch || this.props.fromFlaggedPosts || this.props.isWebrtc) {
+        if (this.props.fromSearch || this.props.fromFlaggedPosts || this.props.isWebrtc || this.props.fromPinnedPosts) {
             back = (
                 <a
                     href='#'
@@ -119,6 +136,7 @@ export default class RhsHeaderPost extends React.Component {
                     className='sidebar--right__back'
                 >
                     <OverlayTrigger
+                        trigger={['hover', 'focus']}
                         delayShow={Constants.OVERLAY_TIME_DELAY}
                         placement='top'
                         overlay={backToResultsTooltip}
@@ -146,6 +164,7 @@ export default class RhsHeaderPost extends React.Component {
                         onClick={this.toggleSize}
                     >
                         <OverlayTrigger
+                            trigger={['hover', 'focus']}
                             delayShow={Constants.OVERLAY_TIME_DELAY}
                             placement='top'
                             overlay={expandSidebarTooltip}
@@ -153,6 +172,7 @@ export default class RhsHeaderPost extends React.Component {
                             <i className='fa fa-expand'/>
                         </OverlayTrigger>
                         <OverlayTrigger
+                            trigger={['hover', 'focus']}
                             delayShow={Constants.OVERLAY_TIME_DELAY}
                             placement='top'
                             overlay={shrinkSidebarTooltip}
@@ -168,6 +188,7 @@ export default class RhsHeaderPost extends React.Component {
                     >
 
                         <OverlayTrigger
+                            trigger={['hover', 'focus']}
                             delayShow={Constants.OVERLAY_TIME_DELAY}
                             placement='top'
                             overlay={closeSidebarTooltip}
@@ -186,10 +207,11 @@ RhsHeaderPost.defaultProps = {
     fromSearch: ''
 };
 RhsHeaderPost.propTypes = {
-    isMentionSearch: React.PropTypes.bool,
-    isWebrtc: React.PropTypes.bool,
-    fromSearch: React.PropTypes.string,
-    fromFlaggedPosts: React.PropTypes.bool,
-    toggleSize: React.PropTypes.function,
-    shrink: React.PropTypes.function
+    isMentionSearch: PropTypes.bool,
+    isWebrtc: PropTypes.bool,
+    fromSearch: PropTypes.string,
+    fromFlaggedPosts: PropTypes.bool,
+    fromPinnedPosts: PropTypes.bool,
+    toggleSize: PropTypes.func,
+    shrink: PropTypes.func
 };

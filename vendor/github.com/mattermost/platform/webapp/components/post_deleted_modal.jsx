@@ -1,14 +1,11 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
-
-import AppDispatcher from '../dispatcher/app_dispatcher.jsx';
-import Constants from 'utils/constants.jsx';
 
 import {FormattedMessage} from 'react-intl';
 
-var ActionTypes = Constants.ActionTypes;
-
 import {Modal} from 'react-bootstrap';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -25,23 +22,6 @@ export default class PostDeletedModal extends React.Component {
 
     handleHide(e) {
         e.preventDefault();
-
-        AppDispatcher.handleServerAction({
-            type: ActionTypes.RECEIVED_SEARCH,
-            results: null
-        });
-
-        AppDispatcher.handleServerAction({
-            type: ActionTypes.RECEIVED_SEARCH_TERM,
-            term: null,
-            do_search: false,
-            is_mention_search: false
-        });
-
-        AppDispatcher.handleServerAction({
-            type: ActionTypes.RECEIVED_POST_SELECTED,
-            postId: null
-        });
 
         this.props.onHide();
     }
@@ -86,6 +66,6 @@ export default class PostDeletedModal extends React.Component {
 }
 
 PostDeletedModal.propTypes = {
-    show: React.PropTypes.bool.isRequired,
-    onHide: React.PropTypes.func.isRequired
+    show: PropTypes.bool.isRequired,
+    onHide: PropTypes.func.isRequired
 };

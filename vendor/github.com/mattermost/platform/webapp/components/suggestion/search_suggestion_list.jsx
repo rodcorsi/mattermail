@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import $ from 'jquery';
@@ -12,6 +12,10 @@ import {FormattedMessage} from 'react-intl';
 import {Popover} from 'react-bootstrap';
 
 export default class SearchSuggestionList extends SuggestionList {
+    static propTypes = {
+        ...SuggestionList.propTypes
+    };
+
     getContent() {
         return $(ReactDOM.findDOMNode(this.refs.popover)).find('.popover-content');
     }
@@ -29,7 +33,7 @@ export default class SearchSuggestionList extends SuggestionList {
             text = (
                 <FormattedMessage
                     id='suggestion.search.private'
-                    defaultMessage='Private Groups'
+                    defaultMessage='Private Channels'
                 />
             );
         }
@@ -75,7 +79,7 @@ export default class SearchSuggestionList extends SuggestionList {
                     term={term}
                     matchedPretext={this.state.matchedPretext[i]}
                     isSelection={isSelection}
-                    onClick={this.handleItemClick}
+                    onClick={this.props.onCompleteWord}
                 />
             );
         }
@@ -92,7 +96,3 @@ export default class SearchSuggestionList extends SuggestionList {
         );
     }
 }
-
-SearchSuggestionList.propTypes = {
-    ...SuggestionList.propTypes
-};

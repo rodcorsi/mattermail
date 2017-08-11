@@ -1,9 +1,9 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
 
-import * as AsyncClient from 'utils/async_client.jsx';
+import {getPublicLink} from 'actions/file_actions.jsx';
 import Constants from 'utils/constants.jsx';
 import ModalStore from 'stores/modal_store.jsx';
 import PureRenderMixin from 'react-addons-pure-render-mixin';
@@ -34,7 +34,7 @@ export default class GetPublicLinkModal extends React.Component {
 
     componentDidUpdate(prevProps, prevState) {
         if (this.state.show && !prevState.show) {
-            AsyncClient.getPublicLink(this.state.fileId, this.handlePublicLink);
+            getPublicLink(this.state.fileId, this.handlePublicLink);
         }
     }
 

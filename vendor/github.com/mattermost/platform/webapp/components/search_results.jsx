@@ -1,25 +1,26 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import SearchResultsHeader from './search_results_header.jsx';
 import SearchResultsItem from './search_results_item.jsx';
-import SearchBox from './search_bar.jsx';
 
 import ChannelStore from 'stores/channel_store.jsx';
 import SearchStore from 'stores/search_store.jsx';
 import UserStore from 'stores/user_store.jsx';
 import PreferenceStore from 'stores/preference_store.jsx';
+import WebrtcStore from 'stores/webrtc_store.jsx';
 
 import * as Utils from 'utils/utils.jsx';
 import Constants from 'utils/constants.jsx';
 const Preferences = Constants.Preferences;
 
 import $ from 'jquery';
+import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage, FormattedHTMLMessage} from 'react-intl';
 
 function getStateFromStores() {
-    const results = SearchStore.getSearchResults();
+    const results = JSON.parse(JSON.stringify(SearchStore.getSearchResults()));
 
     const channels = new Map();
 
@@ -51,8 +52,10 @@ export default class SearchResults extends React.Component {
         this.onChange = this.onChange.bind(this);
         this.onUserChange = this.onUserChange.bind(this);
         this.onPreferenceChange = this.onPreferenceChange.bind(this);
+        this.onBusy = this.onBusy.bind(this);
         this.resize = this.resize.bind(this);
         this.onPreferenceChange = this.onPreferenceChange.bind(this);
+        this.onStatusChange = this.onStatusChange.bind(this);
         this.handleResize = this.handleResize.bind(this);
 
         const state = getStateFromStores();
@@ -60,6 +63,8 @@ export default class SearchResults extends React.Component {
         state.windowHeight = Utils.windowHeight();
         state.profiles = JSON.parse(JSON.stringify(UserStore.getProfiles()));
         state.compactDisplay = PreferenceStore.get(Preferences.CATEGORY_DISPLAY_SETTINGS, Preferences.MESSAGE_DISPLAY, Preferences.MESSAGE_DISPLAY_DEFAULT) === Preferences.MESSAGE_DISPLAY_COMPACT;
+        state.isBusy = WebrtcStore.isBusy();
+        state.statuses = Object.assign({}, UserStore.getStatuses());
         this.state = state;
     }
 
@@ -70,7 +75,9 @@ export default class SearchResults extends React.Component {
         ChannelStore.addChangeListener(this.onChange);
         PreferenceStore.addChangeListener(this.onPreferenceChange);
         UserStore.addChangeListener(this.onUserChange);
+        UserStore.addStatusesChangeListener(this.onStatusChange);
         PreferenceStore.addChangeListener(this.onPreferenceChange);
+        WebrtcStore.addBusyListener(this.onBusy);
 
         this.resize();
         window.addEventListener('resize', this.handleResize);
@@ -80,6 +87,10 @@ export default class SearchResults extends React.Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
+        if (!Utils.areObjectsEqual(nextState.statuses, this.state.statuses)) {
+            return true;
+        }
+
         if (!Utils.areObjectsEqual(this.props, nextProps)) {
             return true;
         }
@@ -92,11 +103,11 @@ export default class SearchResults extends React.Component {
             return true;
         }
 
-        return false;
-    }
+        if (nextState.isBusy !== this.state.isBusy) {
+            return true;
+        }
 
-    componentDidUpdate() {
-        this.resize();
+        return false;
     }
 
     componentWillUnmount() {
@@ -106,9 +117,17 @@ export default class SearchResults extends React.Component {
         ChannelStore.removeChangeListener(this.onChange);
         PreferenceStore.removeChangeListener(this.onPreferenceChange);
         UserStore.removeChangeListener(this.onUserChange);
+        UserStore.removeStatusesChangeListener(this.onStatusChange);
         PreferenceStore.removeChangeListener(this.onPreferenceChange);
+        WebrtcStore.removeBusyListener(this.onBusy);
 
         window.removeEventListener('resize', this.handleResize);
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (this.state.searchTerm !== prevState.searchTerm) {
+            this.resize();
+        }
     }
 
     handleResize() {
@@ -135,17 +154,20 @@ export default class SearchResults extends React.Component {
         this.setState({profiles: JSON.parse(JSON.stringify(UserStore.getProfiles()))});
     }
 
+    onBusy(isBusy) {
+        this.setState({isBusy});
+    }
+
+    onStatusChange() {
+        this.setState({statuses: Object.assign({}, UserStore.getStatuses())});
+    }
+
     resize() {
         $('#search-items-container').scrollTop(0);
     }
 
     render() {
         var results = this.state.results;
-        var currentId = UserStore.getCurrentId();
-        var searchForm = null;
-        if (currentId) {
-            searchForm = <SearchBox/>;
-        }
         var noResults = (!results || !results.order || !results.order.length);
         const searchTerm = this.state.searchTerm;
         const profiles = this.state.profiles || {};
@@ -186,6 +208,37 @@ export default class SearchResults extends React.Component {
                     </ul>
                 </div>
             );
+        } else if (this.props.isPinnedPosts && noResults) {
+            ctls = (
+                <div className='sidebar--right__subheader'>
+                    <ul>
+                        <li>
+                            <FormattedHTMLMessage
+                                id='search_results.usagePin1'
+                                defaultMessage='There are no pinned messages yet.'
+                            />
+                        </li>
+                        <li>
+                            <FormattedHTMLMessage
+                                id='search_results.usagePin2'
+                                defaultMessage='All members of this channel can pin important or useful messages.'
+                            />
+                        </li>
+                        <li>
+                            <FormattedHTMLMessage
+                                id='search_results.usagePin3'
+                                defaultMessage='Pinned messages are visible to all channel members.'
+                            />
+                        </li>
+                        <li>
+                            <FormattedHTMLMessage
+                                id='search_results.usagePin4'
+                                defaultMessage={'To pin a message: Go to the message that you want to pin and click [...] > "Pin to channel".'}
+                            />
+                        </li>
+                    </ul>
+                </div>
+            );
         } else if (!searchTerm && noResults) {
             ctls = (
                 <div className='sidebar--right__subheader'>
@@ -215,7 +268,7 @@ export default class SearchResults extends React.Component {
                 </div>
             );
         } else {
-            ctls = results.order.map(function mymap(id) {
+            ctls = results.order.map(function searchResults(id, idx, arr) {
                 const post = results.posts[id];
                 let profile;
                 if (UserStore.getCurrentId() === post.user_id) {
@@ -224,16 +277,25 @@ export default class SearchResults extends React.Component {
                     profile = profiles[post.user_id];
                 }
 
+                let status = 'offline';
+                if (this.state.statuses) {
+                    status = this.state.statuses[post.user_id] || 'offline';
+                }
+
                 let isFlagged = false;
                 if (this.state.flaggedPosts) {
                     isFlagged = this.state.flaggedPosts.get(post.id) === 'true';
                 }
+
+                const reverseCount = arr.length - idx - 1;
+
                 return (
                     <SearchResultsItem
                         key={post.id}
                         channel={this.state.channels.get(post.channel_id)}
                         compactDisplay={this.state.compactDisplay}
                         post={post}
+                        lastPostCount={(reverseCount >= 0 && reverseCount < Constants.TEST_ID_COUNT) ? reverseCount : -1}
                         user={profile}
                         term={searchTerm}
                         isMentionSearch={this.props.isMentionSearch}
@@ -241,27 +303,28 @@ export default class SearchResults extends React.Component {
                         useMilitaryTime={this.props.useMilitaryTime}
                         shrink={this.props.shrink}
                         isFlagged={isFlagged}
+                        isBusy={this.state.isBusy}
+                        status={status}
                     />
                 );
             }, this);
         }
 
         return (
-            <div className='sidebar--right__content'>
-                <div className='search-bar__container sidebar--right__search-header'>{searchForm}</div>
-                <div className='sidebar-right__body'>
-                    <SearchResultsHeader
-                        isMentionSearch={this.props.isMentionSearch}
-                        toggleSize={this.props.toggleSize}
-                        shrink={this.props.shrink}
-                        isFlaggedPosts={this.props.isFlaggedPosts}
-                    />
-                    <div
-                        id='search-items-container'
-                        className='search-items-container'
-                    >
-                        {ctls}
-                    </div>
+            <div className='sidebar-right__body'>
+                <SearchResultsHeader
+                    isMentionSearch={this.props.isMentionSearch}
+                    toggleSize={this.props.toggleSize}
+                    shrink={this.props.shrink}
+                    isFlaggedPosts={this.props.isFlaggedPosts}
+                    isPinnedPosts={this.props.isPinnedPosts}
+                    channelDisplayName={this.props.channelDisplayName}
+                />
+                <div
+                    id='search-items-container'
+                    className='search-items-container'
+                >
+                    {ctls}
                 </div>
             </div>
         );
@@ -269,9 +332,11 @@ export default class SearchResults extends React.Component {
 }
 
 SearchResults.propTypes = {
-    isMentionSearch: React.PropTypes.bool,
-    useMilitaryTime: React.PropTypes.bool.isRequired,
-    toggleSize: React.PropTypes.function,
-    shrink: React.PropTypes.function,
-    isFlaggedPosts: React.PropTypes.bool
+    isMentionSearch: PropTypes.bool,
+    useMilitaryTime: PropTypes.bool.isRequired,
+    toggleSize: PropTypes.func,
+    shrink: PropTypes.func,
+    isFlaggedPosts: PropTypes.bool,
+    isPinnedPosts: PropTypes.bool,
+    channelDisplayName: PropTypes.string.isRequired
 };

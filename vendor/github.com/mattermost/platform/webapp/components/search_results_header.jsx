@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import Constants from 'utils/constants.jsx';
@@ -6,6 +6,8 @@ import {Tooltip, OverlayTrigger} from 'react-bootstrap';
 import * as GlobalActions from 'actions/global_actions.jsx';
 
 import {FormattedMessage} from 'react-intl';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -79,6 +81,16 @@ export default class SearchResultsHeader extends React.Component {
                     defaultMessage='Flagged Posts'
                 />
             );
+        } else if (this.props.isPinnedPosts) {
+            title = (
+                <FormattedMessage
+                    id='search_header.title4'
+                    defaultMessage='Pinned posts in {channelDisplayName}'
+                    values={{
+                        channelDisplayName: this.props.channelDisplayName
+                    }}
+                />
+            );
         }
 
         return (
@@ -92,6 +104,7 @@ export default class SearchResultsHeader extends React.Component {
                         onClick={this.toggleSize}
                     >
                         <OverlayTrigger
+                            trigger={['hover', 'focus']}
                             delayShow={Constants.OVERLAY_TIME_DELAY}
                             placement='top'
                             overlay={expandSidebarTooltip}
@@ -99,6 +112,7 @@ export default class SearchResultsHeader extends React.Component {
                             <i className='fa fa-expand'/>
                         </OverlayTrigger>
                         <OverlayTrigger
+                            trigger={['hover', 'focus']}
                             delayShow={Constants.OVERLAY_TIME_DELAY}
                             placement='top'
                             overlay={shrinkSidebarTooltip}
@@ -114,6 +128,7 @@ export default class SearchResultsHeader extends React.Component {
                         onClick={this.handleClose}
                     >
                         <OverlayTrigger
+                            trigger={['hover', 'focus']}
                             delayShow={Constants.OVERLAY_TIME_DELAY}
                             placement='top'
                             overlay={closeSidebarTooltip}
@@ -128,8 +143,10 @@ export default class SearchResultsHeader extends React.Component {
 }
 
 SearchResultsHeader.propTypes = {
-    isMentionSearch: React.PropTypes.bool,
-    toggleSize: React.PropTypes.function,
-    shrink: React.PropTypes.function,
-    isFlaggedPosts: React.PropTypes.bool
+    isMentionSearch: PropTypes.bool,
+    toggleSize: PropTypes.func,
+    shrink: PropTypes.func,
+    isFlaggedPosts: PropTypes.bool,
+    isPinnedPosts: PropTypes.bool,
+    channelDisplayName: PropTypes.string.isRequired
 };

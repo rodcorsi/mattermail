@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package store
@@ -15,10 +15,10 @@ const (
 )
 
 type SqlStatusStore struct {
-	*SqlStore
+	SqlStore
 }
 
-func NewSqlStatusStore(sqlStore *SqlStore) StatusStore {
+func NewSqlStatusStore(sqlStore SqlStore) StatusStore {
 	s := &SqlStatusStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

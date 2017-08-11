@@ -4,20 +4,26 @@ logs
 node_modules
 /dist
 /webapp/dist
+jobserver
 npm-debug.log
+webapp/yarn-error.log
+mattermost.mattermost-license
+config/mattermost.mattermost-license
 
 web/static/js/bundle*.js
 web/static/js/bundle*.js.map
 web/static/js/libs*.js
 
 config/active.dat
+config/config.json
 
 # Enteprise imports file
-imports.go
+imports/imports.go
 
 # Build Targets
 .prebuild
 .npminstall
+.yarninstall
 
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
@@ -27,6 +33,7 @@ imports.go
 # Folders
 _obj
 _test
+.vscode
 
 # Architecture specific extensions/prefixes
 [568vq].out
@@ -69,12 +76,18 @@ web/sass-files/sass/.sass-cache/
 data/*
 webapp/data/*
 api/data/*
+api4/data/*
 
 enterprise
 
 cover.out
 ecover.out
+*.test
+webapp/coverage
 
 .agignore
 .ctags
 tags
+.idea
+
+debug

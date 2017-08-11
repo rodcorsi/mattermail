@@ -4,13 +4,29 @@
     background-color: darken($primary-color, 5%);
     color: $white;
     padding: 5px 30px;
-    position: absolute;
+    position: fixed;
     text-align: center;
     top: 0;
     width: 100%;
     z-index: 9999;
 
+    &.error-bar--fixed {
+        overflow: hidden;
+        padding: 1px 30px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     a {
+        color: inherit !important;
+        text-decoration: underline;
+
+        &:hover,
+        &:active,
+        &:focus {
+            color: inherit !important;
+        }
+
         &.error-bar__close {
             color: $white;
             font-family: 'Open Sans', sans-serif;
@@ -30,32 +46,10 @@
     }
 }
 
-.error-bar-developer {
+.error-bar-critical {
     background-color: #B0171F;
-    color: white;
-    padding: 5px 30px;
-    position: absolute;
-    text-align: center;
-    top: 0;
-    width: 100%;
-    z-index: 9999;
+}
 
-    a {
-        &.error-bar__close {
-            color: $white;
-            font-family: 'Open Sans', sans-serif;
-            font-size: 20px;
-            font-weight: 600;
-            padding: 0 10px;
-            position: absolute;
-            right: 0;
-            text-decoration: none;
-            top: 0;
-
-            &:hover {
-                color: $white;
-                text-decoration: none;
-            }
-        }
-    }
+.error-bar-developer {
+    background-color: purple;
 }

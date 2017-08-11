@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import * as RouteUtils from 'routes/route_utils.jsx';
@@ -27,6 +27,12 @@ export default {
                     getComponents: (location, callback) => {
                         System.import('components/integrations/components/add_incoming_webhook.jsx').then(RouteUtils.importComponentSuccess(callback));
                     }
+                },
+                {
+                    path: 'edit',
+                    getComponents: (location, callback) => {
+                        System.import('components/integrations/components/edit_incoming_webhook.jsx').then(RouteUtils.importComponentSuccess(callback));
+                    }
                 }
             ]
         },
@@ -43,32 +49,44 @@ export default {
                     getComponents: (location, callback) => {
                         System.import('components/integrations/components/add_outgoing_webhook.jsx').then(RouteUtils.importComponentSuccess(callback));
                     }
+                },
+                {
+                    path: 'edit',
+                    getComponents: (location, callback) => {
+                        System.import('components/integrations/components/edit_outgoing_webhook.jsx').then(RouteUtils.importComponentSuccess(callback));
+                    }
                 }
             ]
         },
         {
             path: 'commands',
             getComponents: (location, callback) => {
-                System.import('components/integrations/components/commands_container.jsx').then(RouteUtils.importComponentSuccess(callback));
+                System.import('components/integrations/components/commands_container').then(RouteUtils.importComponentSuccess(callback));
             },
             indexRoute: {onEnter: (nextState, replace) => replace(nextState.location.pathname + '/installed')},
             childRoutes: [
                 {
                     path: 'installed',
                     getComponents: (location, callback) => {
-                        System.import('components/integrations/components/installed_commands.jsx').then(RouteUtils.importComponentSuccess(callback));
+                        System.import('components/integrations/components/installed_commands').then(RouteUtils.importComponentSuccess(callback));
                     }
                 },
                 {
                     path: 'add',
                     getComponents: (location, callback) => {
-                        System.import('components/integrations/components/add_command.jsx').then(RouteUtils.importComponentSuccess(callback));
+                        System.import('components/integrations/components/add_command').then(RouteUtils.importComponentSuccess(callback));
+                    }
+                },
+                {
+                    path: 'edit',
+                    getComponents: (location, callback) => {
+                        System.import('components/integrations/components/edit_command.jsx').then(RouteUtils.importComponentSuccess(callback));
                     }
                 },
                 {
                     path: 'confirm',
                     getComponents: (location, callback) => {
-                        System.import('components/integrations/components/confirm_integration.jsx').then(RouteUtils.importComponentSuccess(callback));
+                        System.import('components/integrations/components/confirm_integration').then(RouteUtils.importComponentSuccess(callback));
                     }
                 }
             ]
@@ -92,7 +110,7 @@ export default {
         {
             path: 'confirm',
             getComponents: (location, callback) => {
-                System.import('components/integrations/components/confirm_integration.jsx').then(RouteUtils.importComponentSuccess(callback));
+                System.import('components/integrations/components/confirm_integration').then(RouteUtils.importComponentSuccess(callback));
             }
         }
     ]

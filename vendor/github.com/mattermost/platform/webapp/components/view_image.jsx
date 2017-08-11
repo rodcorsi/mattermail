@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import AudioVideoPreview from './audio_video_preview.jsx';
@@ -9,14 +9,14 @@ import ViewImagePopoverBar from './view_image_popover_bar.jsx';
 
 import * as GlobalActions from 'actions/global_actions.jsx';
 
-import FileStore from 'stores/file_store.jsx';
-
 import * as Utils from 'utils/utils.jsx';
+import {getFileUrl, getFilePreviewUrl} from 'mattermost-redux/utils/file_utils';
 
 import Constants from 'utils/constants.jsx';
 const KeyCodes = Constants.KeyCodes;
 
 import $ from 'jquery';
+import PropTypes from 'prop-types';
 import React from 'react';
 import {Modal} from 'react-bootstrap';
 
@@ -126,10 +126,10 @@ export default class ViewImageModal extends React.Component {
         if (fileType === 'image') {
             let previewUrl;
             if (fileInfo.has_image_preview) {
-                previewUrl = FileStore.getFilePreviewUrl(fileInfo.id);
+                previewUrl = getFilePreviewUrl(fileInfo.id);
             } else {
                 // some images (eg animated gifs) just show the file itself and not a preview
-                previewUrl = FileStore.getFileUrl(fileInfo.id);
+                previewUrl = getFileUrl(fileInfo.id);
             }
 
             const img = new Image();
@@ -174,18 +174,17 @@ export default class ViewImageModal extends React.Component {
         }
 
         const fileInfo = this.props.fileInfos[this.state.imgId];
-        const fileUrl = FileStore.getFileUrl(fileInfo.id);
+        const fileUrl = getFileUrl(fileInfo.id);
 
         let content;
         if (this.state.loaded[this.state.imgId]) {
             const fileType = Utils.getFileType(fileInfo.extension);
 
-            if (fileType === 'image') {
+            if (fileType === 'image' || fileType === 'svg') {
                 content = (
                     <ImagePreview
                         fileInfo={fileInfo}
                         fileUrl={fileUrl}
-                        maxHeight={this.state.imgHeight}
                     />
                 );
             } else if (fileType === 'video' || fileType === 'audio') {
@@ -193,7 +192,6 @@ export default class ViewImageModal extends React.Component {
                     <AudioVideoPreview
                         fileInfo={fileInfo}
                         fileUrl={fileUrl}
-                        maxHeight={this.state.imgHeight}
                     />
                 );
             } else if (PDFPreview.supports(fileInfo)) {
@@ -312,10 +310,10 @@ ViewImageModal.defaultProps = {
     startId: 0
 };
 ViewImageModal.propTypes = {
-    show: React.PropTypes.bool.isRequired,
-    onModalDismissed: React.PropTypes.func.isRequired,
-    fileInfos: React.PropTypes.arrayOf(React.PropTypes.object).isRequired,
-    startId: React.PropTypes.number
+    show: PropTypes.bool.isRequired,
+    onModalDismissed: PropTypes.func.isRequired,
+    fileInfos: PropTypes.arrayOf(PropTypes.object).isRequired,
+    startId: PropTypes.number
 };
 
 function LoadingImagePreview({progress, loading}) {
@@ -340,14 +338,14 @@ function LoadingImagePreview({progress, loading}) {
 }
 
 LoadingImagePreview.propTypes = {
-    progress: React.PropTypes.number,
-    loading: React.PropTypes.string
+    progress: PropTypes.number,
+    loading: PropTypes.string
 };
 
-function ImagePreview({fileInfo, fileUrl, maxHeight}) {
+function ImagePreview({fileInfo, fileUrl}) {
     let previewUrl;
     if (fileInfo.has_preview_image) {
-        previewUrl = FileStore.getFilePreviewUrl(fileInfo.id);
+        previewUrl = getFilePreviewUrl(fileInfo.id);
     } else {
         previewUrl = fileUrl;
     }
@@ -359,16 +357,12 @@ function ImagePreview({fileInfo, fileUrl, maxHeight}) {
             rel='noopener noreferrer'
             download={true}
         >
-            <img
-                style={{maxHeight}}
-                src={previewUrl}
-            />
+            <img src={previewUrl}/>
         </a>
     );
 }
 
 ImagePreview.propTypes = {
-    fileInfo: React.PropTypes.object.isRequired,
-    fileUrl: React.PropTypes.string.isRequired,
-    maxHeight: React.PropTypes.number.isRequired
+    fileInfo: PropTypes.object.isRequired,
+    fileUrl: PropTypes.string.isRequired
 };

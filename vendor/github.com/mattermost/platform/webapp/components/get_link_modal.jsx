@@ -1,13 +1,12 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-import $ from 'jquery';
-import ReactDOM from 'react-dom';
-import {FormattedMessage} from 'react-intl';
-
-import {Modal} from 'react-bootstrap';
-
 import React from 'react';
+
+import {FormattedMessage} from 'react-intl';
+import {Modal} from 'react-bootstrap';
 
 export default class GetLinkModal extends React.Component {
     constructor(props) {
@@ -16,15 +15,10 @@ export default class GetLinkModal extends React.Component {
         this.onHide = this.onHide.bind(this);
 
         this.copyLink = this.copyLink.bind(this);
-        this.selectLinkOnClick = this.selectLinkOnClick.bind(this);
 
         this.state = {
             copiedLink: false
         };
-    }
-
-    componntWillUnmount() {
-        $(this.refs.textarea).off('click');
     }
 
     onHide() {
@@ -33,20 +27,13 @@ export default class GetLinkModal extends React.Component {
         this.props.onHide();
     }
 
-    selectLinkOnClick() {
-        $(this.refs.textarea).on('click', function selectLinkOnClick() {
-            $(this).select();
-            this.setSelectionRange(0, this.value.length);
-        });
-    }
-
     copyLink() {
-        var copyTextarea = $(ReactDOM.findDOMNode(this.refs.textarea));
-        copyTextarea.select();
+        const textarea = this.refs.textarea;
+        textarea.focus();
+        textarea.setSelectionRange(0, this.props.link.length);
 
         try {
-            var successful = document.execCommand('copy');
-            if (successful) {
+            if (document.execCommand('copy')) {
                 this.setState({copiedLink: true});
             } else {
                 this.setState({copiedLink: false});
@@ -90,17 +77,19 @@ export default class GetLinkModal extends React.Component {
                 className='form-control no-resize min-height'
                 ref='textarea'
                 value={this.props.link}
+                onClick={this.copyLink}
+                readOnly={true}
             />
         );
 
-        var copyLinkConfirm = null;
+        let copyLinkConfirm = null;
         if (this.state.copiedLink) {
             copyLinkConfirm = (
                 <p className='alert alert-success alert--confirm'>
                     <i className='fa fa-check'/>
                     <FormattedMessage
                         id='get_link.clipboard'
-                        defaultMessage=' Link copied to clipboard.'
+                        defaultMessage=' Link copied'
                     />
                 </p>
             );
@@ -110,7 +99,6 @@ export default class GetLinkModal extends React.Component {
             <Modal
                 show={this.props.show}
                 onHide={this.onHide}
-                onEntered={this.selectLinkOnClick}
             >
                 <Modal.Header closeButton={true}>
                     <h4 className='modal-title'>{this.props.title}</h4>
@@ -139,11 +127,11 @@ export default class GetLinkModal extends React.Component {
 }
 
 GetLinkModal.propTypes = {
-    show: React.PropTypes.bool.isRequired,
-    onHide: React.PropTypes.func.isRequired,
-    title: React.PropTypes.string.isRequired,
-    helpText: React.PropTypes.string,
-    link: React.PropTypes.string.isRequired
+    show: PropTypes.bool.isRequired,
+    onHide: PropTypes.func.isRequired,
+    title: PropTypes.string.isRequired,
+    helpText: PropTypes.string,
+    link: PropTypes.string.isRequired
 };
 
 GetLinkModal.defaultProps = {

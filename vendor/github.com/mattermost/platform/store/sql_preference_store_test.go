@@ -1,11 +1,12 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package store
 
 import (
-	"github.com/mattermost/platform/model"
 	"testing"
+
+	"github.com/mattermost/platform/model"
 )
 
 func TestPreferenceSave(t *testing.T) {
@@ -343,10 +344,10 @@ func TestDeleteUnusedFeatures(t *testing.T) {
 
 	Must(store.Preference().Save(&features))
 
-	store.(*SqlStore).preference.(*SqlPreferenceStore).DeleteUnusedFeatures()
+	store.Preference().(*SqlPreferenceStore).DeleteUnusedFeatures()
 
 	//make sure features with value "false" have actually been deleted from the database
-	if val, err := store.(*SqlStore).preference.(*SqlPreferenceStore).GetReplica().SelectInt(`SELECT COUNT(*)
+	if val, err := store.Preference().(*SqlPreferenceStore).GetReplica().SelectInt(`SELECT COUNT(*)
 			FROM Preferences
 		WHERE Category = :Category
 		AND Value = :Val
@@ -357,7 +358,7 @@ func TestDeleteUnusedFeatures(t *testing.T) {
 	}
 	//
 	// make sure features with value "true" remain saved
-	if val, err := store.(*SqlStore).preference.(*SqlPreferenceStore).GetReplica().SelectInt(`SELECT COUNT(*)
+	if val, err := store.Preference().(*SqlPreferenceStore).GetReplica().SelectInt(`SELECT COUNT(*)
 			FROM Preferences
 		WHERE Category = :Category
 		AND Value = :Val
@@ -389,6 +390,86 @@ func TestPreferenceDelete(t *testing.T) {
 	}
 
 	if prefs := Must(store.Preference().GetAll(preference.UserId)).(model.Preferences); len([]model.Preference(prefs)) != 0 {
+		t.Fatal("should've returned no preferences")
+	}
+}
+
+func TestPreferenceDeleteCategory(t *testing.T) {
+	Setup()
+
+	category := model.NewId()
+	userId := model.NewId()
+
+	preference1 := model.Preference{
+		UserId:   userId,
+		Category: category,
+		Name:     model.NewId(),
+		Value:    "value1a",
+	}
+
+	preference2 := model.Preference{
+		UserId:   userId,
+		Category: category,
+		Name:     model.NewId(),
+		Value:    "value1a",
+	}
+
+	Must(store.Preference().Save(&model.Preferences{preference1, preference2}))
+
+	if prefs := Must(store.Preference().GetAll(userId)).(model.Preferences); len([]model.Preference(prefs)) != 2 {
+		t.Fatal("should've returned 2 preferences")
+	}
+
+	if result := <-store.Preference().DeleteCategory(userId, category); result.Err != nil {
+		t.Fatal(result.Err)
+	}
+
+	if prefs := Must(store.Preference().GetAll(userId)).(model.Preferences); len([]model.Preference(prefs)) != 0 {
+		t.Fatal("should've returned no preferences")
+	}
+}
+
+func TestPreferenceDeleteCategoryAndName(t *testing.T) {
+	Setup()
+
+	category := model.NewId()
+	name := model.NewId()
+	userId := model.NewId()
+	userId2 := model.NewId()
+
+	preference1 := model.Preference{
+		UserId:   userId,
+		Category: category,
+		Name:     name,
+		Value:    "value1a",
+	}
+
+	preference2 := model.Preference{
+		UserId:   userId2,
+		Category: category,
+		Name:     name,
+		Value:    "value1a",
+	}
+
+	Must(store.Preference().Save(&model.Preferences{preference1, preference2}))
+
+	if prefs := Must(store.Preference().GetAll(userId)).(model.Preferences); len([]model.Preference(prefs)) != 1 {
+		t.Fatal("should've returned 1 preference")
+	}
+
+	if prefs := Must(store.Preference().GetAll(userId2)).(model.Preferences); len([]model.Preference(prefs)) != 1 {
+		t.Fatal("should've returned 1 preference")
+	}
+
+	if result := <-store.Preference().DeleteCategoryAndName(category, name); result.Err != nil {
+		t.Fatal(result.Err)
+	}
+
+	if prefs := Must(store.Preference().GetAll(userId)).(model.Preferences); len([]model.Preference(prefs)) != 0 {
+		t.Fatal("should've returned no preferences")
+	}
+
+	if prefs := Must(store.Preference().GetAll(userId2)).(model.Preferences); len([]model.Preference(prefs)) != 0 {
 		t.Fatal("should've returned no preferences")
 	}
 }

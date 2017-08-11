@@ -1,11 +1,74 @@
 @charset 'UTF-8';
 
+.status-wrapper {
+    display: inline-block;
+    height: 32px;
+    position: relative;
+
+    .status {
+        border-radius: 100px;
+        bottom: -4px;
+        height: 15px;
+        line-height: 0;
+        margin: 0;
+        position: absolute;
+        right: -3px;
+        top: auto;
+        width: 15px;
+
+        .modal & {
+            bottom: -6px;
+        }
+
+        &.status-edit {
+            text-align: center;
+
+            i {
+                @include opacity(1);
+                font-size: 10px;
+                position: relative;
+                top: 4px;
+            }
+        }
+
+
+        svg {
+            max-height: 11px;
+            position: relative;
+            top: 2px;
+        }
+    }
+}
+
 .status {
     display: inline-block;
-    margin-right: 6px;
+    margin: 0 7px 0 1px;
     position: relative;
-    top: 1px;
-    width: 12px;
+    top: 2px;
+    width: 15px;
+
+    &.status--group {
+        border-radius: 2px;
+        font-size: 10px;
+        font-weight: 600;
+        height: 15px;
+        left: 1px;
+        line-height: 14px;
+        margin: 0 9px 0 -1px;
+        text-align: center;
+        top: -2px;
+        width: 15px;
+
+        .mentions__name & {
+            height: 18px;
+            left: 0;
+            line-height: 18px;
+            margin-left: 0;
+            margin-right: 6px;
+            text-align: center;
+            width: 17px;
+        }
+    }
 
     svg {
         max-height: 14px;
@@ -31,3 +94,4 @@
         top: -1px;
     }
 }
+

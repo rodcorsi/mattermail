@@ -1,9 +1,11 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import {FormattedMessage} from 'react-intl';
 import * as Utils from 'utils/utils.jsx';
 import Constants from 'utils/constants.jsx';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -31,12 +33,30 @@ export default class SettingItemMax extends React.Component {
     render() {
         var clientError = null;
         if (this.props.client_error) {
-            clientError = (<div className='form-group'><label className='col-sm-12 has-error'>{this.props.client_error}</label></div>);
+            clientError = (
+                <div className='form-group'>
+                    <label
+                        id='clientError'
+                        className='col-sm-12 has-error'
+                    >
+                        {this.props.client_error}
+                    </label>
+                </div>
+            );
         }
 
         var serverError = null;
         if (this.props.server_error) {
-            serverError = (<div className='form-group'><label className='col-sm-12 has-error'>{this.props.server_error}</label></div>);
+            serverError = (
+                <div className='form-group'>
+                    <label
+                        id='serverError'
+                        className='col-sm-12 has-error'
+                    >
+                        {this.props.server_error}
+                    </label>
+                </div>
+            );
         }
 
         var extraInfo = null;
@@ -48,6 +68,7 @@ export default class SettingItemMax extends React.Component {
         if (this.props.submit) {
             submit = (
                 <input
+                    id='saveSetting'
                     type='submit'
                     className='btn btn-sm btn-primary'
                     href='#'
@@ -68,8 +89,10 @@ export default class SettingItemMax extends React.Component {
         }
 
         let title;
+        let titleProp = 'unknownTitle';
         if (this.props.title) {
             title = <li className='col-sm-12 section-title'>{this.props.title}</li>;
+            titleProp = this.props.title;
         }
 
         return (
@@ -88,7 +111,8 @@ export default class SettingItemMax extends React.Component {
                             {clientError}
                             {submit}
                             <a
-                                className='btn btn-sm theme'
+                                id={Utils.createSafeId(titleProp) + 'Cancel'}
+                                className='btn btn-sm'
                                 href='#'
                                 onClick={this.props.updateSection}
                             >
@@ -106,13 +130,13 @@ export default class SettingItemMax extends React.Component {
 }
 
 SettingItemMax.propTypes = {
-    inputs: React.PropTypes.array,
-    client_error: React.PropTypes.string,
-    server_error: React.PropTypes.string,
-    extraInfo: React.PropTypes.element,
-    updateSection: React.PropTypes.func,
-    submit: React.PropTypes.func,
-    title: React.PropTypes.node,
-    width: React.PropTypes.string,
-    submitExtra: React.PropTypes.node
+    inputs: PropTypes.array,
+    client_error: PropTypes.string,
+    server_error: PropTypes.string,
+    extraInfo: PropTypes.element,
+    updateSection: PropTypes.func,
+    submit: PropTypes.func,
+    title: PropTypes.node,
+    width: PropTypes.string,
+    submitExtra: PropTypes.node
 };

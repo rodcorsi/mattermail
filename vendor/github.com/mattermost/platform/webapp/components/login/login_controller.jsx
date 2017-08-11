@@ -1,15 +1,17 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import LoginMfa from './components/login_mfa.jsx';
-import ErrorBar from 'components/error_bar.jsx';
+import AnnouncementBar from 'components/announcement_bar';
 import FormError from 'components/form_error.jsx';
 
 import * as GlobalActions from 'actions/global_actions.jsx';
+import {addUserToTeamFromInvite} from 'actions/team_actions.jsx';
+import {checkMfa, webLogin} from 'actions/user_actions.jsx';
+import BrowserStore from 'stores/browser_store.jsx';
 import UserStore from 'stores/user_store.jsx';
 
-import Client from 'client/web_client.jsx';
-import * as AsyncClient from 'utils/async_client.jsx';
+import {Client4} from 'mattermost-redux/client';
 import * as TextFormatting from 'utils/text_formatting.jsx';
 
 import * as Utils from 'utils/utils.jsx';
@@ -18,14 +20,16 @@ import Constants from 'utils/constants.jsx';
 import {FormattedMessage} from 'react-intl';
 import {browserHistory, Link} from 'react-router/es6';
 
+import PropTypes from 'prop-types';
+
 import React from 'react';
 import logoImage from 'images/logo.png';
 
 export default class LoginController extends React.Component {
     static get propTypes() {
         return {
-            location: React.PropTypes.object.isRequired,
-            params: React.PropTypes.object.isRequired
+            location: PropTypes.object.isRequired,
+            params: PropTypes.object.isRequired
         };
     }
 
@@ -39,25 +43,33 @@ export default class LoginController extends React.Component {
         this.handleLoginIdChange = this.handleLoginIdChange.bind(this);
         this.handlePasswordChange = this.handlePasswordChange.bind(this);
 
+        let loginId = '';
+        if (this.props.location.query.extra === Constants.SIGNIN_VERIFIED && this.props.location.query.email) {
+            loginId = this.props.location.query.email;
+        }
+
         this.state = {
             ldapEnabled: global.window.mm_license.IsLicensed === 'true' && global.window.mm_config.EnableLdap === 'true',
             usernameSigninEnabled: global.window.mm_config.EnableSignInWithUsername === 'true',
             emailSigninEnabled: global.window.mm_config.EnableSignInWithEmail === 'true',
             samlEnabled: global.window.mm_license.IsLicensed === 'true' && global.window.mm_config.EnableSaml === 'true',
-            loginId: '', // the browser will set a default for this
+            loginId,
             password: '',
-            showMfa: false
+            showMfa: false,
+            loading: false
         };
     }
 
     componentDidMount() {
         document.title = global.window.mm_config.SiteName;
-
+        BrowserStore.removeGlobalItem('team');
         if (UserStore.getCurrentUser()) {
-            browserHistory.push('/select_team');
+            GlobalActions.redirectUserToDefaultTeam();
         }
 
-        AsyncClient.checkVersion();
+        if (this.props.location.query.extra === Constants.SIGNIN_VERIFIED && this.props.location.query.email) {
+            this.refs.password.focus();
+        }
     }
 
     preSubmit(e) {
@@ -76,7 +88,7 @@ export default class LoginController extends React.Component {
         }
 
         // don't trim the password since we support spaces in passwords
-        loginId = loginId.trim();
+        loginId = loginId.trim().toLowerCase();
 
         if (!loginId) {
             // it's slightly weird to be constructing the message ID, but it's a bit nicer than triply nested if statements
@@ -116,42 +128,40 @@ export default class LoginController extends React.Component {
             return;
         }
 
-        if (global.window.mm_config.EnableMultifactorAuthentication === 'true') {
-            Client.checkMfa(
-                loginId,
-                (data) => {
-                    if (data.mfa_required === 'true') {
-                        this.setState({showMfa: true});
-                    } else {
-                        this.submit(loginId, password, '');
-                    }
-                },
-                (err) => {
-                    this.setState({serverError: err.message});
+        checkMfa(
+            loginId,
+            (requiresMfa) => {
+                if (requiresMfa) {
+                    this.setState({showMfa: true});
+                } else {
+                    this.submit(loginId, password, '');
                 }
-            );
-        } else {
-            this.submit(loginId, password, '');
-        }
+            },
+            (err) => {
+                this.setState({serverError: err.message});
+            }
+        );
     }
 
     submit(loginId, password, token) {
-        this.setState({serverError: null});
+        this.setState({serverError: null, loading: true});
 
-        Client.webLogin(
+        webLogin(
             loginId,
             password,
             token,
             () => {
                 // check for query params brought over from signup_user_complete
-                const query = this.props.location.query;
-                if (query.id || query.h) {
-                    Client.addUserToTeamFromInvite(
-                        query.d,
-                        query.h,
-                        query.id,
-                        () => {
-                            this.finishSignin();
+                const hash = this.props.location.query.h;
+                const data = this.props.location.query.d;
+                const inviteId = this.props.location.query.id;
+                if (inviteId || hash) {
+                    addUserToTeamFromInvite(
+                        data,
+                        hash,
+                        inviteId,
+                        (team) => {
+                            this.finishSignin(team);
                         },
                         () => {
                             // there's not really a good way to deal with this, so just let the user log in like normal
@@ -167,11 +177,11 @@ export default class LoginController extends React.Component {
             (err) => {
                 if (err.id === 'api.user.login.not_verified.app_error') {
                     browserHistory.push('/should_verify_email?&email=' + encodeURIComponent(loginId));
-                    return;
                 } else if (err.id === 'store.sql_user.get_for_login.app_error' ||
                     err.id === 'ent.ldap.do_login.user_not_registered.app_error') {
                     this.setState({
                         showMfa: false,
+                        loading: false,
                         serverError: (
                             <FormattedMessage
                                 id='login.userNotFound'
@@ -182,6 +192,7 @@ export default class LoginController extends React.Component {
                 } else if (err.id === 'api.user.check_user_password.invalid.app_error' || err.id === 'ent.ldap.do_login.invalid_password.app_error') {
                     this.setState({
                         showMfa: false,
+                        loading: false,
                         serverError: (
                             <FormattedMessage
                                 id='login.invalidPassword'
@@ -190,24 +201,22 @@ export default class LoginController extends React.Component {
                         )
                     });
                 } else {
-                    this.setState({showMfa: false, serverError: err.message});
+                    this.setState({showMfa: false, serverError: err.message, loading: false});
                 }
             }
         );
     }
 
-    finishSignin() {
-        GlobalActions.emitInitialLoad(
-            () => {
-                const query = this.props.location.query;
-                GlobalActions.loadDefaultLocale();
-                if (query.redirect_to) {
-                    browserHistory.push(query.redirect_to);
-                } else {
-                    browserHistory.push('/select_team');
-                }
-            }
-        );
+    finishSignin(team) {
+        const query = this.props.location.query;
+        GlobalActions.loadCurrentLocale();
+        if (query.redirect_to && query.redirect_to.match(/^\//)) {
+            browserHistory.push(query.redirect_to);
+        } else if (team) {
+            browserHistory.push(`/${team.name}`);
+        } else {
+            GlobalActions.redirectUserToDefaultTeam();
+        }
     }
 
     handleLoginIdChange(e) {
@@ -231,7 +240,7 @@ export default class LoginController extends React.Component {
             return (
                 <div>
                     <img
-                        src={Client.getAdminRoute() + '/get_brand_image'}
+                        src={Client4.getBrandImageUrl(0)}
                     />
                     <p dangerouslySetInnerHTML={{__html: TextFormatting.formatText(text)}}/>
                 </div>
@@ -346,6 +355,23 @@ export default class LoginController extends React.Component {
                 errorClass = ' has-error';
             }
 
+            let loginButton =
+                (<FormattedMessage
+                    id='login.signIn'
+                    defaultMessage='Sign in'
+                 />);
+
+            if (this.state.loading) {
+                loginButton =
+                (<span>
+                    <span className='fa fa-refresh icon--rotate'/>
+                    <FormattedMessage
+                        id='login.signInLoading'
+                        defaultMessage='Signing in...'
+                    />
+                </span>);
+            }
+
             loginControls.push(
                 <form
                     key='loginBoxes'
@@ -382,13 +408,11 @@ export default class LoginController extends React.Component {
                         </div>
                         <div className='form-group'>
                             <button
+                                id='loginButton'
                                 type='submit'
                                 className='btn btn-primary'
                             >
-                                <FormattedMessage
-                                    id='login.signIn'
-                                    defaultMessage='Sign in'
-                                />
+                                { loginButton }
                             </button>
                         </div>
                     </div>
@@ -408,6 +432,7 @@ export default class LoginController extends React.Component {
                             defaultMessage="Don't have an account? "
                         />
                         <Link
+                            id='signup'
                             to={'/signup_user_complete' + this.props.location.search}
                             className='signup-team-login'
                         >
@@ -460,30 +485,21 @@ export default class LoginController extends React.Component {
             );
         }
 
-        if (gitlabSigninEnabled || samlSigninEnabled || office365SigninEnabled || googleSigninEnabled || gitlabSigninEnabled) {
-            loginControls.push(
-                <h5 key='oauthHeader'>
-                    <FormattedMessage
-                        id='login.signInWith'
-                        defaultMessage='Sign in with:'
-                    />
-                </h5>
-            );
-        }
-
         if (gitlabSigninEnabled) {
             loginControls.push(
                 <a
                     className='btn btn-custom-login gitlab'
                     key='gitlab'
-                    href={Client.getOAuthRoute() + '/gitlab/login' + this.props.location.search}
+                    href={Client4.getUrl() + '/oauth/gitlab/login' + this.props.location.search}
                 >
-                    <span className='icon'/>
                     <span>
-                        <FormattedMessage
-                            id='login.gitlab'
-                            defaultMessage='GitLab'
-                        />
+                        <span className='icon'/>
+                        <span>
+                            <FormattedMessage
+                                id='login.gitlab'
+                                defaultMessage='GitLab'
+                            />
+                        </span>
                     </span>
                 </a>
             );
@@ -494,14 +510,16 @@ export default class LoginController extends React.Component {
                 <a
                     className='btn btn-custom-login google'
                     key='google'
-                    href={Client.getOAuthRoute() + '/google/login' + this.props.location.search}
+                    href={Client4.getUrl() + '/oauth/google/login' + this.props.location.search}
                 >
-                    <span className='icon'/>
                     <span>
-                        <FormattedMessage
-                            id='login.google'
-                            defaultMessage='Google Apps'
-                        />
+                        <span className='icon'/>
+                        <span>
+                            <FormattedMessage
+                                id='login.google'
+                                defaultMessage='Google Apps'
+                            />
+                        </span>
                     </span>
                 </a>
             );
@@ -512,14 +530,16 @@ export default class LoginController extends React.Component {
                 <a
                     className='btn btn-custom-login office365'
                     key='office365'
-                    href={Client.getOAuthRoute() + '/office365/login' + this.props.location.search}
+                    href={Client4.getUrl() + '/oauth/office365/login' + this.props.location.search}
                 >
-                    <span className='icon'/>
                     <span>
-                        <FormattedMessage
-                            id='login.office365'
-                            defaultMessage='Office 365'
-                        />
+                        <span className='icon'/>
+                        <span>
+                            <FormattedMessage
+                                id='login.office365'
+                                defaultMessage='Office 365'
+                            />
+                        </span>
                     </span>
                 </a>
             );
@@ -532,9 +552,11 @@ export default class LoginController extends React.Component {
                     key='saml'
                     href={'/login/sso/saml' + this.props.location.search}
                 >
-                    <span className='icon fa fa-lock fa--margin-top'/>
                     <span>
-                        {window.mm_config.SamlLoginButtonText}
+                        <span className='icon fa fa-lock fa--margin-top'/>
+                        <span>
+                            {global.window.mm_config.SamlLoginButtonText}
+                        </span>
                     </span>
                 </a>
             );
@@ -596,7 +618,7 @@ export default class LoginController extends React.Component {
 
         return (
             <div>
-                <ErrorBar/>
+                <AnnouncementBar/>
                 <div className='col-sm-12'>
                     <div className={'signup-team__container ' + customClass}>
                         <div className='signup__markdown'>

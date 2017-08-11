@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -22,6 +22,7 @@ export default class CustomEmojiSettings extends AdminSettings {
 
     getConfigFromState(config) {
         config.ServiceSettings.EnableCustomEmoji = this.state.enableCustomEmoji;
+        config.ServiceSettings.EnableEmojiPicker = this.state.enableEmojiPicker;
 
         if (global.window.mm_license.IsLicensed === 'true') {
             config.ServiceSettings.RestrictCustomEmojiCreation = this.state.restrictCustomEmojiCreation;
@@ -33,18 +34,17 @@ export default class CustomEmojiSettings extends AdminSettings {
     getStateFromConfig(config) {
         return {
             enableCustomEmoji: config.ServiceSettings.EnableCustomEmoji,
+            enableEmojiPicker: config.ServiceSettings.EnableEmojiPicker,
             restrictCustomEmojiCreation: config.ServiceSettings.RestrictCustomEmojiCreation
         };
     }
 
     renderTitle() {
         return (
-            <h3>
-                <FormattedMessage
-                    id='admin.customization.customEmoji'
-                    defaultMessage='Custom Emoji'
-                />
-            </h3>
+            <FormattedMessage
+                id='admin.customization.emoji'
+                defaultMessage='Emoji'
+            />
         );
     }
 
@@ -80,6 +80,23 @@ export default class CustomEmojiSettings extends AdminSettings {
 
         return (
             <SettingsGroup>
+                <BooleanSetting
+                    id='enableEmojiPicker'
+                    label={
+                        <FormattedMessage
+                            id='admin.customization.enableEmojiPickerTitle'
+                            defaultMessage='Enable Emoji Picker:'
+                        />
+                    }
+                    helpText={
+                        <FormattedMessage
+                            id='admin.customization.enableEmojiPickerDesc'
+                            defaultMessage='The emoji picker allows users to select emoji to add as reactions or use in messages. Enabling the emoji picker with a large number of custom emoji may slow down performance.'
+                        />
+                    }
+                    value={this.state.enableEmojiPicker}
+                    onChange={this.handleChange}
+                />
                 <BooleanSetting
                     id='enableCustomEmoji'
                     label={

@@ -1,11 +1,12 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import UserStore from 'stores/user_store.jsx';
 import TeamStore from 'stores/team_store.jsx';
 import PreferenceStore from 'stores/preference_store.jsx';
-import * as AsyncClient from 'utils/async_client.jsx';
+import {savePreference} from 'actions/user_actions.jsx';
 import * as GlobalActions from 'actions/global_actions.jsx';
+import {trackEvent} from 'actions/diagnostics_actions.jsx';
 
 import {Constants, Preferences} from 'utils/constants.jsx';
 
@@ -16,13 +17,15 @@ import AppIcons from 'images/appIcons.png';
 
 const NUM_SCREENS = 3;
 
+import PropTypes from 'prop-types';
+
 import React from 'react';
 
 export default class TutorialIntroScreens extends React.Component {
     static get propTypes() {
         return {
-            townSquare: React.PropTypes.object,
-            offTopic: React.PropTypes.object
+            townSquare: PropTypes.object,
+            offTopic: PropTypes.object
         };
     }
     constructor(props) {
@@ -31,10 +34,23 @@ export default class TutorialIntroScreens extends React.Component {
         this.handleNext = this.handleNext.bind(this);
         this.createScreen = this.createScreen.bind(this);
         this.createCircles = this.createCircles.bind(this);
+        this.skipTutorial = this.skipTutorial.bind(this);
 
         this.state = {currentScreen: 0};
     }
     handleNext() {
+        switch (this.state.currentScreen) {
+        case 0:
+            trackEvent('tutorial', 'tutorial_screen_1_welcome_to_mattermost_next');
+            break;
+        case 1:
+            trackEvent('tutorial', 'tutorial_screen_2_how_mattermost_works_next');
+            break;
+        case 2:
+            trackEvent('tutorial', 'tutorial_screen_3_youre_all_set_next');
+            break;
+        }
+
         if (this.state.currentScreen < 2) {
             this.setState({currentScreen: this.state.currentScreen + 1});
             return;
@@ -44,7 +60,7 @@ export default class TutorialIntroScreens extends React.Component {
 
         const step = PreferenceStore.getInt(Preferences.TUTORIAL_STEP, UserStore.getCurrentId(), 0);
 
-        AsyncClient.savePreference(
+        savePreference(
             Preferences.TUTORIAL_STEP,
             UserStore.getCurrentId(),
             (step + 1).toString()
@@ -53,7 +69,19 @@ export default class TutorialIntroScreens extends React.Component {
     skipTutorial(e) {
         e.preventDefault();
 
-        AsyncClient.savePreference(
+        switch (this.state.currentScreen) {
+        case 0:
+            trackEvent('tutorial', 'tutorial_screen_1_welcome_to_mattermost_skip');
+            break;
+        case 1:
+            trackEvent('tutorial', 'tutorial_screen_2_how_mattermost_works_skip');
+            break;
+        case 2:
+            trackEvent('tutorial', 'tutorial_screen_3_youre_all_set_skip');
+            break;
+        }
+
+        savePreference(
             Preferences.TUTORIAL_STEP,
             UserStore.getCurrentId(),
             '999'
@@ -136,7 +164,7 @@ export default class TutorialIntroScreens extends React.Component {
                 <FormattedHTMLMessage
                     id='tutorial_intro.screenTwo'
                     defaultMessage='<h3>How Mattermost works:</h3>
-                    <p>Communication happens in public discussion channels, private groups and direct messages.</p>
+                    <p>Communication happens in public discussion channels, private channels and direct messages.</p>
                     <p>Everything is archived and searchable from any web-enabled desktop, laptop or phone.</p>'
                 />
                 {appDownloadLink}
@@ -229,7 +257,7 @@ export default class TutorialIntroScreens extends React.Component {
                 {supportInfo}
                 <FormattedMessage
                     id='tutorial_intro.end'
-                    defaultMessage='Click “Next” to enter {channel}. This is the first channel teammates see when they sign up. Use it for posting updates everyone needs to know.'
+                    defaultMessage='Click "Next" to enter {channel}. This is the first channel teammates see when they sign up. Use it for posting updates everyone needs to know.'
                     values={{
                         channel: townSquareDisplayName
                     }}

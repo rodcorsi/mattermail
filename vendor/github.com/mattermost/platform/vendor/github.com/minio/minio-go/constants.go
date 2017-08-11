@@ -44,3 +44,19 @@ const optimalReadBufferSize = 1024 * 1024 * 5
 // unsignedPayload - value to be set to X-Amz-Content-Sha256 header when
 // we don't want to sign the request payload
 const unsignedPayload = "UNSIGNED-PAYLOAD"
+
+// Total number of parallel workers used for multipart operation.
+var totalWorkers = 3
+
+// Signature related constants.
+const (
+	signV4Algorithm   = "AWS4-HMAC-SHA256"
+	iso8601DateFormat = "20060102T150405Z"
+)
+
+// Encryption headers stored along with the object.
+const (
+	amzHeaderIV      = "X-Amz-Meta-X-Amz-Iv"
+	amzHeaderKey     = "X-Amz-Meta-X-Amz-Key"
+	amzHeaderMatDesc = "X-Amz-Meta-X-Amz-Matdesc"
+)

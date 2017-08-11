@@ -1,30 +1,17 @@
 @charset 'UTF-8';
 
-.channel-header {
-    .search-bar__container {
-        padding: 0 9px 0 3px;
-    }
-}
-
 .search-bar__container {
-    @include flex(0 0 56px);
-    padding: 12px 8px 0 0;
+    @include flex(0 0 79px);
+
+    .channel-header__links {
+        .sidebar--right & {
+            line-height: 25px;
+        }
+    }
 }
 
 .icon--rotate {
     @include animation(spin .7s infinite linear);
-}
-
-.search__clear {
-    @include single-transition(all, .2s, linear);
-    @include translateX(60px);
-    cursor: pointer;
-    display: none;
-    line-height: 45px;
-    margin-right: 13px;
-    position: absolute;
-    right: 0;
-    z-index: 5;
 }
 
 .search-item-snippet {
@@ -37,40 +24,36 @@
     }
 }
 
-.sidebar__collapse {
-    @include single-transition(all, .2s, linear);
-    @include translateX(0);
-    cursor: pointer;
-    display: none;
-    fill: $white;
-    font-size: 35px;
-    left: 0;
-    line-height: 40px;
-    padding-left: 1px;
+.search__icon {
+    left: 10px;
     position: absolute;
-    text-align: center;
-    width: 49px;
-    z-index: 5;
+    top: 8px;
 }
 
-.sidebar__search-icon {
+.sidebar__search-clear {
     @include opacity(.5);
     color: $dark-gray;
-    display: none;
-    font-size: 14px;
-    margin-left: 10px;
+    cursor: pointer;
+    margin-right: 20px;
     position: absolute;
-    top: 15px;
+    right: 0;
+    top: 12px;
+    visibility: hidden;
+    width: 40px;
+}
+
+.search-form__container {
+
 }
 
 .search__form {
     position: relative;
 
     .search-bar__container & {
-        @include border-radius(2px);
+        @include border-radius(50px);
         border: 1px solid $light-gray;
-        margin: 0;
-        width: 300px;
+        margin: 16px 10px 0 0;
+        width: 229px;
     }
 
     .sidebar--right & {
@@ -78,14 +61,14 @@
     }
 
     .search-bar {
+        background: transparent;
+        border: none;
         box-shadow: none;
-        height: 40px;
-        padding-right: 30px;
-
-        .search-bar__container & {
-            border: none;
-            height: 30px;
-        }
+        font-size: 14px;
+        height: 35px;
+        outline: none;
+        padding: 0 30px 0 40px;
+        width: 100%;
     }
 
     .icon--refresh {
@@ -95,8 +78,8 @@
         top: 27px;
 
         .search-bar__container & {
-            right: 7px;
-            top: 8px;
+            right: 12px;
+            top: 11px;
         }
     }
 }

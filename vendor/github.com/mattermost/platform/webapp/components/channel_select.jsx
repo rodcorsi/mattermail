@@ -1,21 +1,22 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import Constants from 'utils/constants.jsx';
 import ChannelStore from 'stores/channel_store.jsx';
 import * as Utils from 'utils/utils.jsx';
-import * as AsyncClient from 'utils/async_client.jsx';
+import {sortChannelsByDisplayName} from 'utils/channel_utils.jsx';
 
 export default class ChannelSelect extends React.Component {
     static get propTypes() {
         return {
-            onChange: React.PropTypes.func,
-            value: React.PropTypes.string,
-            selectOpen: React.PropTypes.bool.isRequired,
-            selectPrivate: React.PropTypes.bool.isRequired,
-            selectDm: React.PropTypes.bool.isRequired
+            onChange: PropTypes.func,
+            value: PropTypes.string,
+            selectOpen: PropTypes.bool.isRequired,
+            selectPrivate: PropTypes.bool.isRequired,
+            selectDm: PropTypes.bool.isRequired
         };
     }
 
@@ -31,12 +32,10 @@ export default class ChannelSelect extends React.Component {
         super(props);
 
         this.handleChannelChange = this.handleChannelChange.bind(this);
-        this.compareByDisplayName = this.compareByDisplayName.bind(this);
-
-        AsyncClient.getMoreChannels(true);
+        this.filterChannels = this.filterChannels.bind(this);
 
         this.state = {
-            channels: ChannelStore.getAll().sort(this.compareByDisplayName)
+            channels: ChannelStore.getAll().filter(this.filterChannels).sort(sortChannelsByDisplayName)
         };
     }
 
@@ -50,12 +49,17 @@ export default class ChannelSelect extends React.Component {
 
     handleChannelChange() {
         this.setState({
-            channels: ChannelStore.getAll().concat(ChannelStore.getMoreAll()).sort(this.compareByDisplayName)
+            channels: ChannelStore.getAll().
+                filter(this.filterChannels).sort(sortChannelsByDisplayName)
         });
     }
 
-    compareByDisplayName(channelA, channelB) {
-        return channelA.display_name.localeCompare(channelB.display_name);
+    filterChannels(channel) {
+        if (channel.display_name) {
+            return true;
+        }
+
+        return false;
     }
 
     render() {

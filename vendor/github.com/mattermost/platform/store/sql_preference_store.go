@@ -1,24 +1,24 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package store
 
 import (
 	l4g "github.com/alecthomas/log4go"
-	"github.com/go-gorp/gorp"
+	"github.com/mattermost/gorp"
 	"github.com/mattermost/platform/model"
 	"github.com/mattermost/platform/utils"
 )
 
 type SqlPreferenceStore struct {
-	*SqlStore
+	SqlStore
 }
 
 const (
 	FEATURE_TOGGLE_PREFIX = "feature_enabled_"
 )
 
-func NewSqlPreferenceStore(sqlStore *SqlStore) PreferenceStore {
+func NewSqlPreferenceStore(sqlStore SqlStore) PreferenceStore {
 	s := &SqlPreferenceStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {
@@ -318,6 +318,50 @@ func (s SqlPreferenceStore) Delete(userId, category, name string) StoreChannel {
 				AND Category = :Category
 				AND Name = :Name`, map[string]interface{}{"UserId": userId, "Category": category, "Name": name}); err != nil {
 			result.Err = model.NewLocAppError("SqlPreferenceStore.Delete", "store.sql_preference.delete.app_error", nil, err.Error())
+		}
+
+		storeChannel <- result
+		close(storeChannel)
+	}()
+
+	return storeChannel
+}
+
+func (s SqlPreferenceStore) DeleteCategory(userId string, category string) StoreChannel {
+	storeChannel := make(StoreChannel, 1)
+
+	go func() {
+		result := StoreResult{}
+
+		if _, err := s.GetMaster().Exec(
+			`DELETE FROM
+				Preferences
+			WHERE
+				UserId = :UserId
+				AND Category = :Category`, map[string]interface{}{"UserId": userId, "Category": category}); err != nil {
+			result.Err = model.NewLocAppError("SqlPreferenceStore.DeleteCategory", "store.sql_preference.delete.app_error", nil, err.Error())
+		}
+
+		storeChannel <- result
+		close(storeChannel)
+	}()
+
+	return storeChannel
+}
+
+func (s SqlPreferenceStore) DeleteCategoryAndName(category string, name string) StoreChannel {
+	storeChannel := make(StoreChannel, 1)
+
+	go func() {
+		result := StoreResult{}
+
+		if _, err := s.GetMaster().Exec(
+			`DELETE FROM
+				Preferences
+			WHERE
+				Name = :Name
+				AND Category = :Category`, map[string]interface{}{"Name": name, "Category": category}); err != nil {
+			result.Err = model.NewLocAppError("SqlPreferenceStore.DeleteCategoryAndName", "store.sql_preference.delete.app_error", nil, err.Error())
 		}
 
 		storeChannel <- result

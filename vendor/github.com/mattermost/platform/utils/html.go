@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package utils
@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	l4g "github.com/alecthomas/log4go"
+	"github.com/fsnotify/fsnotify"
 	"github.com/nicksnyder/go-i18n/i18n"
-	"gopkg.in/fsnotify.v1"
 )
 
 // Global storage for templates
@@ -33,7 +33,7 @@ func InitHTMLWithDir(dir string) {
 		return
 	}
 
-	templatesDir := FindDir(dir)
+	templatesDir, _ := FindDir(dir)
 	l4g.Debug(T("api.api.init.parsing_templates.debug"), templatesDir)
 	var err error
 	if htmlTemplates, err = template.ParseGlob(templatesDir + "*.html"); err != nil {

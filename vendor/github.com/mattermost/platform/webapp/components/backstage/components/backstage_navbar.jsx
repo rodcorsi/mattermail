@@ -1,4 +1,6 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -9,7 +11,7 @@ import {Link} from 'react-router/es6';
 export default class BackstageNavbar extends React.Component {
     static get propTypes() {
         return {
-            team: React.propTypes.object.isRequired
+            team: PropTypes.object.isRequired
         };
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package web
@@ -11,6 +11,7 @@ import (
 
 	l4g "github.com/alecthomas/log4go"
 	"github.com/mattermost/platform/api"
+	"github.com/mattermost/platform/app"
 	"github.com/mattermost/platform/model"
 	"github.com/mattermost/platform/utils"
 	"github.com/mssola/user_agent"
@@ -19,10 +20,10 @@ import (
 func InitWeb() {
 	l4g.Debug(utils.T("web.init.debug"))
 
-	mainrouter := api.Srv.Router
+	mainrouter := app.Srv.Router
 
 	if *utils.Cfg.ServiceSettings.WebserverMode != "disabled" {
-		staticDir := utils.FindDir(model.CLIENT_DIR)
+		staticDir, _ := utils.FindDir(model.CLIENT_DIR)
 		l4g.Debug("Using client directory at %v", staticDir)
 		if *utils.Cfg.ServiceSettings.WebserverMode == "gzip" {
 			mainrouter.PathPrefix("/static/").Handler(gziphandler.GzipHandler(staticHandler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))))
@@ -37,6 +38,10 @@ func InitWeb() {
 func staticHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=31556926, public")
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
 		handler.ServeHTTP(w, r)
 	})
 }
@@ -74,5 +79,7 @@ func root(c *api.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Cache-Control", "no-cache, max-age=31556926, public")
-	http.ServeFile(w, r, utils.FindDir(model.CLIENT_DIR)+"root.html")
+
+	staticDir, _ := utils.FindDir(model.CLIENT_DIR)
+	http.ServeFile(w, r, staticDir+"root.html")
 }

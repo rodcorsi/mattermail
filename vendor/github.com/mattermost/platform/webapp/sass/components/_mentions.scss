@@ -9,6 +9,21 @@
     z-index: 10;
 }
 
+.badge {
+    background-color: #777;
+    border-radius: 10px;
+    color: #fff;
+    display: inline-block;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 10px;
+    padding: 3px 7px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
 .mentions__name {
     @include clearfix;
     cursor: pointer;
@@ -21,6 +36,36 @@
     width: 100%;
     z-index: 101;
 
+    .icon {
+        @include opacity(.5);
+        display: inline-block;
+        margin: 0 7px 0 0;
+        position: relative;
+        text-align: center;
+        top: 2px;
+        vertical-align: top;
+        width: 16px;
+
+        &.icon__globe {
+            svg {
+                height: 14px;
+                width: 14px;
+            }
+        }
+    }
+
+    .status {
+        font-size: 15px;
+        text-align: center;
+        vertical-align: bottom;
+        width: 20px;
+    }
+
+    .fa-user {
+        position: relative;
+        top: -1px;
+    }
+
     .mention--align {
         @include clearfix;
         text-overflow: ellipsis;
@@ -32,11 +77,12 @@
     @include border-radius(20px);
     display: block;
     font-size: 15px;
-    height: 20px;
-    line-height: 20px;
-    margin-right: 6px;
+    height: 16px;
+    line-height: 16px;
+    margin-right: 7px;
+    margin-top: 3px;
     text-align: center;
-    width: 20px;
+    width: 16px;
 
     .mention--align {
         display: inline-block;

@@ -1,8 +1,10 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import $ from 'jquery';
 import {FormattedMessage} from 'react-intl';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -21,6 +23,7 @@ export default class NotLoggedIn extends React.Component {
         if (global.window.mm_config.HelpLink) {
             content.push(
                 <a
+                    key='help_link'
                     id='help_link'
                     className='pull-right footer-link'
                     target='_blank'
@@ -32,23 +35,23 @@ export default class NotLoggedIn extends React.Component {
             );
         }
 
-        if (global.window.mm_config.TermsOfServiceLink) {
-            content.push(
-                <a
-                    id='terms_link'
-                    className='pull-right footer-link'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    href={global.window.mm_config.TermsOfServiceLink}
-                >
-                    <FormattedMessage id='web.footer.terms'/>
-                </a>
-            );
-        }
+        content.push(
+            <a
+                key='terms_link'
+                id='terms_link'
+                className='pull-right footer-link'
+                target='_blank'
+                rel='noopener noreferrer'
+                href={global.window.mm_config.TermsOfServiceLink}
+            >
+                <FormattedMessage id='web.footer.terms'/>
+            </a>
+        );
 
         if (global.window.mm_config.PrivacyPolicyLink) {
             content.push(
                 <a
+                    key='privacy_link'
                     id='privacy_link'
                     className='pull-right footer-link'
                     target='_blank'
@@ -63,6 +66,7 @@ export default class NotLoggedIn extends React.Component {
         if (global.window.mm_config.AboutLink) {
             content.push(
                 <a
+                    key='about_link'
                     id='about_link'
                     className='pull-right footer-link'
                     target='_blank'
@@ -86,7 +90,9 @@ export default class NotLoggedIn extends React.Component {
                             <span className='pull-right footer-site-name'>{'Mattermost'}</span>
                         </div>
                         <div className='col-xs-12'>
-                            <span className='pull-right footer-link copyright'>{'© 2015-2016 Mattermost, Inc.'}</span>
+                            <span className='pull-right footer-link copyright'>
+                                {`© 2015-${new Date().getFullYear()} Mattermost, Inc.`}
+                            </span>
                             {content}
                         </div>
                     </div>
@@ -100,5 +106,5 @@ NotLoggedIn.defaultProps = {
 };
 
 NotLoggedIn.propTypes = {
-    children: React.PropTypes.object
+    children: PropTypes.object
 };

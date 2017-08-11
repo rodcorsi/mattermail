@@ -1,7 +1,8 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import $ from 'jquery';
+import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
@@ -12,14 +13,14 @@ import * as Utils from 'utils/utils.jsx';
 export default class FileUploadSetting extends Setting {
     static get propTypes() {
         return {
-            id: React.PropTypes.string.isRequired,
-            label: React.PropTypes.node.isRequired,
-            helpText: React.PropTypes.node,
-            uploadingText: React.PropTypes.node,
-            onSubmit: React.PropTypes.func.isRequired,
-            disabled: React.PropTypes.bool,
-            fileType: React.PropTypes.string.isRequired,
-            error: React.PropTypes.string
+            id: PropTypes.string.isRequired,
+            label: PropTypes.node.isRequired,
+            helpText: PropTypes.node,
+            uploadingText: PropTypes.node,
+            onSubmit: PropTypes.func.isRequired,
+            disabled: PropTypes.bool,
+            fileType: PropTypes.string.isRequired,
+            error: PropTypes.string
         };
     }
 
@@ -51,7 +52,6 @@ export default class FileUploadSetting extends Setting {
             if (error) {
                 Utils.clearFileInput(this.refs.fileInput);
             }
-            this.setState({fileSelected: false, fileName: null, serverError: error});
         });
     }
 
@@ -61,7 +61,7 @@ export default class FileUploadSetting extends Setting {
             serverError = <div className='form-group has-error'><label className='control-label'>{this.state.serverError}</label></div>;
         }
 
-        var btnClass = 'btn';
+        let btnClass = 'btn';
         if (this.state.fileSelected) {
             btnClass = 'btn btn-primary';
         }
@@ -108,7 +108,7 @@ export default class FileUploadSetting extends Setting {
                         disabled={!this.state.fileSelected}
                         onClick={this.handleSubmit}
                         ref='upload_button'
-                        data-loading-text={`<span class=\'glyphicon glyphicon-refresh glyphicon-refresh-animate\'></span> ${this.props.uploadingText}`}
+                        data-loading-text={`<span class='glyphicon glyphicon-refresh glyphicon-refresh-animate'></span> ${this.props.uploadingText}`}
                     >
                         <FormattedMessage
                             id='admin.file_upload.uploadFile'

@@ -1,12 +1,14 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import $ from 'jquery';
 import ReactDOM from 'react-dom';
 import * as Utils from 'utils/utils.jsx';
-import client from 'client/web_client.jsx';
+import {sendPasswordResetEmail} from 'actions/user_actions.jsx';
 
 import {FormattedMessage, FormattedHTMLMessage} from 'react-intl';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import {Link} from 'react-router/es6';
@@ -43,7 +45,7 @@ class PasswordResetSendLink extends React.Component {
             error: ''
         });
 
-        client.sendPasswordReset(
+        sendPasswordResetEmail(
             email,
             () => {
                 this.setState({
@@ -52,14 +54,14 @@ class PasswordResetSendLink extends React.Component {
                         <div className='reset-form alert alert-success'>
                             <FormattedHTMLMessage
                                 id='password_send.link'
-                                defaultMessage='<p>A password reset link has been sent to <b>{email}</b></p>'
+                                defaultMessage='If the account exists, a password reset email will be sent to: <br/><b>{email}</b><br/><br/>'
                                 values={{
                                     email
                                 }}
                             />
                             <FormattedMessage
-                                id={'password_send.checkInbox'}
-                                defaultMessage={'Please check your inbox.'}
+                                id='password_send.checkInbox'
+                                defaultMessage='Please check your inbox.'
                             />
                         </div>
                     )
@@ -148,7 +150,7 @@ class PasswordResetSendLink extends React.Component {
 PasswordResetSendLink.defaultProps = {
 };
 PasswordResetSendLink.propTypes = {
-    params: React.PropTypes.object.isRequired
+    params: PropTypes.object.isRequired
 };
 
 export default PasswordResetSendLink;

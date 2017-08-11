@@ -11,12 +11,6 @@
 
     .post-right-comments-container {
         position: relative;
-
-        .post {
-            &:first-child {
-                padding-top: 15px;
-            }
-        }
     }
 
 
@@ -39,6 +33,7 @@
             .col__reply {
                 background: transparent !important;
                 border: none !important;
+                right: 5px;
                 text-align: right;
                 top: 0;
             }
@@ -53,15 +48,22 @@
         border: none;
     }
 
+    .date-separator {
+        hr {
+            border-top: 1px solid #eee;
+        }
+    }
+
     .post-create__container {
         width: 100%;
 
-        .textarea-wrapper {
-            min-height: 100px;
-        }
-
         .btn {
             margin-bottom: 10px;
+
+            &.disabled {
+                background: grey !important;
+                border-color: transparent !important;
+            }
         }
 
         .custom-textarea {
@@ -89,6 +91,12 @@
             @include opacity(.7);
             margin-right: 10px;
             padding: 6px 0;
+        }
+
+        .emoji-picker {
+            position: absolute;
+            top: -361px;
+            right: 0px;
         }
     }
 }
@@ -140,7 +148,7 @@
 .post-right__scroll {
     -webkit-overflow-scrolling: touch;
     @include flex(1 1 auto);
-    overflow: auto;
+    padding-top: 10px;
     position: relative;
 
     .file-preview__container {

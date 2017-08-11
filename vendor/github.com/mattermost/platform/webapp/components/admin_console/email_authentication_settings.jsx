@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -35,12 +35,10 @@ export default class EmailAuthenticationSettings extends AdminSettings {
 
     renderTitle() {
         return (
-            <h3>
-                <FormattedMessage
-                    id='admin.authentication.email'
-                    defaultMessage='Email'
-                />
-            </h3>
+            <FormattedMessage
+                id='admin.authentication.email'
+                defaultMessage='Email'
+            />
         );
     }
 
@@ -58,7 +56,7 @@ export default class EmailAuthenticationSettings extends AdminSettings {
                     helpText={
                         <FormattedMessage
                             id='admin.email.allowSignupDescription'
-                            defaultMessage='When true, Mattermost allows team creation and account signup using email and password.  This value should be false only when you want to limit signup to a single-sign-on service like OAuth or AD/LDAP.'
+                            defaultMessage='When true, Mattermost allows team creation and account signup using email and password.  This value should be false only when you want to limit signup to a single sign-on service like OAuth or AD/LDAP.'
                         />
                     }
                     value={this.state.enableSignUpWithEmail}

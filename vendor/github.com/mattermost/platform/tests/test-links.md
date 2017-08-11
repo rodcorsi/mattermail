@@ -23,12 +23,9 @@ http://192.168.1.1:4040
 http://[::1]:80
 http://[::1]:8065
 https://[::1]:80
-http://[2001:0:5ef5:79fb:303a:62d5:3312:ff42]:80
+http://[2001:0:5ef5:79fb:303a:62d5:3312:ff42]
 http://[2001:0:5ef5:79fb:303a:62d5:3312:ff42]:8065
-https://[2001:0:5ef5:79fb:303a:62d5:3312:ff42]:443
-http://username:password@example.com
-http://username:password@127.0.0.1
-http://username:password@[2001:0:5ef5:79fb:303a:62d5:3312:ff42]:80
+https://[2001:0:5ef5:79fb:303a:62d5:3312:ff42]
 test@example.com
 http://example.com/more_(than)_one_(parens)
 http://example.com/(something)?after=parens
@@ -83,10 +80,10 @@ https://example.com links to `https://example.com` and not `http://example.com`
 https://en.wikipedia.org/wiki/🐬 links to the Wikipedia article on dolphins
 https://en.wikipedia.org/wiki/URLs#Syntax links to the Syntax section of the Wikipedia article on URLs
 test@example.com links to `mailto:test@example.com`
-mailto:test@example.com links to `mailto:test@example.com`
 [email link](mailto:test@example.com) links to `mailto:test@example.com` and not `http://mailto:test@example.com`
 [other link](ts3server://example.com) links to `ts3server://example.com` and not `http://ts3server://example.com`
 test_underscore@example.com links to `mailto:test_underscore@example.com`
+<test@example.com> with angle brackets links to `mailto:test@example.com` and not `http://mailto:test@example.com`
 [link with spaces](example.com/ spaces in the url) links to either `http://example.com/ spaces in the url` or `http://example.com/%20spaces%20in%20the%20url`
 
 #### These links should have tooltips when you hover over them

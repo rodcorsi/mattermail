@@ -1,4 +1,6 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -54,6 +56,6 @@ export default class FileInfoPreview extends React.Component {
 }
 
 FileInfoPreview.propTypes = {
-    fileInfo: React.PropTypes.object.isRequired,
-    fileUrl: React.PropTypes.string.isRequired
+    fileInfo: PropTypes.object.isRequired,
+    fileUrl: PropTypes.string.isRequired
 };

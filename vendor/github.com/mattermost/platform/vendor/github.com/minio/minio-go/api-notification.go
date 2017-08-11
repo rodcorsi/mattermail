@@ -22,6 +22,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/minio/minio-go/pkg/s3utils"
 )
 
 // GetBucketNotification - get bucket notification at a given path.
@@ -44,8 +47,9 @@ func (c Client) getBucketNotification(bucketName string) (BucketNotification, er
 
 	// Execute GET on bucket to list objects.
 	resp, err := c.executeMethod("GET", requestMetadata{
-		bucketName:  bucketName,
-		queryValues: urlValues,
+		bucketName:         bucketName,
+		queryValues:        urlValues,
+		contentSHA256Bytes: emptySHA256,
 	})
 
 	defer closeResponse(resp)
@@ -99,6 +103,14 @@ type eventMeta struct {
 	Object          objectMeta `json:"object"`
 }
 
+// sourceInfo represents information on the client that
+// triggered the event notification.
+type sourceInfo struct {
+	Host      string `json:"host"`
+	Port      string `json:"port"`
+	UserAgent string `json:"userAgent"`
+}
+
 // NotificationEvent represents an Amazon an S3 bucket notification event.
 type NotificationEvent struct {
 	EventVersion      string            `json:"eventVersion"`
@@ -110,6 +122,7 @@ type NotificationEvent struct {
 	RequestParameters map[string]string `json:"requestParameters"`
 	ResponseElements  map[string]string `json:"responseElements"`
 	S3                eventMeta         `json:"s3"`
+	Source            sourceInfo        `json:"source"`
 }
 
 // NotificationInfo - represents the collection of notification events, additionally
@@ -135,7 +148,7 @@ func (c Client) ListenBucketNotification(bucketName, prefix, suffix string, even
 		}
 
 		// Check ARN partition to verify if listening bucket is supported
-		if isAmazonEndpoint(c.endpointURL) || isGoogleEndpoint(c.endpointURL) {
+		if s3utils.IsAmazonEndpoint(c.endpointURL) || s3utils.IsGoogleEndpoint(c.endpointURL) {
 			notificationInfoCh <- NotificationInfo{
 				Err: ErrAPINotSupported("Listening bucket notification is specific only to `minio` partitions"),
 			}
@@ -143,7 +156,14 @@ func (c Client) ListenBucketNotification(bucketName, prefix, suffix string, even
 		}
 
 		// Continously run and listen on bucket notification.
-		for {
+		// Create a done channel to control 'ListObjects' go routine.
+		retryDoneCh := make(chan struct{}, 1)
+
+		// Indicate to our routine to exit cleanly upon return.
+		defer close(retryDoneCh)
+
+		// Wait on the jitter retry loop.
+		for range c.newRetryTimerContinous(time.Second, time.Second*30, MaxJitter, retryDoneCh) {
 			urlValues := make(url.Values)
 			urlValues.Set("prefix", prefix)
 			urlValues.Set("suffix", suffix)
@@ -151,14 +171,12 @@ func (c Client) ListenBucketNotification(bucketName, prefix, suffix string, even
 
 			// Execute GET on bucket to list objects.
 			resp, err := c.executeMethod("GET", requestMetadata{
-				bucketName:  bucketName,
-				queryValues: urlValues,
+				bucketName:         bucketName,
+				queryValues:        urlValues,
+				contentSHA256Bytes: emptySHA256,
 			})
 			if err != nil {
-				notificationInfoCh <- NotificationInfo{
-					Err: err,
-				}
-				return
+				continue
 			}
 
 			// Validate http response, upon error return quickly.
@@ -180,10 +198,7 @@ func (c Client) ListenBucketNotification(bucketName, prefix, suffix string, even
 			for bio.Scan() {
 				var notificationInfo NotificationInfo
 				if err = json.Unmarshal(bio.Bytes(), &notificationInfo); err != nil {
-					notificationInfoCh <- NotificationInfo{
-						Err: err,
-					}
-					return
+					continue
 				}
 				// Send notifications on channel only if there are events received.
 				if len(notificationInfo.Records) > 0 {
@@ -200,12 +215,7 @@ func (c Client) ListenBucketNotification(bucketName, prefix, suffix string, even
 				// and re-connect.
 				if err == io.ErrUnexpectedEOF {
 					resp.Body.Close()
-					continue
 				}
-				notificationInfoCh <- NotificationInfo{
-					Err: err,
-				}
-				return
 			}
 		}
 	}(notificationInfoCh)

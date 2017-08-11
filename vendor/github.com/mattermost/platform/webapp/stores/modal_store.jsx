@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import AppDispatcher from '../dispatcher/app_dispatcher.jsx';
@@ -31,6 +31,7 @@ class ModalStoreClass extends EventEmitter {
         const {type, value, ...args} = payload.action; //eslint-disable-line no-use-before-define
 
         switch (type) {
+        case ActionTypes.TOGGLE_ACCOUNT_SETTINGS_MODAL:
         case ActionTypes.TOGGLE_IMPORT_THEME_MODAL:
         case ActionTypes.TOGGLE_INVITE_MEMBER_MODAL:
         case ActionTypes.TOGGLE_LEAVE_TEAM_MODAL:
@@ -38,6 +39,9 @@ class ModalStoreClass extends EventEmitter {
         case ActionTypes.TOGGLE_GET_POST_LINK_MODAL:
         case ActionTypes.TOGGLE_GET_TEAM_INVITE_LINK_MODAL:
         case ActionTypes.TOGGLE_GET_PUBLIC_LINK_MODAL:
+        case ActionTypes.TOGGLE_DM_MODAL:
+        case ActionTypes.TOGGLE_QUICK_SWITCH_MODAL:
+        case ActionTypes.TOGGLE_CHANNEL_HEADER_UPDATE_MODAL:
             this.emit(type, value, args);
             break;
         }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package store
@@ -74,7 +74,19 @@ func TestEmojiGet(t *testing.T) {
 	}()
 
 	for _, emoji := range emojis {
-		if result := <-store.Emoji().Get(emoji.Id); result.Err != nil {
+		if result := <-store.Emoji().Get(emoji.Id, false); result.Err != nil {
+			t.Fatalf("failed to get emoji with id %v: %v", emoji.Id, result.Err)
+		}
+	}
+
+	for _, emoji := range emojis {
+		if result := <-store.Emoji().Get(emoji.Id, true); result.Err != nil {
+			t.Fatalf("failed to get emoji with id %v: %v", emoji.Id, result.Err)
+		}
+	}
+
+	for _, emoji := range emojis {
+		if result := <-store.Emoji().Get(emoji.Id, true); result.Err != nil {
 			t.Fatalf("failed to get emoji with id %v: %v", emoji.Id, result.Err)
 		}
 	}
@@ -114,7 +126,7 @@ func TestEmojiGetByName(t *testing.T) {
 	}
 }
 
-func TestEmojiGetAll(t *testing.T) {
+func TestEmojiGetList(t *testing.T) {
 	Setup()
 
 	emojis := []model.Emoji{
@@ -141,7 +153,7 @@ func TestEmojiGetAll(t *testing.T) {
 		}
 	}()
 
-	if result := <-store.Emoji().GetAll(); result.Err != nil {
+	if result := <-store.Emoji().GetList(0, 100); result.Err != nil {
 		t.Fatal(result.Err)
 	} else {
 		for _, emoji := range emojis {

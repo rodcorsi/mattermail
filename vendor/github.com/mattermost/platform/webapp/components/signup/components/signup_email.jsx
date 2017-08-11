@@ -1,16 +1,19 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import LoadingScreen from 'components/loading_screen.jsx';
 
 import * as GlobalActions from 'actions/global_actions.jsx';
-import {track} from 'actions/analytics_actions.jsx';
+import {trackEvent} from 'actions/diagnostics_actions.jsx';
 
 import BrowserStore from 'stores/browser_store.jsx';
+import {getInviteInfo} from 'actions/team_actions.jsx';
+import {loadMe, loginById, createUserWithInvite} from 'actions/user_actions.jsx';
 
 import * as Utils from 'utils/utils.jsx';
-import Client from 'client/web_client.jsx';
 import Constants from 'utils/constants.jsx';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import {FormattedMessage, FormattedHTMLMessage} from 'react-intl';
@@ -21,7 +24,7 @@ import logoImage from 'images/logo.png';
 export default class SignupEmail extends React.Component {
     static get propTypes() {
         return {
-            location: React.PropTypes.object
+            location: PropTypes.object
         };
     }
 
@@ -35,6 +38,10 @@ export default class SignupEmail extends React.Component {
         this.isUserValid = this.isUserValid.bind(this);
 
         this.state = this.getInviteInfo();
+    }
+
+    componentDidMount() {
+        trackEvent('signup', 'signup_user_01_welcome');
     }
 
     getInviteInfo() {
@@ -58,7 +65,7 @@ export default class SignupEmail extends React.Component {
             loading = false;
         } else if (inviteId && inviteId.length > 0) {
             loading = true;
-            Client.getInviteInfo(
+            getInviteInfo(
                 inviteId,
                 (inviteData) => {
                     if (!inviteData) {
@@ -102,23 +109,9 @@ export default class SignupEmail extends React.Component {
         };
     }
 
-    finishSignup() {
-        GlobalActions.emitInitialLoad(
-            () => {
-                const query = this.props.location.query;
-                GlobalActions.loadDefaultLocale();
-                if (query.redirect_to) {
-                    browserHistory.push(query.redirect_to);
-                } else {
-                    browserHistory.push('/select_team');
-                }
-            }
-        );
-    }
-
     handleSignupSuccess(user, data) {
-        track('signup', 'signup_user_02_complete');
-        Client.loginById(
+        trackEvent('signup', 'signup_user_02_complete');
+        loginById(
             data.id,
             user.password,
             '',
@@ -127,13 +120,13 @@ export default class SignupEmail extends React.Component {
                     BrowserStore.setGlobalItem(this.state.hash, JSON.stringify({usedBefore: true}));
                 }
 
-                GlobalActions.emitInitialLoad(
+                loadMe().then(
                     () => {
                         const query = this.props.location.query;
                         if (query.redirect_to) {
                             browserHistory.push(query.redirect_to);
                         } else {
-                            browserHistory.push('/select_team');
+                            GlobalActions.redirectUserToDefaultTeam();
                         }
                     }
                 );
@@ -241,7 +234,7 @@ export default class SignupEmail extends React.Component {
                 allow_marketing: true
             };
 
-            Client.createUserWithInvite(user,
+            createUserWithInvite(user,
                 this.state.data,
                 this.state.hash,
                 this.state.inviteId,
@@ -328,6 +321,7 @@ export default class SignupEmail extends React.Component {
                         </strong></h5>
                         <div className={emailDivStyle}>
                             <input
+                                id='email'
                                 type='email'
                                 ref='email'
                                 className='form-control'
@@ -352,6 +346,7 @@ export default class SignupEmail extends React.Component {
                         </strong></h5>
                         <div className={nameDivStyle}>
                             <input
+                                id='name'
                                 type='text'
                                 ref='name'
                                 className='form-control'
@@ -373,6 +368,7 @@ export default class SignupEmail extends React.Component {
                         </strong></h5>
                         <div className={passwordDivStyle}>
                             <input
+                                id='password'
                                 type='password'
                                 ref='password'
                                 className='form-control'
@@ -385,6 +381,7 @@ export default class SignupEmail extends React.Component {
                     </div>
                     <p className='margin--extra'>
                         <button
+                            id='createAccountButton'
                             type='submit'
                             onClick={this.handleSubmit}
                             className='btn-primary btn'
@@ -401,8 +398,6 @@ export default class SignupEmail extends React.Component {
     }
 
     render() {
-        track('signup', 'signup_user_01_welcome');
-
         let serverError = null;
         if (this.state.serverError) {
             serverError = (
@@ -429,9 +424,11 @@ export default class SignupEmail extends React.Component {
                 <p>
                     <FormattedHTMLMessage
                         id='create_team.agreement'
-                        defaultMessage="By proceeding to create your account and use {siteName}, you agree to our <a href='/static/help/terms.html'>Terms of Service</a> and <a href='/static/help/privacy.html'>Privacy Policy</a>. If you do not agree, you cannot use {siteName}."
+                        defaultMessage="By proceeding to create your account and use {siteName}, you agree to our <a href='{TermsOfServiceLink}'>Terms of Service</a> and <a href='{PrivacyPolicyLink}'>Privacy Policy</a>. If you do not agree, you cannot use {siteName}."
                         values={{
-                            siteName: global.window.mm_config.SiteName
+                            siteName: global.window.mm_config.SiteName,
+                            TermsOfServiceLink: global.window.mm_config.TermsOfServiceLink,
+                            PrivacyPolicyLink: global.window.mm_config.PrivacyPolicyLink
                         }}
                     />
                 </p>
@@ -457,7 +454,7 @@ export default class SignupEmail extends React.Component {
         return (
             <div>
                 <div className='signup-header'>
-                    <Link to='/signup_user_complete'>
+                    <Link to='/'>
                         <span className='fa fa-chevron-left'/>
                         <FormattedMessage
                             id='web.header.back'

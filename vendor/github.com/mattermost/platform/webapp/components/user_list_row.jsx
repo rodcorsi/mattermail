@@ -1,26 +1,23 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import ProfilePicture from 'components/profile_picture.jsx';
 
 import UserStore from 'stores/user_store.jsx';
-import PreferenceStore from 'stores/preference_store.jsx';
 
-import Constants from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
-import Client from 'client/web_client.jsx';
+import {Client4} from 'mattermost-redux/client';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import {FormattedHTMLMessage} from 'react-intl';
 
-export default function UserListRow({user, extraInfo, actions, actionProps, actionUserProps}) {
-    const nameFormat = PreferenceStore.get(Constants.Preferences.CATEGORY_DISPLAY_SETTINGS, 'name_format', '');
-
-    let name = user.username;
-    if (user.nickname && nameFormat === Constants.Preferences.DISPLAY_PREFER_NICKNAME) {
-        name = `${user.nickname} (@${user.username})`;
-    } else if ((user.first_name || user.last_name) && (nameFormat === Constants.Preferences.DISPLAY_PREFER_NICKNAME || nameFormat === Constants.Preferences.DISPLAY_PREFER_FULL_NAME)) {
-        name = `${Utils.getFullName(user)} (@${user.username})`;
+export default function UserListRow({user, extraInfo, actions, actionProps, actionUserProps, userCount}) {
+    const displayName = Utils.displayUsernameForUser(user);
+    let name = `${displayName} (@${user.username})`;
+    if (displayName === user.username) {
+        name = user.username;
     }
 
     let buttons = null;
@@ -58,13 +55,20 @@ export default function UserListRow({user, extraInfo, actions, actionProps, acti
         status = UserStore.getStatus(user.id);
     }
 
+    let userCountID = null;
+    let userCountEmail = null;
+    if (userCount >= 0) {
+        userCountID = Utils.createSafeId('userListRowName' + userCount);
+        userCountEmail = Utils.createSafeId('userListRowEmail' + userCount);
+    }
+
     return (
         <div
             key={user.id}
             className='more-modal__row'
         >
             <ProfilePicture
-                src={`${Client.getUsersRoute()}/${user.id}/image?time=${user.update_at}`}
+                src={Client4.getProfilePictureUrl(user.id, user.last_picture_update)}
                 status={status}
                 width='32'
                 height='32'
@@ -72,10 +76,16 @@ export default function UserListRow({user, extraInfo, actions, actionProps, acti
             <div
                 className='more-modal__details'
             >
-                <div className='more-modal__name'>
+                <div
+                    id={userCountID}
+                    className='more-modal__name'
+                >
                     {name}
                 </div>
-                <div className={emailStyle}>
+                <div
+                    id={userCountEmail}
+                    className={emailStyle}
+                >
                     {email}
                 </div>
                 {extraInfo}
@@ -97,9 +107,10 @@ UserListRow.defaultProps = {
 };
 
 UserListRow.propTypes = {
-    user: React.PropTypes.object.isRequired,
-    extraInfo: React.PropTypes.arrayOf(React.PropTypes.object),
-    actions: React.PropTypes.arrayOf(React.PropTypes.func),
-    actionProps: React.PropTypes.object,
-    actionUserProps: React.PropTypes.object
+    user: PropTypes.object.isRequired,
+    extraInfo: PropTypes.arrayOf(PropTypes.object),
+    actions: PropTypes.arrayOf(PropTypes.func),
+    actionProps: PropTypes.object,
+    actionUserProps: PropTypes.object,
+    userCount: PropTypes.number
 };

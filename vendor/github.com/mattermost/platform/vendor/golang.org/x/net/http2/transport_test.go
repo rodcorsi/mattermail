@@ -39,6 +39,13 @@ var (
 
 var tlsConfigInsecure = &tls.Config{InsecureSkipVerify: true}
 
+type testContext struct{}
+
+func (testContext) Done() <-chan struct{}                   { return make(chan struct{}) }
+func (testContext) Err() error                              { panic("should not be called") }
+func (testContext) Deadline() (deadline time.Time, ok bool) { return time.Time{}, false }
+func (testContext) Value(key interface{}) interface{}       { return nil }
+
 func TestTransportExternal(t *testing.T) {
 	if !*extNet {
 		t.Skip("skipping external network test")
@@ -52,6 +59,17 @@ func TestTransportExternal(t *testing.T) {
 	res.Write(os.Stdout)
 }
 
+type fakeTLSConn struct {
+	net.Conn
+}
+
+func (c *fakeTLSConn) ConnectionState() tls.ConnectionState {
+	return tls.ConnectionState{
+		Version:     tls.VersionTLS12,
+		CipherSuite: cipher_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+	}
+}
+
 func startH2cServer(t *testing.T) net.Listener {
 	h2Server := &Server{}
 	l := newLocalListener(t)
@@ -61,8 +79,8 @@ func startH2cServer(t *testing.T) net.Listener {
 			t.Error(err)
 			return
 		}
-		h2Server.ServeConn(conn, &ServeConnOpts{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "Hello, %v", r.URL.Path)
+		h2Server.ServeConn(&fakeTLSConn{conn}, &ServeConnOpts{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "Hello, %v, http: %v", r.URL.Path, r.TLS == nil)
 		})})
 	}()
 	return l
@@ -92,7 +110,7 @@ func TestTransportH2c(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := string(body), "Hello, /foobar"; got != want {
+	if got, want := string(body), "Hello, /foobar, http: true"; got != want {
 		t.Fatalf("response got %v, want %v", got, want)
 	}
 }
@@ -374,6 +392,45 @@ func randString(n int) string {
 	return string(b)
 }
 
+type panicReader struct{}
+
+func (panicReader) Read([]byte) (int, error) { panic("unexpected Read") }
+func (panicReader) Close() error             { panic("unexpected Close") }
+
+func TestActualContentLength(t *testing.T) {
+	tests := []struct {
+		req  *http.Request
+		want int64
+	}{
+		// Verify we don't read from Body:
+		0: {
+			req:  &http.Request{Body: panicReader{}},
+			want: -1,
+		},
+		// nil Body means 0, regardless of ContentLength:
+		1: {
+			req:  &http.Request{Body: nil, ContentLength: 5},
+			want: 0,
+		},
+		// ContentLength is used if set.
+		2: {
+			req:  &http.Request{Body: panicReader{}, ContentLength: 5},
+			want: 5,
+		},
+		// http.NoBody means 0, not -1.
+		3: {
+			req:  &http.Request{Body: go18httpNoBody()},
+			want: 0,
+		},
+	}
+	for i, tt := range tests {
+		got := actualContentLength(tt.req)
+		if got != tt.want {
+			t.Errorf("test[%d]: got %d; want %d", i, got, tt.want)
+		}
+	}
+}
+
 func TestTransportBody(t *testing.T) {
 	bodyTests := []struct {
 		body         string
@@ -381,8 +438,6 @@ func TestTransportBody(t *testing.T) {
 	}{
 		{body: "some message"},
 		{body: "some message", noContentLen: true},
-		{body: ""},
-		{body: "", noContentLen: true},
 		{body: strings.Repeat("a", 1<<20), noContentLen: true},
 		{body: strings.Repeat("a", 1<<20)},
 		{body: randString(16<<10 - 1)},
@@ -1690,12 +1745,12 @@ func TestTransportRejectsConnHeaders(t *testing.T) {
 		{
 			key:   "Upgrade",
 			value: []string{"anything"},
-			want:  "ERROR: http2: invalid Upgrade request header",
+			want:  "ERROR: http2: invalid Upgrade request header: [\"anything\"]",
 		},
 		{
 			key:   "Connection",
 			value: []string{"foo"},
-			want:  "ERROR: http2: invalid Connection request header",
+			want:  "ERROR: http2: invalid Connection request header: [\"foo\"]",
 		},
 		{
 			key:   "Connection",
@@ -1705,7 +1760,7 @@ func TestTransportRejectsConnHeaders(t *testing.T) {
 		{
 			key:   "Connection",
 			value: []string{"close", "something-else"},
-			want:  "ERROR: http2: invalid Connection request header",
+			want:  "ERROR: http2: invalid Connection request header: [\"close\" \"something-else\"]",
 		},
 		{
 			key:   "Connection",
@@ -1725,7 +1780,7 @@ func TestTransportRejectsConnHeaders(t *testing.T) {
 		{
 			key:   "Transfer-Encoding",
 			value: []string{"foo"},
-			want:  "ERROR: http2: invalid Transfer-Encoding request header",
+			want:  "ERROR: http2: invalid Transfer-Encoding request header: [\"foo\"]",
 		},
 		{
 			key:   "Transfer-Encoding",
@@ -1735,7 +1790,7 @@ func TestTransportRejectsConnHeaders(t *testing.T) {
 		{
 			key:   "Transfer-Encoding",
 			value: []string{"chunked", "other"},
-			want:  "ERROR: http2: invalid Transfer-Encoding request header",
+			want:  "ERROR: http2: invalid Transfer-Encoding request header: [\"chunked\" \"other\"]",
 		},
 		{
 			key:   "Content-Length",
@@ -1898,8 +1953,17 @@ func TestTransportNewTLSConfig(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
+		// Ignore the session ticket keys part, which ends up populating
+		// unexported fields in the Config:
+		if tt.conf != nil {
+			tt.conf.SessionTicketsDisabled = true
+		}
+
 		tr := &Transport{TLSClientConfig: tt.conf}
 		got := tr.newTLSConfig(tt.host)
+
+		got.SessionTicketsDisabled = false
+
 		if !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("%d. got %#v; want %#v", i, got, tt.want)
 		}
@@ -2015,10 +2079,11 @@ func TestTransportHandlerBodyClose(t *testing.T) {
 
 // https://golang.org/issue/15930
 func TestTransportFlowControl(t *testing.T) {
-	const (
-		total  = 100 << 20 // 100MB
-		bufLen = 1 << 16
-	)
+	const bufLen = 64 << 10
+	var total int64 = 100 << 20 // 100MB
+	if testing.Short() {
+		total = 10 << 20
+	}
 
 	var wrote int64 // updated atomically
 	st := newServerTester(t, func(w http.ResponseWriter, r *http.Request) {
@@ -2347,7 +2412,7 @@ func TestTransportReturnsDataPaddingFlowControl(t *testing.T) {
 			EndStream:     false,
 			BlockFragment: buf.Bytes(),
 		})
-		pad := []byte("12345")
+		pad := make([]byte, 5)
 		ct.fr.WriteDataPadded(hf.StreamID, false, make([]byte, 5000), pad) // without ending stream
 
 		f, err := ct.readNonSettingsFrame()
@@ -2469,7 +2534,7 @@ func TestTransportBodyDoubleEndStream(t *testing.T) {
 	}
 }
 
-// golangorg/issue/16847
+// golang.org/issue/16847, golang.org/issue/19103
 func TestTransportRequestPathPseudo(t *testing.T) {
 	type result struct {
 		path string
@@ -2489,9 +2554,9 @@ func TestTransportRequestPathPseudo(t *testing.T) {
 			},
 			want: result{path: "/foo"},
 		},
-		// I guess we just don't let users request "//foo" as
-		// a path, since it's illegal to start with two
-		// slashes....
+		// In Go 1.7, we accepted paths of "//foo".
+		// In Go 1.8, we rejected it (issue 16847).
+		// In Go 1.9, we accepted it again (issue 19103).
 		1: {
 			req: &http.Request{
 				Method: "GET",
@@ -2500,7 +2565,7 @@ func TestTransportRequestPathPseudo(t *testing.T) {
 					Path: "//foo",
 				},
 			},
-			want: result{err: `invalid request :path "//foo"`},
+			want: result{path: "//foo"},
 		},
 
 		// Opaque with //$Matching_Hostname/path
@@ -2617,4 +2682,334 @@ func TestRoundTripDoesntConsumeRequestBodyEarly(t *testing.T) {
 	if string(slurp) != body {
 		t.Errorf("Body = %q; want %q", slurp, body)
 	}
+}
+
+func TestClientConnPing(t *testing.T) {
+	st := newServerTester(t, func(w http.ResponseWriter, r *http.Request) {}, optOnlyServer)
+	defer st.Close()
+	tr := &Transport{TLSClientConfig: tlsConfigInsecure}
+	defer tr.CloseIdleConnections()
+	cc, err := tr.dialClientConn(st.ts.Listener.Addr().String(), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = cc.Ping(testContext{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Issue 16974: if the server sent a DATA frame after the user
+// canceled the Transport's Request, the Transport previously wrote to a
+// closed pipe, got an error, and ended up closing the whole TCP
+// connection.
+func TestTransportCancelDataResponseRace(t *testing.T) {
+	cancel := make(chan struct{})
+	clientGotError := make(chan bool, 1)
+
+	const msg = "Hello."
+	st := newServerTester(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/hello") {
+			time.Sleep(50 * time.Millisecond)
+			io.WriteString(w, msg)
+			return
+		}
+		for i := 0; i < 50; i++ {
+			io.WriteString(w, "Some data.")
+			w.(http.Flusher).Flush()
+			if i == 2 {
+				close(cancel)
+				<-clientGotError
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}, optOnlyServer)
+	defer st.Close()
+
+	tr := &Transport{TLSClientConfig: tlsConfigInsecure}
+	defer tr.CloseIdleConnections()
+
+	c := &http.Client{Transport: tr}
+	req, _ := http.NewRequest("GET", st.ts.URL, nil)
+	req.Cancel = cancel
+	res, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = io.Copy(ioutil.Discard, res.Body); err == nil {
+		t.Fatal("unexpected success")
+	}
+	clientGotError <- true
+
+	res, err = c.Get(st.ts.URL + "/hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+	slurp, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(slurp) != msg {
+		t.Errorf("Got = %q; want %q", slurp, msg)
+	}
+}
+
+func TestTransportRetryAfterGOAWAY(t *testing.T) {
+	var dialer struct {
+		sync.Mutex
+		count int
+	}
+	ct1 := make(chan *clientTester)
+	ct2 := make(chan *clientTester)
+
+	ln := newLocalListener(t)
+	defer ln.Close()
+
+	tr := &Transport{
+		TLSClientConfig: tlsConfigInsecure,
+	}
+	tr.DialTLS = func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+		dialer.Lock()
+		defer dialer.Unlock()
+		dialer.count++
+		if dialer.count == 3 {
+			return nil, errors.New("unexpected number of dials")
+		}
+		cc, err := net.Dial("tcp", ln.Addr().String())
+		if err != nil {
+			return nil, fmt.Errorf("dial error: %v", err)
+		}
+		sc, err := ln.Accept()
+		if err != nil {
+			return nil, fmt.Errorf("accept error: %v", err)
+		}
+		ct := &clientTester{
+			t:  t,
+			tr: tr,
+			cc: cc,
+			sc: sc,
+			fr: NewFramer(sc, sc),
+		}
+		switch dialer.count {
+		case 1:
+			ct1 <- ct
+		case 2:
+			ct2 <- ct
+		}
+		return cc, nil
+	}
+
+	errs := make(chan error, 3)
+	done := make(chan struct{})
+	defer close(done)
+
+	// Client.
+	go func() {
+		req, _ := http.NewRequest("GET", "https://dummy.tld/", nil)
+		res, err := tr.RoundTrip(req)
+		if res != nil {
+			res.Body.Close()
+			if got := res.Header.Get("Foo"); got != "bar" {
+				err = fmt.Errorf("foo header = %q; want bar", got)
+			}
+		}
+		if err != nil {
+			err = fmt.Errorf("RoundTrip: %v", err)
+		}
+		errs <- err
+	}()
+
+	connToClose := make(chan io.Closer, 2)
+
+	// Server for the first request.
+	go func() {
+		var ct *clientTester
+		select {
+		case ct = <-ct1:
+		case <-done:
+			return
+		}
+
+		connToClose <- ct.cc
+		ct.greet()
+		hf, err := ct.firstHeaders()
+		if err != nil {
+			errs <- fmt.Errorf("server1 failed reading HEADERS: %v", err)
+			return
+		}
+		t.Logf("server1 got %v", hf)
+		if err := ct.fr.WriteGoAway(0 /*max id*/, ErrCodeNo, nil); err != nil {
+			errs <- fmt.Errorf("server1 failed writing GOAWAY: %v", err)
+			return
+		}
+		errs <- nil
+	}()
+
+	// Server for the second request.
+	go func() {
+		var ct *clientTester
+		select {
+		case ct = <-ct2:
+		case <-done:
+			return
+		}
+
+		connToClose <- ct.cc
+		ct.greet()
+		hf, err := ct.firstHeaders()
+		if err != nil {
+			errs <- fmt.Errorf("server2 failed reading HEADERS: %v", err)
+			return
+		}
+		t.Logf("server2 got %v", hf)
+
+		var buf bytes.Buffer
+		enc := hpack.NewEncoder(&buf)
+		enc.WriteField(hpack.HeaderField{Name: ":status", Value: "200"})
+		enc.WriteField(hpack.HeaderField{Name: "foo", Value: "bar"})
+		err = ct.fr.WriteHeaders(HeadersFrameParam{
+			StreamID:      hf.StreamID,
+			EndHeaders:    true,
+			EndStream:     false,
+			BlockFragment: buf.Bytes(),
+		})
+		if err != nil {
+			errs <- fmt.Errorf("server2 failed writing response HEADERS: %v", err)
+		} else {
+			errs <- nil
+		}
+	}()
+
+	for k := 0; k < 3; k++ {
+		select {
+		case err := <-errs:
+			if err != nil {
+				t.Error(err)
+			}
+		case <-time.After(1 * time.Second):
+			t.Errorf("timed out")
+		}
+	}
+
+	for {
+		select {
+		case c := <-connToClose:
+			c.Close()
+		default:
+			return
+		}
+	}
+}
+
+func TestAuthorityAddr(t *testing.T) {
+	tests := []struct {
+		scheme, authority string
+		want              string
+	}{
+		{"http", "foo.com", "foo.com:80"},
+		{"https", "foo.com", "foo.com:443"},
+		{"https", "foo.com:1234", "foo.com:1234"},
+		{"https", "1.2.3.4:1234", "1.2.3.4:1234"},
+		{"https", "1.2.3.4", "1.2.3.4:443"},
+		{"https", "[::1]:1234", "[::1]:1234"},
+		{"https", "[::1]", "[::1]:443"},
+	}
+	for _, tt := range tests {
+		got := authorityAddr(tt.scheme, tt.authority)
+		if got != tt.want {
+			t.Errorf("authorityAddr(%q, %q) = %q; want %q", tt.scheme, tt.authority, got, tt.want)
+		}
+	}
+}
+
+// Issue 20448: stop allocating for DATA frames' payload after
+// Response.Body.Close is called.
+func TestTransportAllocationsAfterResponseBodyClose(t *testing.T) {
+	megabyteZero := make([]byte, 1<<20)
+
+	writeErr := make(chan error, 1)
+
+	st := newServerTester(t, func(w http.ResponseWriter, r *http.Request) {
+		w.(http.Flusher).Flush()
+		var sum int64
+		for i := 0; i < 100; i++ {
+			n, err := w.Write(megabyteZero)
+			sum += int64(n)
+			if err != nil {
+				writeErr <- err
+				return
+			}
+		}
+		t.Logf("wrote all %d bytes", sum)
+		writeErr <- nil
+	}, optOnlyServer)
+	defer st.Close()
+
+	tr := &Transport{TLSClientConfig: tlsConfigInsecure}
+	defer tr.CloseIdleConnections()
+	c := &http.Client{Transport: tr}
+	res, err := c.Get(st.ts.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf [1]byte
+	if _, err := res.Body.Read(buf[:]); err != nil {
+		t.Error(err)
+	}
+	if err := res.Body.Close(); err != nil {
+		t.Error(err)
+	}
+
+	trb, ok := res.Body.(transportResponseBody)
+	if !ok {
+		t.Fatalf("res.Body = %T; want transportResponseBody", res.Body)
+	}
+	if trb.cs.bufPipe.b != nil {
+		t.Errorf("response body pipe is still open")
+	}
+
+	gotErr := <-writeErr
+	if gotErr == nil {
+		t.Errorf("Handler unexpectedly managed to write its entire response without getting an error")
+	} else if gotErr != errStreamClosed {
+		t.Errorf("Handler Write err = %v; want errStreamClosed", gotErr)
+	}
+}
+
+// Issue 18891: make sure Request.Body == NoBody means no DATA frame
+// is ever sent, even if empty.
+func TestTransportNoBodyMeansNoDATA(t *testing.T) {
+	ct := newClientTester(t)
+
+	unblockClient := make(chan bool)
+
+	ct.client = func() error {
+		req, _ := http.NewRequest("GET", "https://dummy.tld/", go18httpNoBody())
+		ct.tr.RoundTrip(req)
+		<-unblockClient
+		return nil
+	}
+	ct.server = func() error {
+		defer close(unblockClient)
+		defer ct.cc.(*net.TCPConn).Close()
+		ct.greet()
+
+		for {
+			f, err := ct.fr.ReadFrame()
+			if err != nil {
+				return fmt.Errorf("ReadFrame while waiting for Headers: %v", err)
+			}
+			switch f := f.(type) {
+			default:
+				return fmt.Errorf("Got %T; want HeadersFrame", f)
+			case *WindowUpdateFrame, *SettingsFrame:
+				continue
+			case *HeadersFrame:
+				if !f.StreamEnded() {
+					return fmt.Errorf("got headers frame without END_STREAM")
+				}
+				return nil
+			}
+		}
+	}
+	ct.run()
 }

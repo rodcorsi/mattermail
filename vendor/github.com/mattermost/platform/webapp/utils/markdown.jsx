@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import * as TextFormatting from './text_formatting.jsx';
@@ -6,11 +6,6 @@ import * as SyntaxHighlighting from './syntax_highlighting.jsx';
 
 import marked from 'marked';
 import katex from 'katex';
-
-function markdownImageLoaded(image) {
-    image.style.height = 'auto';
-}
-global.markdownImageLoaded = markdownImageLoaded;
 
 class MattermostMarkdownRenderer extends marked.Renderer {
     constructor(options, formattingOptions = {}) {
@@ -51,7 +46,7 @@ class MattermostMarkdownRenderer extends marked.Renderer {
         if (SyntaxHighlighting.canHighlight(usedLanguage)) {
             header = (
                 '<span class="post-code__language">' +
-                    SyntaxHighlighting.getLanguageName(language) +
+                    SyntaxHighlighting.getLanguageName(usedLanguage) +
                 '</span>'
             );
         }
@@ -117,22 +112,44 @@ class MattermostMarkdownRenderer extends marked.Renderer {
     }
 
     image(href, title, text) {
-        let out = '<img src="' + href + '" alt="' + text + '"';
+        let src = href;
+        let dimensions = [];
+        const parts = href.split(' ');
+        if (parts.length > 1) {
+            const lastPart = parts.pop();
+            src = parts.join(' ');
+            if (lastPart[0] === '=') {
+                dimensions = lastPart.substr(1).split('x');
+                if (dimensions.length === 2 && dimensions[1] === '') {
+                    dimensions[1] = 'auto';
+                }
+            }
+        }
+        let out = '<img src="' + src + '" alt="' + text + '"';
         if (title) {
             out += ' title="' + title + '"';
         }
-        out += ' onload="window.markdownImageLoaded(this)" onerror="window.markdownImageLoaded(this)" class="markdown-inline-img"';
+        if (dimensions.length > 0) {
+            out += ' width="' + dimensions[0] + '"';
+        }
+        if (dimensions.length > 1) {
+            out += ' height="' + dimensions[1] + '"';
+        }
+        out += ' class="markdown-inline-img"';
         out += this.options.xhtml ? '/>' : '>';
         return out;
     }
 
-    heading(text, level, raw) {
-        const id = `${this.options.headerPrefix}${raw.toLowerCase().replace(/[^\w]+/g, '-')}`;
-        return `<h${level} id="${id}" class="markdown__heading">${text}</h${level}>`;
+    heading(text, level) {
+        return `<h${level} class="markdown__heading">${text}</h${level}>`;
     }
 
     link(href, title, text) {
         let outHref = href;
+
+        if (this.formattingOptions.linkFilter && !this.formattingOptions.linkFilter(outHref)) {
+            return text;
+        }
 
         try {
             let unescaped = unescape(href);
@@ -167,8 +184,15 @@ class MattermostMarkdownRenderer extends marked.Renderer {
 
         output += '" href="' + outHref + '" rel="noreferrer"';
 
-        // special case for channel links and permalinks that are inside the app
-        if (this.formattingOptions.siteURL && new RegExp('^' + TextFormatting.escapeRegex(this.formattingOptions.siteURL) + '\\/[^\\/]+\\/(pl|channels)\\/').test(outHref)) {
+        // special case for team invite links, channel links, and permalinks that are inside the app
+        let internalLink = false;
+        if (this.formattingOptions.siteURL) {
+            const pattern = new RegExp('^' + TextFormatting.escapeRegex(this.formattingOptions.siteURL) + '\\/(?:signup_user_complete|[^\\/]+\\/(?:pl|channels))\\/');
+
+            internalLink = pattern.test(outHref);
+        }
+
+        if (internalLink) {
             output += ' data-link="' + outHref.substring(this.formattingOptions.siteURL) + '"';
         } else {
             output += ' target="_blank"';
@@ -197,7 +221,7 @@ class MattermostMarkdownRenderer extends marked.Renderer {
     }
 
     listitem(text, bullet) {
-        const taskListReg = /^\[([ |xX])\] /;
+        const taskListReg = /^\[([ |xX])] /;
         const isTaskList = taskListReg.exec(text);
 
         if (isTaskList) {
@@ -222,7 +246,8 @@ export function format(text, options = {}) {
         renderer: new MattermostMarkdownRenderer(null, options),
         sanitize: true,
         gfm: true,
-        tables: true
+        tables: true,
+        mangle: false
     };
 
     return marked(text, markdownOptions);

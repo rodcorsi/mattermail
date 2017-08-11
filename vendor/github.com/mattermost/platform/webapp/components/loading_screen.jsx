@@ -1,7 +1,9 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import {FormattedMessage} from 'react-intl';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 
@@ -44,6 +46,6 @@ LoadingScreen.defaultProps = {
     position: 'relative'
 };
 LoadingScreen.propTypes = {
-    position: React.PropTypes.oneOf(['absolute', 'fixed', 'relative', 'static', 'inherit']),
-    message: React.PropTypes.node
+    position: PropTypes.oneOf(['absolute', 'fixed', 'relative', 'static', 'inherit']),
+    message: PropTypes.node
 };

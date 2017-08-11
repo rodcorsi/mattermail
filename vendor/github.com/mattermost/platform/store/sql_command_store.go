@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 package store
@@ -8,10 +8,10 @@ import (
 )
 
 type SqlCommandStore struct {
-	*SqlStore
+	SqlStore
 }
 
-func NewSqlCommandStore(sqlStore *SqlStore) CommandStore {
+func NewSqlCommandStore(sqlStore SqlStore) CommandStore {
 	s := &SqlCommandStore{sqlStore}
 
 	for _, db := range sqlStore.GetAllConns() {

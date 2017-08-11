@@ -1,11 +1,10 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
-import AppDispatcher from 'dispatcher/app_dispatcher.jsx';
 import TeamMembersModal from './team_members_modal.jsx';
 import ToggleModalButton from './toggle_modal_button.jsx';
-import UserSettingsModal from './user_settings/user_settings_modal.jsx';
 import AboutBuildModal from './about_build_modal.jsx';
+import AddUsersToTeam from 'components/add_users_to_team';
 
 import UserStore from 'stores/user_store.jsx';
 import TeamStore from 'stores/team_store.jsx';
@@ -19,7 +18,6 @@ import * as UserAgent from 'utils/user_agent.jsx';
 import * as Utils from 'utils/utils.jsx';
 import {Constants, WebrtcActionTypes} from 'utils/constants.jsx';
 
-const ActionTypes = Constants.ActionTypes;
 const Preferences = Constants.Preferences;
 const TutorialSteps = Constants.TutorialSteps;
 
@@ -27,25 +25,26 @@ import {FormattedMessage} from 'react-intl';
 import {Link} from 'react-router/es6';
 import {createMenuTip} from 'components/tutorial/tutorial_tip.jsx';
 
+import PropTypes from 'prop-types';
+
 import React from 'react';
-import PureRenderMixin from 'react-addons-pure-render-mixin';
 
 export default class SidebarRightMenu extends React.Component {
     constructor(props) {
         super(props);
 
-        this.onPreferenceChange = this.onPreferenceChange.bind(this);
+        this.onChange = this.onChange.bind(this);
         this.handleClick = this.handleClick.bind(this);
         this.handleAboutModal = this.handleAboutModal.bind(this);
+        this.showAddUsersToTeamModal = this.showAddUsersToTeamModal.bind(this);
+        this.hideAddUsersToTeamModal = this.hideAddUsersToTeamModal.bind(this);
         this.searchMentions = this.searchMentions.bind(this);
         this.aboutModalDismissed = this.aboutModalDismissed.bind(this);
         this.getFlagged = this.getFlagged.bind(this);
 
         const state = this.getStateFromStores();
-        state.showUserSettingsModal = false;
         state.showAboutModal = false;
-
-        this.shouldComponentUpdate = PureRenderMixin.shouldComponentUpdate.bind(this);
+        state.showAddUsersToTeamModal = false;
 
         this.state = state;
     }
@@ -65,17 +64,35 @@ export default class SidebarRightMenu extends React.Component {
         this.setState({showAboutModal: false});
     }
 
+    showAddUsersToTeamModal(e) {
+        e.preventDefault();
+
+        this.setState({
+            showAddUsersToTeamModal: true,
+            showDropdown: false
+        });
+    }
+
+    hideAddUsersToTeamModal() {
+        this.setState({
+            showAddUsersToTeamModal: false
+        });
+    }
+
     getFlagged(e) {
         e.preventDefault();
         getFlaggedPosts();
+        this.hideSidebars();
     }
 
     componentDidMount() {
-        PreferenceStore.addChangeListener(this.onPreferenceChange);
+        TeamStore.addChangeListener(this.onChange);
+        PreferenceStore.addChangeListener(this.onChange);
     }
 
     componentWillUnmount() {
-        PreferenceStore.removeChangeListener(this.onPreferenceChange);
+        TeamStore.removeChangeListener(this.onChange);
+        PreferenceStore.removeChangeListener(this.onChange);
     }
 
     getStateFromStores() {
@@ -83,11 +100,13 @@ export default class SidebarRightMenu extends React.Component {
 
         return {
             currentUser: UserStore.getCurrentUser(),
+            teamMembers: TeamStore.getMyTeamMembers(),
+            teamListings: TeamStore.getTeamListings(),
             showTutorialTip: tutorialStep === TutorialSteps.MENU_POPOVER && Utils.isMobile()
         };
     }
 
-    onPreferenceChange() {
+    onChange() {
         this.setState(this.getStateFromStores());
     }
 
@@ -122,32 +141,22 @@ export default class SidebarRightMenu extends React.Component {
 
     hideSidebars() {
         if (Utils.isMobile()) {
-            AppDispatcher.handleServerAction({
-                type: ActionTypes.RECEIVED_SEARCH,
-                results: null
-            });
-
-            AppDispatcher.handleServerAction({
-                type: ActionTypes.RECEIVED_POST_SELECTED,
-                postId: null
-            });
-
-            document.querySelector('.app__body .inner-wrap').classList.remove('move--right', 'move--left', 'move--left-small');
-            document.querySelector('.app__body .sidebar--left').classList.remove('move--right');
-            document.querySelector('.app__body .sidebar--right').classList.remove('move--left');
-            document.querySelector('.app__body .sidebar--menu').classList.remove('move--left');
+            GlobalActions.toggleSideBarRightMenuAction();
         }
     }
 
     render() {
-        var teamLink = '';
-        var inviteLink = '';
-        var teamSettingsLink = '';
-        var manageLink = '';
-        var consoleLink = '';
-        var currentUser = UserStore.getCurrentUser();
-        var isAdmin = false;
-        var isSystemAdmin = false;
+        const currentUser = UserStore.getCurrentUser();
+        let teamLink;
+        let inviteLink;
+        let addUserToTeamLink;
+        let teamSettingsLink;
+        let manageLink;
+        let consoleLink;
+        let joinAnotherTeamLink;
+        let isAdmin = false;
+        let isSystemAdmin = false;
+        let createTeam = null;
 
         if (currentUser != null) {
             isAdmin = TeamStore.isTeamAdminForCurrentTeam() || UserStore.isSystemAdminForCurrentUser();
@@ -162,7 +171,23 @@ export default class SidebarRightMenu extends React.Component {
                         <i className='icon fa fa-user-plus'/>
                         <FormattedMessage
                             id='sidebar_right_menu.inviteNew'
-                            defaultMessage='Invite New Member'
+                            defaultMessage='Send Email Invite'
+                        />
+                    </a>
+                </li>
+            );
+
+            addUserToTeamLink = (
+                <li>
+                    <a
+                        id='addUsersToTeam'
+                        href='#'
+                        onClick={this.showAddUsersToTeamModal}
+                    >
+                        <i className='icon fa fa-user-plus'/>
+                        <FormattedMessage
+                            id='sidebar_right_menu.addMemberToTeam'
+                            defaultMessage='Add Members to Team'
                         />
                     </a>
                 </li>
@@ -189,10 +214,58 @@ export default class SidebarRightMenu extends React.Component {
                 if (global.window.mm_config.RestrictTeamInvite === Constants.PERMISSIONS_SYSTEM_ADMIN && !isSystemAdmin) {
                     teamLink = null;
                     inviteLink = null;
+                    addUserToTeamLink = null;
                 } else if (global.window.mm_config.RestrictTeamInvite === Constants.PERMISSIONS_TEAM_ADMIN && !isAdmin) {
                     teamLink = null;
                     inviteLink = null;
+                    addUserToTeamLink = null;
                 }
+            }
+
+            let moreTeams = false;
+            const isAlreadyMember = this.state.teamMembers.reduce((result, item) => {
+                result[item.team_id] = true;
+                return result;
+            }, {});
+
+            for (const id in this.state.teamListings) {
+                if (this.state.teamListings.hasOwnProperty(id) && !isAlreadyMember[id]) {
+                    moreTeams = true;
+                    break;
+                }
+            }
+
+            if (moreTeams) {
+                joinAnotherTeamLink = (
+                    <li key='joinTeam_li'>
+                        <Link to='/select_team'>
+                            <i className='icon fa fa-plus-square'/>
+                            <FormattedMessage
+                                id='navbar_dropdown.join'
+                                defaultMessage='Join Another Team'
+                            />
+                        </Link>
+                    </li>
+                );
+            }
+
+            if (global.window.mm_config.EnableTeamCreation === 'true' || isSystemAdmin) {
+                createTeam = (
+                    <li key='newTeam_li'>
+                        <Link
+                            id='createTeam'
+                            key='newTeam_a'
+                            to='/create_team'
+                            onClick={this.handleClick}
+                        >
+                            <i className='icon fa fa-plus-square'/>
+                            <FormattedMessage
+                                id='navbar_dropdown.create'
+                                defaultMessage='Create a New Team'
+                            />
+                        </Link>
+                    </li>
+                );
             }
         }
 
@@ -205,6 +278,25 @@ export default class SidebarRightMenu extends React.Component {
                         defaultMessage='View Members'
                     />
                 </ToggleModalButton>
+            </li>
+        );
+
+        const leaveTeam = (
+            <li key='leaveTeam_li'>
+                <a
+                    id='leaveTeam'
+                    href='#'
+                    onClick={GlobalActions.showLeaveTeamModal}
+                >
+                    <span
+                        className='icon'
+                        dangerouslySetInnerHTML={{__html: Constants.LEAVE_TEAM_SVG}}
+                    />
+                    <FormattedMessage
+                        id='navbar_dropdown.leave'
+                        defaultMessage='Leave Team'
+                    />
+                </a>
             </li>
         );
 
@@ -330,6 +422,25 @@ export default class SidebarRightMenu extends React.Component {
             );
         }
 
+        let addUsersToTeamModal;
+        if (this.state.showAddUsersToTeamModal) {
+            addUsersToTeamModal = (
+                <AddUsersToTeam
+                    onModalDismissed={this.hideAddUsersToTeamModal}
+                />
+            );
+        }
+
+        let teamDivider = null;
+        if (teamSettingsLink || manageLink || joinAnotherTeamLink || createTeam || leaveTeam) {
+            teamDivider = <li className='divider'/>;
+        }
+
+        let consoleDivider = null;
+        if (consoleLink) {
+            consoleDivider = <li className='divider'/>;
+        }
+
         return (
             <div
                 className='sidebar--menu'
@@ -375,7 +486,7 @@ export default class SidebarRightMenu extends React.Component {
                         <li>
                             <a
                                 href='#'
-                                onClick={() => this.setState({showUserSettingsModal: true})}
+                                onClick={() => GlobalActions.showAccountSettingsModal()}
                             >
                                 <i className='icon fa fa-cog'/>
                                 <FormattedMessage
@@ -384,24 +495,22 @@ export default class SidebarRightMenu extends React.Component {
                                 />
                             </a>
                         </li>
+                        <li className='divider'/>
                         {inviteLink}
                         {teamLink}
-                        <li className='divider'/>
+                        {addUserToTeamLink}
+                        {teamDivider}
                         {teamSettingsLink}
                         {manageLink}
+                        {createTeam}
+                        {joinAnotherTeamLink}
+                        {leaveTeam}
+                        {consoleDivider}
                         {consoleLink}
-                        <li>
-                            <Link to='/select_team'>
-                                <i className='icon fa fa-exchange'/>
-                                <FormattedMessage
-                                    id='sidebar_right_menu.switch_team'
-                                    defaultMessage='Team Selection'
-                                />
-                            </Link>
-                        </li>
                         <li className='divider'/>
                         {helpLink}
                         {reportLink}
+                        {nativeAppLink}
                         <li>
                             <a
                                 href='#'
@@ -415,12 +524,10 @@ export default class SidebarRightMenu extends React.Component {
                             </a>
                         </li>
                         <li className='divider'/>
-                        {nativeAppLink}
-                        <li className='divider'/>
                         <li>
                             <a
                                 href='#'
-                                onClick={GlobalActions.emitUserLoggedOutEvent}
+                                onClick={() => GlobalActions.emitUserLoggedOutEvent()}
                             >
                                 <i className='icon fa fa-sign-out'/>
                                 <FormattedMessage
@@ -431,20 +538,17 @@ export default class SidebarRightMenu extends React.Component {
                         </li>
                     </ul>
                 </div>
-                <UserSettingsModal
-                    show={this.state.showUserSettingsModal}
-                    onModalDismissed={() => this.setState({showUserSettingsModal: false})}
-                />
                 <AboutBuildModal
                     show={this.state.showAboutModal}
                     onModalDismissed={this.aboutModalDismissed}
                 />
+                {addUsersToTeamModal}
             </div>
         );
     }
 }
 
 SidebarRightMenu.propTypes = {
-    teamType: React.PropTypes.string,
-    teamDisplayName: React.PropTypes.string
+    teamType: PropTypes.string,
+    teamDisplayName: PropTypes.string
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -31,7 +31,9 @@ export default class UsersAndTeamsSettings extends AdminSettings {
         config.TeamSettings.MaxUsersPerTeam = this.parseIntNonZero(this.state.maxUsersPerTeam, Constants.DEFAULT_MAX_USERS_PER_TEAM);
         config.TeamSettings.RestrictCreationToDomains = this.state.restrictCreationToDomains;
         config.TeamSettings.RestrictDirectMessage = this.state.restrictDirectMessage;
+        config.TeamSettings.TeammateNameDisplay = this.state.teammateNameDisplay;
         config.TeamSettings.MaxChannelsPerTeam = this.parseIntNonZero(this.state.maxChannelsPerTeam, Constants.DEFAULT_MAX_CHANNELS_PER_TEAM);
+        config.TeamSettings.MaxNotificationsPerChannel = this.parseIntNonZero(this.state.maxNotificationsPerChannel, Constants.DEFAULT_MAX_NOTIFICATIONS_PER_CHANNEL);
 
         return config;
     }
@@ -43,18 +45,18 @@ export default class UsersAndTeamsSettings extends AdminSettings {
             maxUsersPerTeam: config.TeamSettings.MaxUsersPerTeam,
             restrictCreationToDomains: config.TeamSettings.RestrictCreationToDomains,
             restrictDirectMessage: config.TeamSettings.RestrictDirectMessage,
-            maxChannelsPerTeam: config.TeamSettings.MaxChannelsPerTeam
+            teammateNameDisplay: config.TeamSettings.TeammateNameDisplay,
+            maxChannelsPerTeam: config.TeamSettings.MaxChannelsPerTeam,
+            maxNotificationsPerChannel: config.TeamSettings.MaxNotificationsPerChannel
         };
     }
 
     renderTitle() {
         return (
-            <h3>
-                <FormattedMessage
-                    id='admin.general.usersAndTeams'
-                    defaultMessage='Users and Teams'
-                />
-            </h3>
+            <FormattedMessage
+                id='admin.general.usersAndTeams'
+                defaultMessage='Users and Teams'
+            />
         );
     }
 
@@ -132,6 +134,24 @@ export default class UsersAndTeamsSettings extends AdminSettings {
                     onChange={this.handleChange}
                 />
                 <TextSetting
+                    id='maxNotificationsPerChannel'
+                    label={
+                        <FormattedMessage
+                            id='admin.team.maxNotificationsPerChannelTitle'
+                            defaultMessage='Max Notifications Per Channel:'
+                        />
+                    }
+                    placeholder={Utils.localizeMessage('admin.team.maxNotificationsPerChannelExample', 'Ex "1000"')}
+                    helpText={
+                        <FormattedMessage
+                            id='admin.team.maxNotificationsPerChannelDescription'
+                            defaultMessage='Maximum total number of users in a channel before users typing messages, @all, @here, and @channel no longer send notifications because of performance.'
+                        />
+                    }
+                    value={this.state.maxNotificationsPerChannel}
+                    onChange={this.handleChange}
+                />
+                <TextSetting
                     id='restrictCreationToDomains'
                     label={
                         <FormattedMessage
@@ -168,6 +188,28 @@ export default class UsersAndTeamsSettings extends AdminSettings {
                         />
                     }
                     value={this.state.restrictDirectMessage}
+                    onChange={this.handleChange}
+                />
+                <DropdownSetting
+                    id='teammateNameDisplay'
+                    values={[
+                        {value: Constants.TEAMMATE_NAME_DISPLAY.SHOW_USERNAME, text: Utils.localizeMessage('admin.team.showUsername', 'Show username')},
+                        {value: Constants.TEAMMATE_NAME_DISPLAY.SHOW_NICKNAME_FULLNAME, text: Utils.localizeMessage('admin.team.showNickname', 'Show nickname if one exists, otherwise show first and last name')},
+                        {value: Constants.TEAMMATE_NAME_DISPLAY.SHOW_FULLNAME, text: Utils.localizeMessage('admin.team.showFullname', 'Show first and last name (default)')}
+                    ]}
+                    label={
+                        <FormattedMessage
+                            id='admin.team.teammateNameDisplay'
+                            defaultMessage='Teammate Name Display:'
+                        />
+                    }
+                    helpText={
+                        <FormattedHTMLMessage
+                            id='admin.team.teammateNameDisplayDesc'
+                            defaultMessage="Set how to display users' names in posts and the Direct Messages list."
+                        />
+                    }
+                    value={this.state.teammateNameDisplay}
                     onChange={this.handleChange}
                 />
             </SettingsGroup>

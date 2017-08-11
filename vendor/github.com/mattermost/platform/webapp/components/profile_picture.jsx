@@ -1,12 +1,25 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
+import ProfilePopover from './profile_popover.jsx';
 import * as Utils from 'utils/utils.jsx';
-import UserStore from 'stores/user_store.jsx';
+
+import PropTypes from 'prop-types';
+
 import React from 'react';
-import {Popover, OverlayTrigger} from 'react-bootstrap';
+import StatusIcon from './status_icon.jsx';
+import {OverlayTrigger} from 'react-bootstrap';
 
 export default class ProfilePicture extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.hideProfilePopover = this.hideProfilePopover.bind(this);
+    }
     shouldComponentUpdate(nextProps) {
+        if (!Utils.areObjectsEqual(nextProps.user, this.props.user)) {
+            return true;
+        }
+
         if (nextProps.src !== this.props.src) {
             return true;
         }
@@ -23,92 +36,56 @@ export default class ProfilePicture extends React.Component {
             return true;
         }
 
+        if (nextProps.isBusy !== this.props.isBusy) {
+            return true;
+        }
+
         return false;
     }
 
+    hideProfilePopover() {
+        this.refs.overlay.hide();
+    }
+
     render() {
-        let email = '';
-        let statusClass = '';
-        if (this.props.status) {
-            statusClass = 'status-' + this.props.status;
-        }
         if (this.props.user) {
-            email = this.props.user.email;
-            var dataContent = [];
-            dataContent.push(
-                <img
-                    className='user-popover__image'
-                    src={this.props.src}
-                    height='128'
-                    width='128'
-                    key='user-popover-image'
-                />
-                );
-            const fullname = Utils.getFullName(this.props.user);
-            if (fullname) {
-                dataContent.push(
-                    <div
-                        data-toggle='tooltip'
-                        title={fullname}
-                        key='user-popover-fullname'
-                    >
-                        <p
-                            className='text-nowrap'
-                        >
-                            {fullname}
-                        </p>
-                    </div>
-                        );
-            }
-            if (global.window.mm_config.ShowEmailAddress === 'true' || UserStore.isSystemAdminForCurrentUser() || this.props.user.id === UserStore.getCurrentId()) {
-                dataContent.push(
-                    <div
-                        data-toggle='tooltip'
-                        title={email}
-                        key='user-popover-email'
-                    >
-                        <a
-                            href={'mailto:' + email}
-                            className='text-nowrap text-lowercase user-popover__email'
-                        >
-                            {email}
-                        </a>
-                    </div>
-                );
-            }
             return (
                 <OverlayTrigger
+                    ref='overlay'
                     trigger='click'
                     placement='right'
                     rootClose={true}
                     overlay={
-                        <Popover
-                            title={'@' + this.props.user.username}
-                            id='user-profile-popover'
-                        >
-                            {dataContent}
-                        </Popover>
+                        <ProfilePopover
+                            user={this.props.user}
+                            src={this.props.src}
+                            status={this.props.status}
+                            isBusy={this.props.isBusy}
+                            hide={this.hideProfilePopover}
+                        />
                 }
                 >
-                    <span className={`status-wrapper ${statusClass}`}>
+                    <span className='status-wrapper'>
                         <img
                             className='more-modal__image'
                             width={this.props.width}
                             height={this.props.width}
                             src={this.props.src}
                         />
+                        <StatusIcon status={this.props.status}/>
                     </span>
                 </OverlayTrigger>
             );
         }
         return (
-            <span className={`status-wrapper ${statusClass}`}>
+            <span className='status-wrapper'>
                 <img
                     className='more-modal__image'
                     width={this.props.width}
                     height={this.props.width}
                     src={this.props.src}
                 />
+                <StatusIcon status={this.props.status}/>
             </span>
         );
     }
@@ -119,9 +96,10 @@ ProfilePicture.defaultProps = {
     height: '36'
 };
 ProfilePicture.propTypes = {
-    src: React.PropTypes.string.isRequired,
-    status: React.PropTypes.string,
-    width: React.PropTypes.string,
-    height: React.PropTypes.string,
-    user: React.PropTypes.object
+    src: PropTypes.string.isRequired,
+    status: PropTypes.string,
+    width: PropTypes.string,
+    height: PropTypes.string,
+    user: PropTypes.object,
+    isBusy: PropTypes.bool
 };

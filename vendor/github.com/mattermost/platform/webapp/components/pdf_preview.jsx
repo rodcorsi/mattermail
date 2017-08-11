@@ -1,9 +1,11 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import FileInfoPreview from './file_info_preview.jsx';
 
 import loadingGif from 'images/load.gif';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import PDFJS from 'pdfjs-dist';
@@ -82,7 +84,7 @@ export default class PDFPreview extends React.Component {
             success: false
         });
 
-        PDFJS.getDocument(window.mm_config.SiteURL + props.fileUrl).then(this.onDocumentLoad);
+        PDFJS.getDocument(props.fileUrl).then(this.onDocumentLoad);
     }
 
     onDocumentLoad(pdf) {
@@ -171,6 +173,6 @@ export default class PDFPreview extends React.Component {
 }
 
 PDFPreview.propTypes = {
-    fileInfo: React.PropTypes.object.isRequired,
-    fileUrl: React.PropTypes.string.isRequired
+    fileInfo: PropTypes.object.isRequired,
+    fileUrl: PropTypes.string.isRequired
 };

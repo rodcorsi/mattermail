@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import $ from 'jquery';
@@ -6,18 +6,29 @@ require('perfect-scrollbar/jquery')($);
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import {Provider} from 'react-redux';
 import {Router, browserHistory} from 'react-router/es6';
 import PDFJS from 'pdfjs-dist';
-import * as GlobalActions from 'actions/global_actions.jsx';
+
 import * as Websockets from 'actions/websocket_actions.jsx';
-import BrowserStore from 'stores/browser_store.jsx';
+import {loadMeAndConfig} from 'actions/user_actions.jsx';
+import ChannelStore from 'stores/channel_store.jsx';
 import * as I18n from 'i18n/i18n.jsx';
 
 // Import our styles
 import 'bootstrap-colorpicker/dist/css/bootstrap-colorpicker.css';
-import 'google-fonts/google-fonts.css';
 import 'sass/styles.scss';
 import 'katex/dist/katex.min.css';
+
+// Redux actions
+import store from 'stores/redux_store.jsx';
+const dispatch = store.dispatch;
+const getState = store.getState;
+import EventEmitter from 'mattermost-redux/utils/event_emitter';
+
+import {viewChannel} from 'mattermost-redux/actions/channels';
+import {getClientConfig, getLicenseConfig, setUrl, setServerVersion as setServerVersionRedux} from 'mattermost-redux/actions/general';
+import {General} from 'mattermost-redux/constants';
 
 // Import the root of our routing tree
 import rRoot from 'routes/route_root.jsx';
@@ -41,23 +52,40 @@ function preRenderSetup(callwhendone) {
         });
 
         if (window.mm_config && window.mm_config.EnableDeveloper === 'true') {
-            window.ErrorStore.storeLastError({type: 'developer', message: 'DEVELOPER MODE: A javascript error has occured.  Please use the javascript console to capture and report the error (row: ' + line + ' col: ' + column + ').'});
+            window.ErrorStore.storeLastError({type: 'developer', message: 'DEVELOPER MODE: A JavaScript error has occurred.  Please use the JavaScript console to capture and report the error (row: ' + line + ' col: ' + column + ').'});
             window.ErrorStore.emitChange();
         }
     };
 
     var d1 = $.Deferred(); //eslint-disable-line new-cap
 
-    GlobalActions.emitInitialLoad(
-        () => {
-            d1.resolve();
-        }
-    );
+    setUrl(window.location.origin);
+
+    if (document.cookie.indexOf('MMUSERID=') > -1) {
+        loadMeAndConfig(() => d1.resolve());
+    } else {
+        getClientConfig()(store.dispatch, store.getState).then(
+            (config) => {
+                global.window.mm_config = config;
+
+                getLicenseConfig()(store.dispatch, store.getState).then(
+                    (license) => {
+                        global.window.mm_license = license;
+                        d1.resolve();
+                    }
+                );
+            }
+        );
+    }
 
     // Make sure the websockets close and reset version
     $(window).on('beforeunload',
          () => {
-             BrowserStore.setLastServerVersion('');
+             // Turn off to prevent getting stuck in a loop
+             $(window).off('beforeunload');
+             if (document.cookie.indexOf('MMUSERID=') > -1) {
+                 viewChannel('', ChannelStore.getCurrentId() || '')(dispatch, getState);
+             }
              Websockets.close();
          }
     );
@@ -74,16 +102,45 @@ function preRenderSetup(callwhendone) {
     } else {
         I18n.safariFix(afterIntl);
     }
+
+    // Prevent drag and drop files from navigating away from the app
+    document.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    document.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
 }
 
 function renderRootComponent() {
     ReactDOM.render((
-        <Router
-            history={browserHistory}
-            routes={rRoot}
-        />
+        <Provider store={store}>
+            <Router
+                history={browserHistory}
+                routes={rRoot}
+            />
+        </Provider>
     ),
     document.getElementById('root'));
+}
+
+let serverVersion = '';
+
+EventEmitter.on(General.CONFIG_CHANGED, setServerVersion);
+
+function setServerVersion(newServerVersion) {
+    if (serverVersion && serverVersion !== newServerVersion) {
+        console.log('Detected version update refreshing the page'); //eslint-disable-line no-console
+        window.location.reload(true);
+    }
+
+    if (serverVersion !== newServerVersion) {
+        serverVersion = newServerVersion;
+        setServerVersionRedux(newServerVersion)(dispatch, getState);
+    }
 }
 
 global.window.setup_root = () => {

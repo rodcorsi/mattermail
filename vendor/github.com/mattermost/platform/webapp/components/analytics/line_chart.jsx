@@ -1,9 +1,11 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import {FormattedMessage} from 'react-intl';
 
 import * as Utils from 'utils/utils.jsx';
+
+import PropTypes from 'prop-types';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -21,14 +23,33 @@ export default class LineChart extends React.Component {
         this.initChart();
     }
 
+    componentWillUpdate(nextProps) {
+        const willHaveData = nextProps.data && nextProps.data.labels.length > 0;
+        const hasChart = Boolean(this.chart);
+
+        if (!willHaveData && hasChart) {
+            // Clean up the rendered chart before we render and destroy its context
+            this.chart.destroy();
+            this.chart = null;
+        }
+    }
+
     componentDidUpdate(prevProps) {
-        if (!Utils.areObjectsEqual(prevProps.data, this.props.data) || !Utils.areObjectsEqual(prevProps.options, this.props.options)) {
-            this.initChart(true);
+        if (Utils.areObjectsEqual(prevProps.data, this.props.data) && Utils.areObjectsEqual(prevProps.options, this.props.options)) {
+            return;
+        }
+
+        const hasData = this.props.data && this.props.data.labels.length > 0;
+        const hasChart = Boolean(this.chart);
+
+        if (hasData) {
+            // Update the rendered chart or initialize it as necessary
+            this.initChart(hasChart);
         }
     }
 
     componentWillUnmount() {
-        if (this.chart && this.refs.canvas) {
+        if (this.chart) {
             this.chart.destroy();
         }
     }
@@ -37,9 +58,11 @@ export default class LineChart extends React.Component {
         if (!this.refs.canvas) {
             return;
         }
+
         var el = ReactDOM.findDOMNode(this.refs.canvas);
         var ctx = el.getContext('2d');
-        this.chart = new Chart(ctx, {type: 'line', data: this.props.data, options: this.props.options || {}}); //eslint-disable-line new-cap
+        this.chart = new Chart(ctx, {type: 'line', data: this.props.data, options: this.props.options || {}}); // eslint-disable-line new-cap
+
         if (update) {
             this.chart.update();
         }
@@ -89,10 +112,10 @@ export default class LineChart extends React.Component {
 }
 
 LineChart.propTypes = {
-    title: React.PropTypes.node.isRequired,
-    width: React.PropTypes.string.isRequired,
-    height: React.PropTypes.string.isRequired,
-    data: React.PropTypes.object,
-    options: React.PropTypes.object
+    title: PropTypes.node.isRequired,
+    width: PropTypes.string.isRequired,
+    height: PropTypes.string.isRequired,
+    data: PropTypes.object,
+    options: PropTypes.object
 };
 

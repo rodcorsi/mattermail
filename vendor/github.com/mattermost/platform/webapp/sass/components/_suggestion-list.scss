@@ -11,6 +11,11 @@
     bottom: 100%;
 }
 
+.suggestion-list--bottom {
+    position: relative;
+    height: 0;
+}
+
 .suggestion-list__content {
     background-color: $white;
     border: $border-gray;
@@ -45,6 +50,10 @@
 
 .suggestion-list--bottom {
     position: relative;
+}
+
+.suggestion-loader {
+    margin: 6px 11px;
 }
 
 .suggestion-list__divider {

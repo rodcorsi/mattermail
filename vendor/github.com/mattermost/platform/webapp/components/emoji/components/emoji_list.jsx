@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import EmojiListItem from './emoji_list_item.jsx';
@@ -7,20 +7,20 @@ import LoadingScreen from 'components/loading_screen.jsx';
 import EmojiStore from 'stores/emoji_store.jsx';
 import UserStore from 'stores/user_store.jsx';
 
-import {loadEmoji} from 'actions/emoji_actions.jsx';
+import * as EmojiActions from 'actions/emoji_actions.jsx';
 
-import * as AsyncClient from 'utils/async_client.jsx';
 import * as Utils from 'utils/utils.jsx';
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {FormattedMessage} from 'react-intl';
 
 export default class EmojiList extends React.Component {
     static get propTypes() {
         return {
-            team: React.propTypes.object.isRequired,
-            user: React.propTypes.object.isRequired
+            team: PropTypes.object,
+            user: PropTypes.object
         };
     }
 
@@ -36,7 +36,7 @@ export default class EmojiList extends React.Component {
 
         this.state = {
             emojis: EmojiStore.getCustomEmojiMap(),
-            loading: !EmojiStore.hasReceivedCustomEmojis(),
+            loading: true,
             filter: '',
             users: UserStore.getProfiles()
         };
@@ -47,7 +47,7 @@ export default class EmojiList extends React.Component {
         UserStore.addChangeListener(this.handleUserChange);
 
         if (window.mm_config.EnableCustomEmoji === 'true') {
-            loadEmoji();
+            EmojiActions.loadEmoji().then(() => this.setState({loading: false}));
         }
 
         this.updateTitle();
@@ -69,8 +69,7 @@ export default class EmojiList extends React.Component {
 
     handleEmojiChange() {
         this.setState({
-            emojis: EmojiStore.getCustomEmojiMap(),
-            loading: !EmojiStore.hasReceivedCustomEmojis()
+            emojis: EmojiStore.getCustomEmojiMap()
         });
     }
 
@@ -85,7 +84,7 @@ export default class EmojiList extends React.Component {
     }
 
     deleteEmoji(emoji) {
-        AsyncClient.deleteEmoji(emoji.id);
+        EmojiActions.deleteEmoji(emoji.id);
     }
 
     render() {
@@ -95,11 +94,21 @@ export default class EmojiList extends React.Component {
         const emojis = [];
         if (this.state.loading) {
             emojis.push(
-                <LoadingScreen key='loading'/>
+                <tr
+                    key='loading'
+                    className='backstage-list__item backstage-list__empty'
+                >
+                    <td colSpan='4'>
+                        <LoadingScreen key='loading'/>
+                    </td>
+                </tr>
             );
-        } else if (this.state.emojis.length === 0) {
+        } else if (this.state.emojis.size === 0) {
             emojis.push(
-                <tr className='backstage-list__item backstage-list__empty'>
+                <tr
+                    key='empty'
+                    className='backstage-list__item backstage-list__empty'
+                >
                     <td colSpan='4'>
                         <FormattedMessage
                             id='emoji_list.empty'
@@ -180,33 +189,37 @@ export default class EmojiList extends React.Component {
                 </span>
                 <div className='backstage-list'>
                     <table className='emoji-list__table'>
-                        <tr className='backstage-list__item emoji-list__table-header'>
-                            <th className='emoji-list__name'>
-                                <FormattedMessage
-                                    id='emoji_list.name'
-                                    defaultMessage='Name'
-                                />
-                            </th>
-                            <th className='emoji-list__image'>
-                                <FormattedMessage
-                                    id='emoji_list.image'
-                                    defaultMessage='Image'
-                                />
-                            </th>
-                            <th className='emoji-list__creator'>
-                                <FormattedMessage
-                                    id='emoji_list.creator'
-                                    defaultMessage='Creator'
-                                />
-                            </th>
-                            <th className='emoji-list_actions'>
-                                <FormattedMessage
-                                    id='emoji_list.actions'
-                                    defaultMessage='Actions'
-                                />
-                            </th>
-                        </tr>
-                        {emojis}
+                        <thead>
+                            <tr className='backstage-list__item emoji-list__table-header'>
+                                <th className='emoji-list__name'>
+                                    <FormattedMessage
+                                        id='emoji_list.name'
+                                        defaultMessage='Name'
+                                    />
+                                </th>
+                                <th className='emoji-list__image'>
+                                    <FormattedMessage
+                                        id='emoji_list.image'
+                                        defaultMessage='Image'
+                                    />
+                                </th>
+                                <th className='emoji-list__creator'>
+                                    <FormattedMessage
+                                        id='emoji_list.creator'
+                                        defaultMessage='Creator'
+                                    />
+                                </th>
+                                <th className='emoji-list_actions'>
+                                    <FormattedMessage
+                                        id='emoji_list.actions'
+                                        defaultMessage='Actions'
+                                    />
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {emojis}
+                        </tbody>
                     </table>
                 </div>
             </div>

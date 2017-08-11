@@ -1,4 +1,6 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+import PropTypes from 'prop-types';
+
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import React from 'react';
@@ -6,11 +8,11 @@ import React from 'react';
 export default class Suggestion extends React.Component {
     static get propTypes() {
         return {
-            item: React.PropTypes.object.isRequired,
-            term: React.PropTypes.string.isRequired,
-            matchedPretext: React.PropTypes.string.isRequired,
-            isSelection: React.PropTypes.bool,
-            onClick: React.PropTypes.func
+            item: PropTypes.object.isRequired,
+            term: PropTypes.string.isRequired,
+            matchedPretext: PropTypes.string.isRequired,
+            isSelection: PropTypes.bool,
+            onClick: PropTypes.func
         };
     }
 

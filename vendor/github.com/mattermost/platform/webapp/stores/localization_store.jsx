@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import AppDispatcher from '../dispatcher/app_dispatcher.jsx';
@@ -12,7 +12,7 @@ class LocalizationStoreClass extends EventEmitter {
     constructor() {
         super();
 
-        this.currentLocale = 'en';
+        this.currentLocale = '';
         this.currentTranslations = null;
     }
 

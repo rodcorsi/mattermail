@@ -1,21 +1,26 @@
-// Copyright (c) 2016 Mattermost, Inc. All Rights Reserved.
+// Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See License.txt for license information.
 
 import $ from 'jquery';
+import PropTypes from 'prop-types';
 import React from 'react';
-import ReactDOM from 'react-dom';
 
-import Client from 'client/web_client.jsx';
+import {Client4} from 'mattermost-redux/client';
 import * as Utils from 'utils/utils.jsx';
+import {uploadBrandImage} from 'actions/admin_actions.jsx';
 
 import FormError from 'components/form_error.jsx';
 import {FormattedHTMLMessage, FormattedMessage} from 'react-intl';
 
-export default class BrandImageSetting extends React.Component {
-    static get propTypes() {
-        return {
-            disabled: React.PropTypes.bool.isRequired
-        };
+const HTTP_STATUS_OK = 200;
+
+export default class BrandImageSetting extends React.PureComponent {
+    static propTypes = {
+
+        /*
+         * Set to disable the setting
+         */
+        disabled: PropTypes.bool.isRequired
     }
 
     constructor(props) {
@@ -35,9 +40,15 @@ export default class BrandImageSetting extends React.Component {
     }
 
     componentWillMount() {
-        $.get(Client.getAdminRoute() + '/get_brand_image?t=' + this.state.brandImageTimestamp).done(() => {
-            this.setState({brandImageExists: true});
-        });
+        fetch(Client4.getBrandImageUrl(this.state.brandImageTimestamp)).then(
+            (resp) => {
+                if (resp.status === HTTP_STATUS_OK) {
+                    this.setState({brandImageExists: true});
+                } else {
+                    this.setState({brandImageExists: false});
+                }
+            }
+        );
     }
 
     componentDidUpdate() {
@@ -74,17 +85,17 @@ export default class BrandImageSetting extends React.Component {
             return;
         }
 
-        $(ReactDOM.findDOMNode(this.refs.upload)).button('loading');
+        $(this.refs.upload).button('loading');
 
         this.setState({
             uploading: true,
             error: ''
         });
 
-        Client.uploadBrandImage(
+        uploadBrandImage(
             this.state.brandImage,
             () => {
-                $(ReactDOM.findDOMNode(this.refs.upload)).button('complete');
+                $(this.refs.upload).button('complete');
 
                 this.setState({
                     brandImageExists: true,
@@ -94,7 +105,7 @@ export default class BrandImageSetting extends React.Component {
                 });
             },
             (err) => {
-                $(ReactDOM.findDOMNode(this.refs.upload)).button('reset');
+                $(this.refs.upload).button('reset');
 
                 this.setState({
                     uploading: false,
@@ -128,7 +139,7 @@ export default class BrandImageSetting extends React.Component {
             img = (
                 <img
                     className='brand-img'
-                    src={Client.getAdminRoute() + '/get_brand_image?t=' + this.state.brandImageTimestamp}
+                    src={Client4.getBrandImageUrl(this.state.brandImageTimestamp)}
                 />
             );
         } else {
@@ -178,6 +189,7 @@ export default class BrandImageSetting extends React.Component {
                         disabled={this.props.disabled || !this.state.brandImage}
                         onClick={this.handleImageSubmit}
                         id='upload-button'
+                        ref='upload'
                         data-loading-text={'<span class=\'fa fa-refresh fa-rotate\'></span> ' + Utils.localizeMessage('admin.team.uploading', 'Uploading..')}
                         data-complete-text={'<span class=\'fa fa-check\'></span> ' + Utils.localizeMessage('admin.team.uploaded', 'Uploaded!')}
                     >
