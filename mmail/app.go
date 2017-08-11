@@ -46,6 +46,6 @@ func createMatterMail(profile *model.Profile, directory string, debug bool) *Mat
 	logger := NewLog(profile.Name, debug)
 	cache := NewUIDCacheFile(directory, profile.Email.Username, MailBox)
 	mailProvider := NewMailProviderImap(profile.Email, logger, cache, debug)
-	mattermost := NewMattermostDefault(profile.Mattermost, logger)
+	mattermost := NewMattermostProvider(profile.Mattermost, logger)
 	return NewMatterMail(profile, logger, mailProvider, mattermost)
 }

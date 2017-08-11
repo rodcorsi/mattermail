@@ -8,23 +8,8 @@ import (
 	"github.com/rodcorsi/mattermail/model"
 )
 
-// MattermostProvider interface to abstract Mattermost functions
-type MattermostProvider interface {
-	// Login log in Mattermost
-	Login() error
-
-	// Logout terminate connection with Mattermost
-	Logout() error
-
-	// GetChannelID gets channel id by channel name return empty string if not exists
-	GetChannelID(channelName string) string
-
-	// PostMessage posts a message in Mattermost
-	PostMessage(message, channelID string, attachments []*Attachment) error
-}
-
-// MattermostDefault default implementation of MattermostProvider
-type MattermostDefault struct {
+// MattermostProviderV3 default implementation of MattermostProvider
+type MattermostProviderV3 struct {
 	cfg         *model.Mattermost
 	log         Logger
 	user        *mmModel.User
@@ -32,21 +17,19 @@ type MattermostDefault struct {
 	channelList *mmModel.ChannelList
 }
 
-// NewMattermostDefault creates a new instance of MattermostDefault
-func NewMattermostDefault(cfg *model.Mattermost, log Logger) *MattermostDefault {
-	return &MattermostDefault{
+// NewMattermostProviderV3 creates a new instance of Mattermost api V3
+func NewMattermostProviderV3(cfg *model.Mattermost, log Logger) *MattermostProviderV3 {
+	return &MattermostProviderV3{
 		cfg: cfg,
 		log: log,
 	}
 }
 
 // Login log in Mattermost
-func (m *MattermostDefault) Login() error {
+func (m *MattermostProviderV3) Login() error {
 	m.client = mmModel.NewClient(m.cfg.Server)
 
-	m.client.GetClientProperties()
-	m.log.Debug("Mattermost version:", m.client.ServerVersion)
-
+	m.log.Debug("Mattermost Api V3 version:", m.client.ServerVersion)
 	m.log.Debugf("Login user:%v team:%v url:%v\n", m.cfg.User, m.cfg.Team, m.cfg.Server)
 
 	result, apperr := m.client.Login(m.cfg.User, m.cfg.Password)
@@ -79,7 +62,7 @@ func (m *MattermostDefault) Login() error {
 }
 
 // Logout terminate connection with Mattermost
-func (m *MattermostDefault) Logout() (err error) {
+func (m *MattermostProviderV3) Logout() (err error) {
 	if m.client != nil {
 		_, err = m.client.Logout()
 	}
@@ -87,7 +70,7 @@ func (m *MattermostDefault) Logout() (err error) {
 }
 
 // GetChannelID gets channel id by channel name return empty string if not exists
-func (m *MattermostDefault) GetChannelID(channelName string) string {
+func (m *MattermostProviderV3) GetChannelID(channelName string) string {
 	if strings.HasPrefix(channelName, "#") {
 		return m.getChannelIDByName(strings.TrimPrefix(channelName, "#"))
 	} else if strings.HasPrefix(channelName, "@") {
@@ -97,7 +80,7 @@ func (m *MattermostDefault) GetChannelID(channelName string) string {
 }
 
 // PostMessage posts a message in Mattermost
-func (m *MattermostDefault) PostMessage(message, channelID string, attachments []*Attachment) error {
+func (m *MattermostProviderV3) PostMessage(message, channelID string, attachments []*Attachment) error {
 	m.log.Debugf("Post in channel id %v", channelID)
 
 	// Upload attachments
@@ -134,7 +117,7 @@ func (m *MattermostDefault) PostMessage(message, channelID string, attachments [
 	return nil
 }
 
-func (m *MattermostDefault) getChannelIDByName(channelName string) string {
+func (m *MattermostProviderV3) getChannelIDByName(channelName string) string {
 	for _, c := range *m.channelList {
 		if c.Name == channelName {
 			return c.Id
@@ -143,7 +126,7 @@ func (m *MattermostDefault) getChannelIDByName(channelName string) string {
 	return ""
 }
 
-func (m *MattermostDefault) getDirectChannelIDByName(userName string) string {
+func (m *MattermostProviderV3) getDirectChannelIDByName(userName string) string {
 
 	if m.user.Username == userName {
 		m.log.Errorf("Impossible create a Direct channel, Mattermail user (%v) equals destination user (%v)\n", m.user.Username, userName)

@@ -4,17 +4,24 @@ import (
 	"fmt"
 )
 
+const defaultUseAPIv3 = true
+
 // Mattermost type with Mattermost connection settings
 type Mattermost struct {
 	Server   string
 	Team     string
 	User     string
 	Password string
+	UseAPIv3 *bool `json:",omitempty"`
 }
 
 // NewMattermost creates new Mattermost with default values
 func NewMattermost() *Mattermost {
-	return &Mattermost{}
+	mm := &Mattermost{
+		UseAPIv3: new(bool),
+	}
+	*mm.UseAPIv3 = defaultUseAPIv3
+	return mm
 }
 
 // Validate valids Mattermost
@@ -44,4 +51,12 @@ func (c *Mattermost) Validate() error {
 	}
 
 	return nil
+}
+
+// Fix fields and using default if is necessary
+func (c *Mattermost) Fix() {
+	if c.UseAPIv3 == nil {
+		x := defaultUseAPIv3
+		c.UseAPIv3 = &x
+	}
 }

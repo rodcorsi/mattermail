@@ -135,6 +135,10 @@ func (c *Profile) Fix() {
 		c.Email.Fix()
 	}
 
+	if c.Mattermost != nil {
+		c.Mattermost.Fix()
+	}
+
 	if c.Filter != nil {
 		c.Filter.Fix()
 	}
