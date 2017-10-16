@@ -9,7 +9,7 @@ type stringCommand struct {
 }
 
 func (sc *stringCommand) execute() error {
-	fmt.Printf(sc.command)
+	fmt.Print(sc.command)
 	return nil
 }
 

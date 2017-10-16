@@ -65,4 +65,4 @@ Options:
 
 `
 
-var version = "Version: " + Version
+var version = "Version: " + Version + "\n"
