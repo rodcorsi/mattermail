@@ -23,28 +23,34 @@ all: build-linux build-osx build-windows
 
 build-linux:
 	@echo Build Linux amd64
-	env GOOS=linux GOARCH=amd64 $(GO) build -o $(DIST)/linux/mattermail/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
+	rm -fr $(DIST)/linux
+	env GOOS=linux GOARCH=amd64 $(GO) build -o $(DIST)/linux/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
 
 build-osx:
 	@echo Build OSX amd64
-	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(DIST)/osx/mattermail/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
+	rm -fr $(DIST)/osx
+	env GOOS=darwin GOARCH=amd64 $(GO) build -o $(DIST)/osx/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
 
 build-windows:
 	@echo Build Windows amd64
-	env GOOS=windows GOARCH=amd64 $(GO) build -o $(DIST)/windows/mattermail/mattermail $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
+	rm -fr $(DIST)/windows
+	env GOOS=windows GOARCH=amd64 $(GO) build -o $(DIST)/windows/mattermail.exe $(GOFLAGS) $(GO_LINKER_FLAGS) *.go
 
-package:
+package: all
 	@echo Create Linux package
-	cp config.json $(DIST)/linux/mattermail/
-	tar -C $(DIST)/linux -czf $(DIST)/mattermail-$(VERSION).linux.am64.tar.gz mattermail
+	cp config.json $(DIST)/linux/
+	mkdir $(DIST)/linux/data
+	tar -C $(DIST)/linux -czf $(DIST)/mattermail-$(VERSION).linux.am64.tar.gz .
 
 	@echo Create OSX package
-	cp config.json $(DIST)/osx/mattermail/
-	tar -C $(DIST)/osx -czf $(DIST)/mattermail-$(VERSION).osx.am64.tar.gz mattermail
+	cp config.json $(DIST)/osx/
+	mkdir $(DIST)/osx/data
+	tar -C $(DIST)/osx -czf $(DIST)/mattermail-$(VERSION).osx.am64.tar.gz .
 
 	@echo Create Windows package
-	cp config.json $(DIST)/windows/mattermail/
-	tar -C $(DIST)/windows -czf $(DIST)/mattermail-$(VERSION).windows.am64.tar.gz mattermail
+	cp config.json $(DIST)/windows/
+	mkdir $(DIST)/windows/data
+	tar -C $(DIST)/windows -czf $(DIST)/mattermail-$(VERSION).windows.am64.tar.gz .
 
 govet:
 	@echo GOVET
