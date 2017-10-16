@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	mmModel "github.com/mattermost/platform/model"
+	mmModel "github.com/mattermost/mattermost-server/model"
 	"github.com/rodcorsi/mattermail/model"
 )
 

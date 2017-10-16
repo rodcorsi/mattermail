@@ -44,9 +44,11 @@ func NewReader(e *message.Entity) *Reader {
 	mr := e.MultipartReader()
 	if mr == nil {
 		// Artificially create a multipart entity
+		// With this header, no error will be returned by message.NewMultipart
 		h := make(message.Header)
 		h.Set("Content-Type", "multipart/mixed")
-		mr = message.NewMultipart(h, []*message.Entity{e}).MultipartReader()
+		me, _ := message.NewMultipart(h, []*message.Entity{e})
+		mr = me.MultipartReader()
 	}
 
 	l := list.New()
@@ -56,17 +58,25 @@ func NewReader(e *message.Entity) *Reader {
 }
 
 // CreateReader reads a mail header from r and returns a new mail reader.
+//
+// If the message uses an unknown transfer encoding or charset, CreateReader
+// returns an error that verifies message.IsUnknownEncoding, but also returns a
+// Reader that can be used.
 func CreateReader(r io.Reader) (*Reader, error) {
 	e, err := message.Read(r)
-	if err != nil {
+	if err != nil && !message.IsUnknownEncoding(err) {
 		return nil, err
 	}
 
-	return NewReader(e), nil
+	return NewReader(e), err
 }
 
 // NextPart returns the next mail part. If there is no more part, io.EOF is
 // returned as error.
+//
+// If the part uses an unknown transfer encoding or charset, NextPart returns an
+// error that verifies message.IsUnknownEncoding, but also returns a Part that
+// can be used.
 func (r *Reader) NextPart() (*Part, error) {
 	for r.readers.Len() > 0 {
 		e := r.readers.Back()
@@ -77,7 +87,7 @@ func (r *Reader) NextPart() (*Part, error) {
 			// This whole multipart entity has been read, continue with the next one
 			r.readers.Remove(e)
 			continue
-		} else if err != nil {
+		} else if err != nil && !message.IsUnknownEncoding(err) {
 			return nil, err
 		}
 
@@ -93,7 +103,7 @@ func (r *Reader) NextPart() (*Part, error) {
 			} else {
 				mp.Header = AttachmentHeader{p.Header}
 			}
-			return mp, nil
+			return mp, err
 		}
 	}
 
