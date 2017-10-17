@@ -2,12 +2,13 @@ package mmail
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // UIDCacheFile implements UIDCache using filesystem to store
@@ -42,11 +43,11 @@ func (u *UIDCacheFile) GetNextUID(uidvalidity uint32) (uint32, error) {
 
 	data, err := ioutil.ReadFile(u.filename)
 	if err != nil {
-		return 0, fmt.Errorf("Error on read file '%v' err:%v", u.filename, err.Error())
+		return 0, errors.Wrapf(err, "Error on read file '%v'", u.filename)
 	}
 
 	if len(data) != 8 {
-		return 0, fmt.Errorf("Error on read file '%v' invalid size", u.filename)
+		return 0, errors.Errorf("Error on read file '%v' invalid size", u.filename)
 	}
 
 	uidval := binary.LittleEndian.Uint32(data[:4])

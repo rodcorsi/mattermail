@@ -135,3 +135,22 @@ func testMailMessage(r io.Reader, expected *MailMessage) error {
 	}
 	return nil
 }
+
+func Test_removeNonUTF8(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  string
+	}{
+		{"1", "foo", "foo"},
+		{"2", "a\xc5z", "az"},
+		{"3", "b\xe7\xe3\x6fc", "boc"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := removeNonUTF8(tt.value); got != tt.want {
+				t.Errorf("removeNonUTF() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

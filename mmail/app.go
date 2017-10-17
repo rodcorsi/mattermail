@@ -1,10 +1,9 @@
 package mmail
 
 import (
-	"errors"
-	"fmt"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/rodcorsi/mattermail/model"
 )
 
@@ -13,7 +12,7 @@ func Start(config *model.Config) error {
 	var wg sync.WaitGroup
 
 	if err := config.Validate(); err != nil {
-		return fmt.Errorf("Config is invalid err:%v", err.Error())
+		return errors.Wrap(err, "Config is invalid")
 	}
 
 	hasconfig := false

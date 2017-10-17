@@ -1,10 +1,10 @@
 package mmail
 
 import (
-	"fmt"
 	"strings"
 
 	mmModel "github.com/mattermost/mattermost-server/model"
+	"github.com/pkg/errors"
 	"github.com/rodcorsi/mattermail/model"
 )
 
@@ -34,7 +34,7 @@ func (m *MattermostProviderV3) Login() error {
 
 	result, apperr := m.client.Login(m.cfg.User, m.cfg.Password)
 	if apperr != nil {
-		return apperr
+		return errors.Wrap(apperr, "login on Mattermost V3")
 	}
 
 	m.user = result.Data.(*mmModel.User)
@@ -52,7 +52,7 @@ func (m *MattermostProviderV3) Login() error {
 	}
 
 	if !teamMatch {
-		return fmt.Errorf("Did not find team with name '%v'. Check if the team exist or if you are not using display name instead team name", m.cfg.Team)
+		return errors.Errorf("Did not find team with name '%v'. Check if the team exist or if you are not using display name instead team name", m.cfg.Team)
 	}
 
 	//Discover channel id by channel name
@@ -92,11 +92,11 @@ func (m *MattermostProviderV3) PostMessage(message, channelID string, attachment
 
 		resp, err := m.client.UploadPostAttachment(a.Content, channelID, a.Filename)
 		if resp == nil {
-			return err
+			return errors.Wrapf(err, "Upload Attachment on mattermost channel id:'%v' filename:'%v'", channelID, a.Filename)
 		}
 
 		if len(resp.FileInfos) != 1 {
-			return fmt.Errorf("error on upload file - fileinfos len different of one %v", resp.FileInfos)
+			return errors.Errorf("error on upload file - fileinfos len different of one %v", resp.FileInfos)
 		}
 
 		fileIds = append(fileIds, resp.FileInfos[0].Id)
@@ -111,7 +111,7 @@ func (m *MattermostProviderV3) PostMessage(message, channelID string, attachment
 
 	res, err := m.client.CreatePost(post)
 	if res == nil {
-		return err
+		return errors.Wrapf(err, "create mattermost post %v", post)
 	}
 
 	return nil

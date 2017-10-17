@@ -2,11 +2,12 @@ package mmail
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/mail"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jhillyerd/go.enmime"
+	"github.com/pkg/errors"
 )
 
 // Emails content type
@@ -38,7 +39,7 @@ func ParseMailMessage(msg *mail.Message) (*MailMessage, error) {
 	mime, err := enmime.ParseMIMEBody(msg) // Parse message body with enmime
 
 	if err != nil {
-		return nil, fmt.Errorf("Error on parse mail.Message:%v", err.Error())
+		return nil, errors.Wrap(err, "parse mail MIME body")
 	}
 
 	mm.From = NonASCII(msg.Header.Get("From"))
@@ -68,7 +69,7 @@ func ParseMailMessage(msg *mail.Message) (*MailMessage, error) {
 
 	for i, a := range mime.Attachments {
 		mm.Attachments[i] = &Attachment{
-			Filename: a.FileName(),
+			Filename: removeNonUTF8(a.FileName()),
 			Content:  a.Content(),
 		}
 	}
@@ -87,4 +88,21 @@ func replaceCID(html string, part enmime.MIMEPart) string {
 	b64 := "data:" + part.ContentType() + ";base64," + base64.StdEncoding.EncodeToString(part.Content())
 
 	return strings.Replace(html, "cid:"+cid, b64, -1)
+}
+
+func removeNonUTF8(s string) string {
+	if !utf8.ValidString(s) {
+		v := make([]rune, 0, len(s))
+		for i, r := range s {
+			if r == utf8.RuneError {
+				_, size := utf8.DecodeRuneInString(s[i:])
+				if size == 1 {
+					continue
+				}
+			}
+			v = append(v, r)
+		}
+		s = string(v)
+	}
+	return s
 }

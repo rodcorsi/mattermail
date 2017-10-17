@@ -1,11 +1,11 @@
 package mmail
 
 import (
-	"fmt"
 	"net/mail"
 	"time"
 	"unicode/utf8"
 
+	"github.com/pkg/errors"
 	"github.com/rodcorsi/mattermail/model"
 )
 
@@ -28,7 +28,7 @@ type MatterMail struct {
 func (m *MatterMail) PostNetMail(msg *mail.Message) error {
 	mMsg, err := ParseMailMessage(msg)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "parse mail message")
 	}
 
 	return m.PostMailMessage(mMsg)
@@ -37,7 +37,7 @@ func (m *MatterMail) PostNetMail(msg *mail.Message) error {
 // PostMailMessage MailMessage in Mattermost
 func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 	if err := m.mmProvider.Login(); err != nil {
-		return err
+		return errors.Wrap(err, "login on Mattermost to post mail message")
 	}
 
 	defer func() {
@@ -51,13 +51,13 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 	mP, err := createMattermostPost(msg, m.cfg, m.log, m.mmProvider.GetChannelID)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "create mattermost post")
 	}
 
 	for name, id := range mP.channelMap {
 		m.log.Debugf("Post email in %v", name)
 		if err := m.mmProvider.PostMessage(mP.message, id, mP.attachments); err != nil {
-			return err
+			return errors.Wrap(err, "post message on mattermost")
 		}
 	}
 
@@ -73,6 +73,7 @@ func (m *MatterMail) Listen() {
 
 	for {
 		if err := m.checkAndWait(); err != nil {
+			m.log.Debug(err.Error())
 			m.log.Infof("Try again in %vs", tryAgainTime)
 			time.Sleep(time.Second * tryAgainTime)
 		} else {
@@ -84,14 +85,14 @@ func (m *MatterMail) Listen() {
 func (m *MatterMail) checkAndWait() error {
 	if err := m.mailProvider.CheckNewMessage(m.PostNetMail); err != nil {
 		m.log.Error("MatterMail.InitMatterMail Error on check new messsage:", err.Error())
-		return err
+		return errors.Wrap(err, "check new message")
 	}
 
 	time.Sleep(time.Second * 2)
 
 	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout); err != nil {
 		m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
-		return err
+		return errors.Wrap(err, "wait new message")
 	}
 	return nil
 }
@@ -133,7 +134,7 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 	var err error
 	mP.message, err = cfg.FormatMailTemplate(msg.From, msg.Subject, partmessage)
 	if err != nil {
-		return nil, fmt.Errorf("Error on format Mail Template err:%v", err.Error())
+		return nil, errors.Wrap(err, "format Mail Template")
 	}
 
 	// Mattermost post limit
@@ -146,7 +147,7 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 	mP.channelMap = chooseChannel(cfg, msg, log, getChannelID)
 
 	if mP.channelMap == nil {
-		return nil, fmt.Errorf("Did not find any channel to post")
+		return nil, errors.New("Did not find any channel to post")
 	}
 
 	// Attachments

@@ -2,9 +2,10 @@ package model
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"text/template"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -52,25 +53,25 @@ func NewProfile() *Profile {
 // Validate set default value for config and check if valid return err
 func (c *Profile) Validate() error {
 	if c.Name == "" {
-		return fmt.Errorf("Field 'Name' is empty set a name for help in log")
+		return errors.New("Field 'Name' is empty set a name for help in log")
 	}
 
 	if len(c.Channels) == 0 {
-		return fmt.Errorf("Field 'Channels' need to set at least one channel or user for destination")
+		return errors.New("Field 'Channels' need to set at least one channel or user for destination")
 	}
 
 	for _, channel := range c.Channels {
 		if channel != "" && !validateChannel(channel) {
-			return fmt.Errorf("Field 'Channels' contains invalid chars, make sure if you are using url channel name or username. This field need to start with # for channel or @ for username: %v", channel)
+			return errors.Errorf("Field 'Channels' contains invalid chars, make sure if you are using url channel name or username. This field need to start with # for channel or @ for username: %v", channel)
 		}
 	}
 
 	if c.LinesToPreview != nil && *c.LinesToPreview <= 0 {
-		return fmt.Errorf("Field 'LinesToPreview' need to be greater than 0")
+		return errors.New("Field 'LinesToPreview' need to be greater than 0")
 	}
 
 	if c.Email == nil {
-		return fmt.Errorf("Field 'Email' is empty set Email configuration")
+		return errors.New("Field 'Email' is empty set Email configuration")
 	}
 
 	if c.Email != nil {
@@ -80,7 +81,7 @@ func (c *Profile) Validate() error {
 	}
 
 	if c.Mattermost == nil {
-		return fmt.Errorf("Field 'Mattermost' is empty set Mattermost configuration")
+		return errors.New("Field 'Mattermost' is empty set Mattermost configuration")
 	}
 
 	if c.Mattermost != nil {
@@ -91,7 +92,7 @@ func (c *Profile) Validate() error {
 
 	if c.Filter != nil {
 		if err := c.Filter.Validate(); err != nil {
-			return fmt.Errorf("Error in Filter:%v", err)
+			return errors.Errorf("Error in Filter:%v", err)
 		}
 	}
 
@@ -148,7 +149,7 @@ func (c *Profile) Fix() {
 func (c *Profile) FormatMailTemplate(from, subject, message string) (string, error) {
 	t, err := template.New("").Parse(*c.MailTemplate)
 	if err != nil {
-		return "", fmt.Errorf("Error on parse MailTemplate %v err:%v", c.MailTemplate, err.Error())
+		return "", errors.Wrapf(err, "parse MailTemplate %v", c.MailTemplate)
 	}
 
 	r := &struct {
@@ -163,7 +164,7 @@ func (c *Profile) FormatMailTemplate(from, subject, message string) (string, err
 
 	buff := &bytes.Buffer{}
 	if err = t.Execute(buff, r); err != nil {
-		return "", fmt.Errorf("Error on execute MailTemplate %v err:%v", c.MailTemplate, err.Error())
+		return "", errors.Wrapf(err, "Error on execute MailTemplate %v", c.MailTemplate)
 	}
 
 	return buff.String(), nil

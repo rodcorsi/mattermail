@@ -1,8 +1,7 @@
 package model
 
 import (
-	"errors"
-	"fmt"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -38,7 +37,7 @@ func (c *Email) Validate() error {
 	}
 
 	if !validateImap(c.ImapServer) {
-		return fmt.Errorf("Field 'ImapServer' need to be a valid url: %v", c.ImapServer)
+		return errors.Errorf("Field 'ImapServer' need to be a valid url: %v", c.ImapServer)
 	}
 
 	if c.Username == "" {

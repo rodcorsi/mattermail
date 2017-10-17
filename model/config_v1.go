@@ -2,7 +2,8 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 // ConfigV1 depracated
@@ -31,7 +32,7 @@ type ConfigV1 []struct {
 func ParseConfigV1(data []byte) (*ConfigV1, error) {
 	cfg := &ConfigV1{}
 	if err := json.Unmarshal(data, cfg); err != nil {
-		return nil, fmt.Errorf("Could not parse data it does not to be a valid json file: %v", err.Error())
+		return nil, errors.Wrap(err, "Could not parse data it does not to be a valid json file")
 	}
 
 	return cfg, nil

@@ -2,10 +2,11 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -35,12 +36,12 @@ func NewConfig() *Config {
 func NewConfigFromFile(file string) (*Config, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("Could not load: %v\n%v", file, err.Error())
+		return nil, errors.Wrapf(err, "Could not load: %v", file)
 	}
 
 	config := NewConfig()
 	if err = json.Unmarshal(data, config); err != nil {
-		return nil, fmt.Errorf("Error on read '%v' err:%v", file, err.Error())
+		return nil, errors.Wrapf(err, "read file '%v'", file)
 	}
 
 	config.Fix()
@@ -51,18 +52,18 @@ func NewConfigFromFile(file string) (*Config, error) {
 func (c *Config) Validate() error {
 	if _, err := os.Stat(c.Directory); err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("Directory %v does not exists. please create the directory first", c.Directory)
+			return errors.Errorf("Directory %v does not exists. please create the directory first", c.Directory)
 		}
-		return fmt.Errorf("Field 'Directory':'%v' is not a valid path err: %v", c.Directory, err.Error())
+		return errors.Wrapf(err, "Field 'Directory':'%v' is not a valid path", c.Directory)
 	}
 
 	if c.Profiles == nil || len(c.Profiles) == 0 {
-		return fmt.Errorf("Field 'Profiles' is empty set Profiles configuration")
+		return errors.Errorf("Field 'Profiles' is empty set Profiles configuration")
 	}
 
 	for _, p := range c.Profiles {
 		if err := p.Validate(); err != nil {
-			return err
+			return errors.Wrap(err, "Validate config file")
 		}
 	}
 

@@ -2,7 +2,6 @@ package mmail
 
 import (
 	"bytes"
-	"errors"
 	"io/ioutil"
 	"net"
 	"net/mail"
@@ -15,6 +14,7 @@ import (
 	"github.com/emersion/go-imap/backend"
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
+	"github.com/pkg/errors"
 	"github.com/rodcorsi/mattermail/model"
 )
 

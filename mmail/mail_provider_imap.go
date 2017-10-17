@@ -2,7 +2,6 @@ package mmail
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/mail"
 	"strings"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
+	"github.com/pkg/errors"
 	"github.com/rodcorsi/mattermail/model"
 )
 
@@ -42,12 +42,12 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
 	m.log.Debug("MailProviderImap.CheckNewMessage")
 
 	if err := m.checkConnection(); err != nil {
-		return err
+		return errors.Wrap(err, "checkConnection with imap server")
 	}
 
 	mbox, err := m.selectMailBox()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "select mailbox")
 	}
 
 	validity, uidnext := mbox.UidValidity, mbox.UidNext
@@ -64,7 +64,7 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
 		uid, err := m.imapClient.UidSearch(criteria)
 		if err != nil {
 			m.log.Debug("MailProviderImap.CheckNewMessage: Error UIDSearch")
-			return err
+			return errors.Wrapf(err, "imap UIDSearch %v", criteria)
 		}
 
 		if len(uid) == 0 {
@@ -77,15 +77,14 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
 		seqset.AddNum(uid...)
 
 	} else if err != nil {
-		return err
-
+		return errors.Wrap(err, "GetNextUID")
 	} else {
 		if uidnext > next {
 			seqset.AddNum(next, uidnext)
 		} else if uidnext < next {
 			// reset cache
 			m.cache.SaveNextUID(0, 0)
-			return fmt.Errorf("MailProviderImap.CheckNewMessage: Cache error mailbox.next < cache.next")
+			return errors.New("Cache error mailbox.next < cache.next")
 		} else if uidnext == next {
 			m.log.Debug("MailProviderImap.CheckNewMessage: No new messages")
 			return nil
@@ -110,24 +109,24 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
 		msg, err := mail.ReadMessage(r)
 		if err != nil {
 			m.log.Error("MailProviderImap.CheckNewMessage: Error on parse imap/message to mail/message")
-			return err
+			return errors.Wrap(err, "parse imap/message to mail/message")
 		}
 
 		if err := handler(msg); err != nil {
 			m.log.Error("MailProviderImap.CheckNewMessage: Error handler")
-			return err
+			return errors.Wrap(err, "execute MailHandler")
 		}
 	}
 
 	// Check command completion status
 	if err := <-done; err != nil {
 		m.log.Error("MailProviderImap.CheckNewMessage: Error on terminate fetch command")
-		return err
+		return errors.Wrap(err, "terminate fetch command")
 	}
 
 	if err := m.cache.SaveNextUID(validity, uidnext); err != nil {
 		m.log.Error("MailProviderImap.CheckNewMessage: Error on save next uid")
-		return err
+		return errors.Wrap(err, "save next uid")
 	}
 
 	return nil
@@ -139,7 +138,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 
 	// Idle mode
 	if err := m.checkConnection(); err != nil {
-		return err
+		return errors.Wrap(err, "WaitNewMessage checkConnection")
 	}
 
 	m.log.Debug("MailProviderImap.WaitNewMessage: idle mode:", m.idle)
@@ -150,7 +149,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 	}
 
 	if _, err := m.selectMailBox(); err != nil {
-		return err
+		return errors.Wrap(err, "select mailbox")
 	}
 
 	if m.idleClient == nil {
@@ -186,7 +185,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 		case err := <-done:
 			if err != nil {
 				m.log.Error("MailProviderImap.WaitNewMessage: Error on terminate idle", err.Error())
-				return err
+				return errors.Wrap(err, "terminate idle")
 			}
 			m.log.Debug("MailProviderImap.WaitNewMessage: Terminate idle")
 			return nil
@@ -210,7 +209,7 @@ func (m *MailProviderImap) selectMailBox() (*imap.MailboxStatus, error) {
 	mbox, err := m.imapClient.Select(MailBox, true)
 	if err != nil {
 		m.log.Error("MailProviderImap.selectMailBox: Error on select", MailBox)
-		return nil, err
+		return nil, errors.Wrapf(err, "select mailbox '%v'", MailBox)
 	}
 	return mbox, nil
 }
@@ -235,7 +234,7 @@ func (m *MailProviderImap) checkConnection() error {
 
 	if err != nil {
 		m.log.Error("MailProviderImap.CheckConnection: Unable to connect:", m.cfg.ImapServer)
-		return err
+		return errors.Wrapf(err, "unable to connect '%v'", m.cfg.ImapServer)
 	}
 
 	if m.debug {
@@ -248,7 +247,7 @@ func (m *MailProviderImap) checkConnection() error {
 	if *m.cfg.StartTLS {
 		starttls, err := m.imapClient.SupportStartTLS()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "check support STARTTLS")
 		}
 
 		if starttls {
@@ -259,7 +258,7 @@ func (m *MailProviderImap) checkConnection() error {
 			}
 			err = m.imapClient.StartTLS(&tconfig)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "enable StartTLS")
 			}
 		}
 	}
@@ -269,11 +268,11 @@ func (m *MailProviderImap) checkConnection() error {
 	err = m.imapClient.Login(m.cfg.Username, m.cfg.Password)
 	if err != nil {
 		m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Username)
-		return err
+		return errors.Wrapf(err, "unable to login username:'%v'", m.cfg.Username)
 	}
 
 	if _, err = m.selectMailBox(); err != nil {
-		return err
+		return errors.Wrap(err, "select mailbox on checkConnection")
 	}
 
 	idleClient := idle.NewClient(m.imapClient)
@@ -281,7 +280,7 @@ func (m *MailProviderImap) checkConnection() error {
 	if err != nil {
 		m.idle = false
 		m.log.Error("MailProviderImap.CheckConnection: Error on check idle support")
-		return err
+		return errors.Wrap(err, "on check idle support")
 	}
 
 	return nil
@@ -293,7 +292,7 @@ func (m *MailProviderImap) Terminate() error {
 		m.log.Info("MailProviderImap.Terminate Logout")
 		if err := m.imapClient.Logout(); err != nil {
 			m.log.Error("MailProviderImap.Terminate Error:", err.Error())
-			return err
+			return errors.Wrap(err, "terminate imap connection")
 		}
 	}
 

@@ -2,7 +2,6 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -30,15 +29,15 @@ func (r *Rule) Fix() {
 // Validate check if this rule is valid
 func (r *Rule) Validate() error {
 	if len(r.From) == 0 && len(r.Subject) == 0 {
-		return fmt.Errorf("Need to set From or Subject")
+		return errors.New("Need to set From or Subject")
 	}
 
 	if len(r.Channel) == 0 {
-		return fmt.Errorf("Need to set a Channel")
+		return errors.New("Need to set a Channel")
 	}
 
 	if !strings.HasPrefix(r.Channel, "#") && !strings.HasPrefix(r.Channel, "@") {
-		return fmt.Errorf("Need to set a #channel or @user")
+		return errors.New("Need to set a #channel or @user")
 	}
 	return nil
 }

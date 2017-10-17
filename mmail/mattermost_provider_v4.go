@@ -1,10 +1,10 @@
 package mmail
 
 import (
-	"fmt"
 	"strings"
 
 	mmModel "github.com/mattermost/mattermost-server/model"
+	"github.com/pkg/errors"
 	"github.com/rodcorsi/mattermail/model"
 )
 
@@ -36,19 +36,19 @@ func (m *MattermostProviderV4) Login() error {
 	m.user, resp = m.client.Login(m.cfg.User, m.cfg.Password)
 	m.log.Debug("Mattermost Api V4 version:", resp.ServerVersion)
 	if resp.Error != nil {
-		return resp.Error
+		return errors.Wrap(resp.Error, "login on mattermost V4")
 	}
 
 	// Get Team
 	m.team, resp = m.client.GetTeamByName(m.cfg.Team, "")
 	if resp.Error != nil {
-		return fmt.Errorf("Did not find team with name '%v'. Check if the team exist or if you are not using display name instead team name error:%v", m.cfg.Team, resp.Error)
+		return errors.Wrapf(resp.Error, "Did not find team with name '%v'. Check if the team exist or if you are not using display name instead team name", m.cfg.Team)
 	}
 
 	//Discover channel id by channel name
 	m.channelList, resp = m.client.GetChannelsForTeamForUser(m.team.Id, m.user.Id, "")
 	if resp.Error != nil {
-		return fmt.Errorf("Error on get channel list error:%v", resp.Error)
+		return errors.Wrap(resp.Error, "Error on get channel list")
 	}
 
 	return nil
@@ -86,11 +86,11 @@ func (m *MattermostProviderV4) PostMessage(message, channelID string, attachment
 
 		fileResp, resp := m.client.UploadFile(a.Content, channelID, a.Filename)
 		if resp.Error != nil {
-			return resp.Error
+			return errors.Wrapf(resp.Error, "upload file to mattermost channelID:'%v', filename:'%v'", channelID, a.Filename)
 		}
 
 		if len(fileResp.FileInfos) != 1 {
-			return fmt.Errorf("error on upload file - fileinfos len different of one %v", fileResp.FileInfos)
+			return errors.Errorf("error on upload file - fileinfos len different of one %v", fileResp.FileInfos)
 		}
 
 		fileIds = append(fileIds, fileResp.FileInfos[0].Id)
@@ -105,7 +105,7 @@ func (m *MattermostProviderV4) PostMessage(message, channelID string, attachment
 
 	post, resp := m.client.CreatePost(post)
 	if resp.Error != nil {
-		return resp.Error
+		return errors.Wrapf(resp.Error, "create post %v", post)
 	}
 
 	return nil
