@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rodcorsi/mattermail/model"
 	"github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/pkg/errors"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 // MailProviderImap implements MailProvider using imap
