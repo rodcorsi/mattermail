@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rodcorsi/mattermail/model"
 	"github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/pkg/errors"
-	"github.com/rodcorsi/mattermail/model"
 )
 
 // MailProviderImap implements MailProvider using imap
@@ -160,7 +160,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int, folders []string) error {
 	folders = append(folders, MailBox)
 
 	for _, folder := range folders {
-		if _, err := m.selectMailBox(MailBox); err != nil {
+		if _, err := m.selectMailBox(folder); err != nil {
 			return errors.Wrap(err, "select mailbox")
 		}
 	}
