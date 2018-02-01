@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/rodcorsi/mattermail/model"
+	"github.com/cseeger-epages/mattermail/model"
 )
 
 func TestCreateMattermostPost(t *testing.T) {

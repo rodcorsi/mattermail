@@ -17,7 +17,7 @@ DIST := dist
 VERSION := $(shell git describe --tags)
 GO := go
 
-GO_LINKER_FLAGS ?= -ldflags "-X github.com/rodcorsi/mattermail/cmd.Version=${VERSION}"
+GO_LINKER_FLAGS ?= -ldflags "-X github.com/cseeger-epages/mattermail/cmd.Version=${VERSION}"
 
 all: build-linux build-osx build-windows
 

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/rodcorsi/mattermail/mmail"
-	"github.com/rodcorsi/mattermail/model"
+	"github.com/cseeger-epages/mattermail/mmail"
+	"github.com/cseeger-epages/mattermail/model"
 )
 
 type serverCommand struct {
@@ -15,7 +15,7 @@ type serverCommand struct {
 func (sc *serverCommand) execute() error {
 	config, err := model.NewConfigFromFile(sc.configFile)
 	if err != nil {
-		return fmt.Errorf("Error on read '%v' file, make sure if this file is has a valid configuration.\nExecute 'mattermail migrate -c %v' to migrate this file to new version if it is necessary, learn more at https://github.com/rodcorsi/mattermail/#migrate-configuration.\n\nerr:%v", sc.configFile, sc.configFile, err.Error())
+		return fmt.Errorf("Error on read '%v' file, make sure if this file is has a valid configuration.\nExecute 'mattermail migrate -c %v' to migrate this file to new version if it is necessary, learn more at https://github.com/cseeger-epages/mattermail/#migrate-configuration.\n\nerr:%v", sc.configFile, sc.configFile, err.Error())
 	}
 
 	return mmail.Start(config)

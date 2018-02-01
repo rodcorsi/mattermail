@@ -1,21 +1,21 @@
-# ![mattermail icon](https://github.com/rodcorsi/mattermail/raw/master/img/icon.png) MatterMail
+# ![mattermail icon](https://github.com/cseeger-epages/mattermail/raw/master/img/icon.png) MatterMail
 
 *MatterMail* is an integration service for [Mattermost](http://www.mattermost.org/), *MatterMail* listen an email box and publish all received emails in channels or users in Mattermost.
 
-[![Build Status](https://travis-ci.org/rodcorsi/mattermail.svg?branch=master)](https://travis-ci.org/rodcorsi/mattermail)
-[![Coverage Status](https://coveralls.io/repos/github/rodcorsi/mattermail/badge.svg?branch=master)](https://coveralls.io/github/rodcorsi/mattermail?branch=master)
+[![Build Status](https://travis-ci.org/cseeger-epages/mattermail.svg?branch=master)](https://travis-ci.org/cseeger-epages/mattermail)
+[![Coverage Status](https://coveralls.io/repos/github/cseeger-epages/mattermail/badge.svg?branch=master)](https://coveralls.io/github/cseeger-epages/mattermail?branch=master)
 
-![mattermail screenshot](https://github.com/rodcorsi/mattermail/raw/master/img/screenshot.png)
+![mattermail screenshot](https://github.com/cseeger-epages/mattermail/raw/master/img/screenshot.png)
 
 ## Install
 
-  Download the [Latest Version](https://github.com/rodcorsi/mattermail/releases/latest)
+  Download the [Latest Version](https://github.com/cseeger-epages/mattermail/releases/latest)
 
 ## Usage
 
 1. You need to create an user in Mattermost server and you can use MatterMail icon as profile picture.
 
-1. Get the [Team and Channels](https://github.com/rodcorsi/mattermail#teamchannel) and check if the user has permission to post in these channels
+1. Get the [Team and Channels](https://github.com/cseeger-epages/mattermail#teamchannel) and check if the user has permission to post in these channels
 
 1. Edit the file config.json
 
@@ -74,14 +74,14 @@ You can set multiple profiles using different names
 |-------------------|:-------:|---------|:------------------:|----------------------------------------------------------------------------------------------------------|
 | Name              | string  |         | :white_check_mark: | Name of profile, used to log                                                                             |
 | Channels          | array   |         | :white_check_mark: | List of channels where the email will be posted. You can use `#channel` or `@username`                   |
-| Email             | object  |         | :white_check_mark: | Configuration of Email [(details)](https://github.com/rodcorsi/mattermail#email)                         |
-| Mattermost        | object  |         | :white_check_mark: | Configuration of Mattermost [(details)](https://github.com/rodcorsi/mattermail#mattermost)               |
-| MailTemplate      | string  |         |                    | Template used to format message to post [(details)](https://github.com/rodcorsi/mattermail#mailtemplate) |
+| Email             | object  |         | :white_check_mark: | Configuration of Email [(details)](https://github.com/cseeger-epages/mattermail#email)                         |
+| Mattermost        | object  |         | :white_check_mark: | Configuration of Mattermost [(details)](https://github.com/cseeger-epages/mattermail#mattermost)               |
+| MailTemplate      | string  |         |                    | Template used to format message to post [(details)](https://github.com/cseeger-epages/mattermail#mailtemplate) |
 | LinesToPreview    | int     | 10      |                    | Number of email lines that will be posted                                                                |
 | Attachment        | boolean | true    |                    | Inform if attachments will be posted in Mattermost                                                       |
 | Disabled          | boolean | false   |                    | Disable this profile                                                                                     |
-| RedirectBySubject | boolean | true    |                    | Inform if redirect email by subject [(details)](https://github.com/rodcorsi/mattermail#redirectbysubject)|
-| Filter            | object  |         |                    | Filter used to redirect email [(details)](https://github.com/rodcorsi/mattermail#filter)                 |
+| RedirectBySubject | boolean | true    |                    | Inform if redirect email by subject [(details)](https://github.com/cseeger-epages/mattermail#redirectbysubject)|
+| Filter            | object  |         |                    | Filter used to redirect email [(details)](https://github.com/cseeger-epages/mattermail#filter)                 |
 
 #### Email
 
@@ -102,7 +102,7 @@ Mattermost configuration
 | Field     | Type   | Default | Obrigatory         | Information                                                                                                                |
 |-----------|:------:|---------|:------------------:|----------------------------------------------------------------------------------------------------------------------------|
 | Server    | string |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _<https://mattermost.example.com:8065>_ |
-| Team      | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                          |
+| Team      | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/cseeger-epages/mattermail#teamchannel)                          |
 | User      | string |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                              |
 | Password  | string |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                          |
 | UseAPIv3  | string | true    |                    | Set to use Mattermost Api V3                                                                                               |
@@ -160,7 +160,7 @@ This option is used to redirect email following the rules.
 
 You can find team and channel name by URL ex:
 
-![mattermail teamchannel](https://github.com/rodcorsi/mattermail/raw/master/img/team_channel.png)
+![mattermail teamchannel](https://github.com/cseeger-epages/mattermail/raw/master/img/team_channel.png)
 
 ## Sequence that the email will be redirected
 
@@ -168,7 +168,7 @@ Mattermail post the email using this rules:
 
 1 - Try to post using the subject if the option `RedirectBySubject` is `true`
 
-2 - Try to post following the [Filter](https://github.com/rodcorsi/mattermail#filter) configuration.
+2 - Try to post following the [Filter](https://github.com/cseeger-epages/mattermail#filter) configuration.
 
 3 - Post on channels/users defined on field `Channels` in `config.json`
 
@@ -190,5 +190,5 @@ For more details execute:
 You need [Go](http://golang.org) to build this project
 
 ```bash
-go get github.com/rodcorsi/mattermail
+go get github.com/cseeger-epages/mattermail
 ```

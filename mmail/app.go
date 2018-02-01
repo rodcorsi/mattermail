@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/rodcorsi/mattermail/model"
+	"github.com/cseeger-epages/mattermail/model"
 )
 
 // Start server

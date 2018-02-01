@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rodcorsi/mattermail/cmd"
+	"github.com/cseeger-epages/mattermail/cmd"
 )
 
 func main() {

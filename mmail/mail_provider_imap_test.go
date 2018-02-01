@@ -15,7 +15,7 @@ import (
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
 	"github.com/pkg/errors"
-	"github.com/rodcorsi/mattermail/model"
+	"github.com/cseeger-epages/mattermail/model"
 )
 
 type testServer struct {

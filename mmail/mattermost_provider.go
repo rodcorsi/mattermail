@@ -1,6 +1,6 @@
 package mmail
 
-import "github.com/rodcorsi/mattermail/model"
+import "github.com/cseeger-epages/mattermail/model"
 
 // MattermostProvider interface to abstract Mattermost functions
 type MattermostProvider interface {
