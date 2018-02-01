@@ -77,13 +77,13 @@ func TestCheckNewMessage(t *testing.T) {
 
 	var count uint32
 
-	err := mP.CheckNewMessage(func(msg *mail.Message) error {
+	err := mP.CheckNewMessage(func(msg *mail.Message, folder string) error {
 		if msg == nil {
 			return errors.New("Messsage nil")
 		}
 		atomic.AddUint32(&count, 1)
 		return nil
-	})
+	}, []string{})
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -106,7 +106,7 @@ func TestWaitNewMessage(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- mP.WaitNewMessage(60)
+		done <- mP.WaitNewMessage(60, []string{})
 	}()
 
 	defer mP.Terminate()
