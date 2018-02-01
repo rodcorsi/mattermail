@@ -219,9 +219,5 @@ func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelI
 
 	// get default Channel config
 	log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channels)
-	if chMap = validateChannelNames(cfg.Channels, getChannelID); chMap != nil {
-		return chMap
-	}
-
-	return nil
+	return validateChannelNames(cfg.Channels, getChannelID)
 }

@@ -92,7 +92,7 @@ func (f *Filter) GetChannel(from, subject, folder string) string {
 	return ""
 }
 
-// list folder to select MailBox
+// ListFolder return all folders defined in filter rules
 func (f *Filter) ListFolder() []string {
 	var list []string
 	for _, r := range *f {
