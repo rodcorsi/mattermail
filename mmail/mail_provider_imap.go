@@ -38,102 +38,110 @@ func NewMailProviderImap(cfg *model.Email, log Logger, cache UIDCache, debug boo
 }
 
 // CheckNewMessage gets new email from server
-func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
+func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string) error {
+
 	m.log.Debug("MailProviderImap.CheckNewMessage")
 
 	if err := m.checkConnection(); err != nil {
 		return errors.Wrap(err, "checkConnection with imap server")
 	}
 
-	mbox, err := m.selectMailBox()
-	if err != nil {
-		return errors.Wrap(err, "select mailbox")
-	}
+	// add INBOX to our list
+	folders = append(folders, MailBox)
 
-	validity, uidnext := mbox.UidValidity, mbox.UidNext
+	for _, folder := range folders {
 
-	seqset := &imap.SeqSet{}
-	next, err := m.cache.GetNextUID(validity)
-	if err == ErrEmptyUID {
-		m.log.Debug("MailProviderImap.CheckNewMessage: ErrEmptyUID search unread messages")
+		mbox, err := m.selectMailBox(folder)
+		m.log.Debug("MailProviderImap.CheckNewMessage: select MailBox: ", folder)
 
-		criteria := &imap.SearchCriteria{
-			WithoutFlags: []string{imap.SeenFlag},
-		}
-
-		uid, err := m.imapClient.UidSearch(criteria)
 		if err != nil {
-			m.log.Debug("MailProviderImap.CheckNewMessage: Error UIDSearch")
-			return errors.Wrapf(err, "imap UIDSearch %v", criteria)
+			return errors.Wrap(err, "select mailbox")
 		}
 
-		if len(uid) == 0 {
-			m.log.Debug("MailProviderImap.CheckNewMessage: No new messages")
-			return nil
+		validity, uidnext := mbox.UidValidity, mbox.UidNext
+
+		seqset := &imap.SeqSet{}
+		next, err := m.cache.GetNextUID(validity)
+		if err == ErrEmptyUID {
+			m.log.Debug("MailProviderImap.CheckNewMessage: ErrEmptyUID search unread messages")
+
+			criteria := &imap.SearchCriteria{
+				WithoutFlags: []string{imap.SeenFlag},
+			}
+
+			uid, err := m.imapClient.UidSearch(criteria)
+			if err != nil {
+				m.log.Debug("MailProviderImap.CheckNewMessage: Error UIDSearch")
+				return errors.Wrapf(err, "imap UIDSearch %v", criteria)
+			}
+
+			if len(uid) == 0 {
+				m.log.Debug("MailProviderImap.CheckNewMessage: No new messages for MailBox ", folder)
+				return nil
+			}
+
+			m.log.Debugf("MailProviderImap.CheckNewMessage: found %v uid in Mailbox %s", len(uid), folder)
+
+			seqset.AddNum(uid...)
+
+		} else if err != nil {
+			return errors.Wrap(err, "GetNextUID")
+		} else {
+			if uidnext > next {
+				seqset.AddNum(next, uidnext)
+			} else if uidnext < next {
+				// reset cache
+				m.cache.SaveNextUID(0, 0)
+				return errors.New("Cache error mailbox.next < cache.next")
+			} else if uidnext == next {
+				m.log.Debug("MailProviderImap.CheckNewMessage: No new messages")
+				return nil
+			}
 		}
 
-		m.log.Debugf("MailProviderImap.CheckNewMessage: found %v uid", len(uid))
+		messages := make(chan *imap.Message)
+		done := make(chan error, 1)
+		go func() {
+			done <- m.imapClient.UidFetch(seqset, []string{imap.EnvelopeMsgAttr, "BODY[]"}, messages)
+		}()
 
-		seqset.AddNum(uid...)
+		for imapMsg := range messages {
+			m.log.Debug("MailProviderImap.CheckNewMessage: PostMail uid:", imapMsg.Uid)
 
-	} else if err != nil {
-		return errors.Wrap(err, "GetNextUID")
-	} else {
-		if uidnext > next {
-			seqset.AddNum(next, uidnext)
-		} else if uidnext < next {
-			// reset cache
-			m.cache.SaveNextUID(0, 0)
-			return errors.New("Cache error mailbox.next < cache.next")
-		} else if uidnext == next {
-			m.log.Debug("MailProviderImap.CheckNewMessage: No new messages")
-			return nil
+			r := imapMsg.GetBody("BODY[]")
+			if r == nil {
+				m.log.Debug("MailProviderImap.CheckNewMessage: message.GetBody(BODY[]) returns nil")
+				continue
+			}
+
+			msg, err := mail.ReadMessage(r)
+			if err != nil {
+				m.log.Error("MailProviderImap.CheckNewMessage: Error on parse imap/message to mail/message")
+				return errors.Wrap(err, "parse imap/message to mail/message")
+			}
+
+			if err := handler(msg, folder); err != nil {
+				m.log.Error("MailProviderImap.CheckNewMessage: Error handler")
+				return errors.Wrap(err, "execute MailHandler")
+			}
+		}
+
+		// Check command completion status
+		if err := <-done; err != nil {
+			m.log.Error("MailProviderImap.CheckNewMessage: Error on terminate fetch command")
+			return errors.Wrap(err, "terminate fetch command")
+		}
+
+		if err := m.cache.SaveNextUID(validity, uidnext); err != nil {
+			m.log.Error("MailProviderImap.CheckNewMessage: Error on save next uid")
+			return errors.Wrap(err, "save next uid")
 		}
 	}
-
-	messages := make(chan *imap.Message)
-	done := make(chan error, 1)
-	go func() {
-		done <- m.imapClient.UidFetch(seqset, []string{imap.EnvelopeMsgAttr, "BODY[]"}, messages)
-	}()
-
-	for imapMsg := range messages {
-		m.log.Debug("MailProviderImap.CheckNewMessage: PostMail uid:", imapMsg.Uid)
-
-		r := imapMsg.GetBody("BODY[]")
-		if r == nil {
-			m.log.Debug("MailProviderImap.CheckNewMessage: message.GetBody(BODY[]) returns nil")
-			continue
-		}
-
-		msg, err := mail.ReadMessage(r)
-		if err != nil {
-			m.log.Error("MailProviderImap.CheckNewMessage: Error on parse imap/message to mail/message")
-			return errors.Wrap(err, "parse imap/message to mail/message")
-		}
-
-		if err := handler(msg); err != nil {
-			m.log.Error("MailProviderImap.CheckNewMessage: Error handler")
-			return errors.Wrap(err, "execute MailHandler")
-		}
-	}
-
-	// Check command completion status
-	if err := <-done; err != nil {
-		m.log.Error("MailProviderImap.CheckNewMessage: Error on terminate fetch command")
-		return errors.Wrap(err, "terminate fetch command")
-	}
-
-	if err := m.cache.SaveNextUID(validity, uidnext); err != nil {
-		m.log.Error("MailProviderImap.CheckNewMessage: Error on save next uid")
-		return errors.Wrap(err, "save next uid")
-	}
-
 	return nil
 }
 
 // WaitNewMessage waits for a new message (idle or time.Sleep)
-func (m *MailProviderImap) WaitNewMessage(timeout int) error {
+func (m *MailProviderImap) WaitNewMessage(timeout int, folders []string) error {
 	m.log.Debug("MailProviderImap.WaitNewMessage")
 
 	// Idle mode
@@ -148,8 +156,13 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 		return nil
 	}
 
-	if _, err := m.selectMailBox(); err != nil {
-		return errors.Wrap(err, "select mailbox")
+	// add INBOX
+	folders = append(folders, MailBox)
+
+	for _, folder := range folders {
+		if _, err := m.selectMailBox(MailBox); err != nil {
+			return errors.Wrap(err, "select mailbox")
+		}
 	}
 
 	if m.idleClient == nil {
@@ -196,20 +209,20 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 	}
 }
 
-func (m *MailProviderImap) selectMailBox() (*imap.MailboxStatus, error) {
+func (m *MailProviderImap) selectMailBox(mailbox string) (*imap.MailboxStatus, error) {
 
-	if m.imapClient.Mailbox() != nil && m.imapClient.Mailbox().Name == MailBox {
+	if m.imapClient.Mailbox() != nil && m.imapClient.Mailbox().Name == mailbox {
 		if err := m.imapClient.Close(); err != nil {
 			m.log.Debug("MailProviderImap.selectMailBox: Error on close mailbox:", err.Error())
 		}
 	}
 
-	m.log.Debug("MailProviderImap.selectMailBox: Select mailbox:", MailBox)
+	m.log.Debug("MailProviderImap.selectMailBox: Select mailbox:", mailbox)
 
-	mbox, err := m.imapClient.Select(MailBox, true)
+	mbox, err := m.imapClient.Select(mailbox, true)
 	if err != nil {
-		m.log.Error("MailProviderImap.selectMailBox: Error on select", MailBox)
-		return nil, errors.Wrapf(err, "select mailbox '%v'", MailBox)
+		m.log.Error("MailProviderImap.selectMailBox: Error on select", mailbox)
+		return nil, errors.Wrapf(err, "select mailbox '%v'", mailbox)
 	}
 	return mbox, nil
 }
@@ -271,7 +284,7 @@ func (m *MailProviderImap) checkConnection() error {
 		return errors.Wrapf(err, "unable to login username:'%v'", m.cfg.Username)
 	}
 
-	if _, err = m.selectMailBox(); err != nil {
+	if _, err = m.selectMailBox(MailBox); err != nil {
 		return errors.Wrap(err, "select mailbox on checkConnection")
 	}
 
