@@ -83,14 +83,20 @@ func (m *MatterMail) Listen() {
 }
 
 func (m *MatterMail) checkAndWait() error {
-	if err := m.mailProvider.CheckNewMessage(m.PostNetMail, m.cfg.Filter.ListFolder()); err != nil {
+
+	var folders []string
+	if m.cfg.Filter != nil {
+		folders = m.cfg.Filter.ListFolder()
+	}
+
+	if err := m.mailProvider.CheckNewMessage(m.PostNetMail, folders); err != nil {
 		m.log.Error("MatterMail.InitMatterMail Error on check new messsage:", err.Error())
 		return errors.Wrap(err, "check new message")
 	}
 
 	time.Sleep(time.Second * 2)
 
-	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout, m.cfg.Filter.ListFolder()); err != nil {
+	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout, folders); err != nil {
 		m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
 		return errors.Wrap(err, "wait new message")
 	}
