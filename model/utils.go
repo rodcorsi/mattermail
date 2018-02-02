@@ -47,7 +47,7 @@ func dedupStrings(elements []string) []string {
 	}
 
 	result := []string{}
-	for key, _ := range encountered {
+	for key := range encountered {
 		result = append(result, key)
 	}
 	return result
