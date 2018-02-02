@@ -48,12 +48,21 @@ func TestRule_Match(t *testing.T) {
 		t.Fatal("Attempt from rule subject need to be ignored")
 	}
 
+	if !rule.Match("test@test.com", "", "asdf") {
+		t.Fatal("Attempt from rule folder need to be ignored")
+	}
+
 	if rule.Match("", "ansdkjfhad", "") {
 		t.Fatal("Do not attempt from rule subject need to be ignored")
 	}
 
+	if rule.Match("", "", "asdf") {
+		t.Fatal("Do not attempt from rule folder need to be ignored")
+	}
+
 	rule.Subject = "subject"
 	rule.From = ""
+	rule.Folder = ""
 
 	if rule.Match("", "", "") {
 		t.Fatal("Do not attempt subject rule")
@@ -73,12 +82,17 @@ func TestRule_Match(t *testing.T) {
 
 	rule.Subject = "subject"
 	rule.From = "test@test.com"
+	rule.Folder = "test"
 
 	if rule.Match("", "", "") {
 		t.Fatal("Do not attempt rules")
 	}
 
 	if rule.Match("dfadf", "sdfsafa", "") {
+		t.Fatal("Do not attempt rules")
+	}
+
+	if rule.Match("dfadf", "sdfsafa", "kljskdf") {
 		t.Fatal("Do not attempt rules")
 	}
 
@@ -90,7 +104,11 @@ func TestRule_Match(t *testing.T) {
 		t.Fatal("Do not attempt rules")
 	}
 
-	if !rule.Match("test@test.com", "asdH subject assdhj", "") {
+	if rule.Match("", "", "test") {
+		t.Fatal("Do not attempt rules")
+	}
+
+	if !rule.Match("test@test.com", "asdH subject assdhj", "test") {
 		t.Fatal("Attempt all rules")
 	}
 }
