@@ -100,7 +100,7 @@ func (f *Filter) ListFolder() []string {
 			list = append(list, r.getFolder())
 		}
 	}
-	return list
+	return dedupStrings(list)
 }
 
 // Validate check if all rules is valid
