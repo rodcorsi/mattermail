@@ -3,8 +3,8 @@ package mmail
 import (
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/cseeger-epages/mattermail/model"
+	"github.com/pkg/errors"
 )
 
 // Start server
@@ -16,6 +16,8 @@ func Start(config *model.Config) error {
 	}
 
 	hasconfig := false
+	var folders []string
+	folders = append(folders, MailBox)
 
 	for _, profile := range config.Profiles {
 		if *profile.Disabled {
@@ -23,11 +25,16 @@ func Start(config *model.Config) error {
 		}
 		hasconfig = true
 
+		if profile.Filter != nil {
+			folders = append(folders, profile.Filter.ListFolder()...)
+			folders = dedupStrings(folders)
+		}
+
 		wg.Add(1)
 		debug := *config.Debug
 		p := profile
 		go func() {
-			createMatterMail(p, config.Directory, debug).Listen()
+			createMatterMail(p, config.Directory, folders, debug).Listen()
 			wg.Done()
 		}()
 	}
@@ -41,10 +48,17 @@ func Start(config *model.Config) error {
 	return nil
 }
 
-func createMatterMail(profile *model.Profile, directory string, debug bool) *MatterMail {
+func createMatterMail(profile *model.Profile, directory string, folders []string, debug bool) *MatterMail {
 	logger := NewLog(profile.Name, debug)
-	cache := NewUIDCacheFile(directory, profile.Email.Username, MailBox)
-	mailProvider := NewMailProviderImap(profile.Email, logger, cache, debug)
+
+	// mailbox caches for each mailbox defined in filter rules
+	var caches []UIDCache
+	caches = append(caches, NewUIDCacheFile(directory, profile.Email.Username, MailBox))
+	for _, folder := range folders {
+		caches = append(caches, NewUIDCacheFile(directory, profile.Email.Username, folder))
+	}
+
+	mailProvider := NewMailProviderImap(profile.Email, logger, caches, debug)
 	mattermost := NewMattermostProvider(profile.Mattermost, logger)
 	return NewMatterMail(profile, logger, mailProvider, mattermost)
 }

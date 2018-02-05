@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cseeger-epages/mattermail/model"
 	"github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"
 	"github.com/pkg/errors"
-	"github.com/cseeger-epages/mattermail/model"
 )
 
 // MailProviderImap implements MailProvider using imap
@@ -19,7 +19,7 @@ type MailProviderImap struct {
 	idleClient *idle.Client
 	cfg        *model.Email
 	log        Logger
-	cache      UIDCache
+	caches     []UIDCache
 	idle       bool
 	debug      bool
 }
@@ -28,12 +28,12 @@ type MailProviderImap struct {
 const MailBox = "INBOX"
 
 // NewMailProviderImap creates a new MailProviderImap implementing MailProvider
-func NewMailProviderImap(cfg *model.Email, log Logger, cache UIDCache, debug bool) *MailProviderImap {
+func NewMailProviderImap(cfg *model.Email, log Logger, caches []UIDCache, debug bool) *MailProviderImap {
 	return &MailProviderImap{
-		cfg:   cfg,
-		cache: cache,
-		log:   log,
-		debug: debug,
+		cfg:    cfg,
+		caches: caches,
+		log:    log,
+		debug:  debug,
 	}
 }
 
@@ -61,7 +61,17 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 		validity, uidnext := mbox.UidValidity, mbox.UidNext
 
 		seqset := &imap.SeqSet{}
-		next, err := m.cache.GetNextUID(validity)
+
+		cacheid := 0
+
+		// get first matching cache file
+		for id, cache := range m.caches {
+			if cache.GetMailBox() == folder {
+				cacheid = id
+			}
+		}
+		next, err := m.caches[cacheid].GetNextUID(validity)
+
 		if err == ErrEmptyUID {
 			m.log.Debug("MailProviderImap.CheckNewMessage: ErrEmptyUID search unread messages")
 
@@ -91,7 +101,7 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 				seqset.AddNum(next, uidnext)
 			} else if uidnext < next {
 				// reset cache
-				m.cache.SaveNextUID(0, 0)
+				m.caches[cacheid].SaveNextUID(0, 0)
 				return errors.New("Cache error mailbox.next < cache.next")
 			} else if uidnext == next {
 				m.log.Debug("MailProviderImap.CheckNewMessage: No new messages")
@@ -132,7 +142,7 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 			return errors.Wrap(err, "terminate fetch command")
 		}
 
-		if err := m.cache.SaveNextUID(validity, uidnext); err != nil {
+		if err := m.caches[cacheid].SaveNextUID(validity, uidnext); err != nil {
 			m.log.Error("MailProviderImap.CheckNewMessage: Error on save next uid")
 			return errors.Wrap(err, "save next uid")
 		}
