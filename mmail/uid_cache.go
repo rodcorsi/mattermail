@@ -18,9 +18,17 @@ type UIDCache interface {
 
 	// SaveNextUID stores the uid and uidvalidity
 	SaveNextUID(uidvalidity, uid uint32) error
+
+	// GetMailbox returns mailbox for the cache
+	GetMailBox() string
+
+	// Get Account returns account for cache
+	//GetAccount() string
 }
 
 type uidCacheMem struct {
+	account     string
+	mailbox     string
 	uidvalidity uint32
 	next        uint32
 	lock        sync.RWMutex
@@ -54,4 +62,12 @@ func (u *uidCacheMem) SaveNextUID(uidvalidity, uid uint32) error {
 	u.next = uid
 
 	return nil
+}
+
+func (u *uidCacheMem) GetMailBox() string {
+	return u.mailbox
+}
+
+func (u *uidCacheMem) GetAccount() string {
+	return u.account
 }
