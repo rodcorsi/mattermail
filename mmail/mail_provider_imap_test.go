@@ -71,7 +71,10 @@ func TestCheckNewMessage(t *testing.T) {
 	config.Password = "password"
 	config.ImapServer = ts.addr
 
-	mP := NewMailProviderImap(config, NewLog("", debugImap), &uidCacheMem{}, debugImap)
+	var caches []UIDCache
+	caches = append(caches, &uidCacheMem{})
+
+	mP := NewMailProviderImap(config, NewLog("", debugImap), caches, debugImap)
 
 	defer mP.Terminate()
 
@@ -102,7 +105,10 @@ func TestWaitNewMessage(t *testing.T) {
 	config.ImapServer = ts.addr
 	*config.StartTLS = true
 
-	mP := NewMailProviderImap(config, NewLog("", debugImap), &uidCacheMem{}, debugImap)
+	var caches []UIDCache
+	caches = append(caches, &uidCacheMem{})
+
+	mP := NewMailProviderImap(config, NewLog("", debugImap), caches, debugImap)
 
 	done := make(chan error, 1)
 	go func() {
