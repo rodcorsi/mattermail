@@ -64,10 +64,12 @@ func (u *uidCacheMem) SaveNextUID(uidvalidity, uid uint32) error {
 	return nil
 }
 
+// GetMailBox return mailbox
 func (u *uidCacheMem) GetMailBox() string {
 	return u.mailbox
 }
 
+// GetAccount return account
 func (u *uidCacheMem) GetAccount() string {
 	return u.account
 }
