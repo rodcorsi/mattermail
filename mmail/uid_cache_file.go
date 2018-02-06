@@ -13,6 +13,8 @@ import (
 
 // UIDCacheFile implements UIDCache using filesystem to store
 type UIDCacheFile struct {
+	account  string
+	mailbox  string
 	filename string
 	lock     sync.RWMutex
 }
@@ -22,6 +24,8 @@ func NewUIDCacheFile(directory, account, mailbox string) *UIDCacheFile {
 	filename := filepath.Join(directory, strings.ToLower(account+"_"+mailbox+".dat"))
 
 	return &UIDCacheFile{
+		account:  account,
+		mailbox:  mailbox,
 		filename: filename,
 	}
 }
@@ -77,4 +81,14 @@ func (u *UIDCacheFile) SaveNextUID(uidvalidity, uid uint32) error {
 	b := append(bval, buid...)
 
 	return ioutil.WriteFile(u.filename, b, 0640)
+}
+
+// GetMailBox returns mailbox for cachefile
+func (u *UIDCacheFile) GetMailBox() string {
+	return u.mailbox
+}
+
+// GetAccount returns account fro cachefile
+func (u *UIDCacheFile) GetAccount() string {
+	return u.account
 }
