@@ -255,6 +255,9 @@ func (m *MailProviderImap) checkConnection() error {
 			var tconfig tls.Config
 			if *m.cfg.TLSAcceptAllCerts {
 				tconfig.InsecureSkipVerify = true
+			} else {
+				addr := strings.Split(m.cfg.ImapServer, ":")
+				tconfig.ServerName = addr[0]
 			}
 			err = m.imapClient.StartTLS(&tconfig)
 			if err != nil {
