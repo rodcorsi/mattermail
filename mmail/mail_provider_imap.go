@@ -216,9 +216,18 @@ func (m *MailProviderImap) selectMailBox() (*imap.MailboxStatus, error) {
 
 // checkConnection if is connected return nil or try to connect
 func (m *MailProviderImap) checkConnection() error {
-	if m.imapClient != nil && (m.imapClient.State() == imap.AuthenticatedState || m.imapClient.State() == imap.SelectedState) {
-		m.log.Debug("MailProviderImap.CheckConnection: Connection state", m.imapClient.State)
-		return nil
+	if m.imapClient != nil {
+		// ConnectingState 0
+		// NotAuthenticatedState 1
+		// AuthenticatedState 2
+		// SelectedState 6
+		// LogoutState 8
+		// ConnectedState 7
+		cliState := m.imapClient.State()
+		if cliState == imap.AuthenticatedState || cliState == imap.SelectedState {
+			m.log.Debug("MailProviderImap.CheckConnection: Client state", cliState)
+			return nil
+		}
 	}
 
 	var err error
