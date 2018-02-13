@@ -239,10 +239,47 @@ func (m *MailProviderImap) selectMailBox(mailbox string) (*imap.MailboxStatus, e
 
 // checkConnection if is connected return nil or try to connect
 func (m *MailProviderImap) checkConnection() error {
-	if m.imapClient != nil && (m.imapClient.State() == imap.AuthenticatedState || m.imapClient.State() == imap.SelectedState) {
-		m.log.Debug("MailProviderImap.CheckConnection: Connection state", m.imapClient.State)
-		return nil
+	var err error
+	if m.imapClient != nil {
+		// ConnectingState 0
+		// NotAuthenticatedState 1
+		// AuthenticatedState 2
+		// SelectedState 6
+		// LogoutState 8
+		// ConnectedState 7
+		cliState := m.imapClient.State()
+		if cliState == imap.AuthenticatedState || cliState == imap.SelectedState {
+			m.log.Debug("MailProviderImap.CheckConnection: Client state", cliState)
+			m.log.Debug("MailProviderImap.CheckConnection: Connection state", m.imapClient.State())
+			m.log.Debug("MailProviderImap.CheckConnection: IsTLS", m.imapClient.IsTLS())
+			if err = m.imapClient.Check(); err != nil {
+				m.log.Debug("MailProviderImap.CheckConnection: Check", err)
+
+				// on error try to recconnect to resolv the problem
+				if err = m.Terminate(); err != nil {
+					m.log.Debug("MailProviderImap.CheckConnection: Terminate", err)
+				}
+
+				if err = m.Connect(); err != nil {
+					m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Username)
+				}
+			}
+			return nil
+		}
 	}
+
+	if err = m.Connect(); err != nil {
+		m.log.Error("MailProviderImap.CheckConnection: Unable to login:", m.cfg.Username)
+	}
+
+	if _, err = m.selectMailBox(MailBox); err != nil {
+		return errors.Wrap(err, "select mailbox on checkConnection")
+	}
+
+	return nil
+}
+
+func (m *MailProviderImap) Connect() error {
 
 	var err error
 
@@ -294,29 +331,34 @@ func (m *MailProviderImap) checkConnection() error {
 		return errors.Wrapf(err, "unable to login username:'%v'", m.cfg.Username)
 	}
 
-	if _, err = m.selectMailBox(MailBox); err != nil {
-		return errors.Wrap(err, "select mailbox on checkConnection")
-	}
-
 	idleClient := idle.NewClient(m.imapClient)
 	m.idle, err = idleClient.SupportIdle()
+
 	if err != nil {
 		m.idle = false
 		m.log.Error("MailProviderImap.CheckConnection: Error on check idle support")
 		return errors.Wrap(err, "on check idle support")
 	}
-
 	return nil
 }
 
 // Terminate imap connection
 func (m *MailProviderImap) Terminate() error {
 	if m.imapClient != nil {
-		m.log.Info("MailProviderImap.Terminate Logout")
+		m.log.Info("MailProviderImap.Terminate")
 		if err := m.imapClient.Logout(); err != nil {
-			m.log.Error("MailProviderImap.Terminate Error:", err.Error())
-			return errors.Wrap(err, "terminate imap connection")
+			m.log.Debug("MailProviderImap.Terminate: imap.Logout", err.Error())
 		}
+		if err := m.imapClient.Close(); err != nil {
+			m.log.Debug("MailProviderImap.Terminate: imap.Close", err.Error())
+		}
+		if err := m.imapClient.Terminate(); err != nil {
+			m.log.Debug("MailProviderImap.Terminate: imap.Terminate", err.Error())
+			return err
+		}
+		// clean up clients
+		m.imapClient = nil
+		m.idleClient = nil
 	}
 
 	return nil
