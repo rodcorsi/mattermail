@@ -5,7 +5,7 @@ import (
 
 	mmModel "github.com/mattermost/mattermost-server/model"
 	"github.com/pkg/errors"
-	"github.com/cseeger-epages/mattermail/model"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 // MattermostProviderV3 default implementation of MattermostProvider

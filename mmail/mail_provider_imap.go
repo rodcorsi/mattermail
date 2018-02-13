@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cseeger-epages/mattermail/model"
+	"github.com/rodcorsi/mattermail/model"
 	"github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/client"

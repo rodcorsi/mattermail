@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/cseeger-epages/mattermail/model"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 type migrateCommand struct {

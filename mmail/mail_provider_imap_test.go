@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cseeger-epages/mattermail/model"
+	"github.com/rodcorsi/mattermail/model"
 	imap "github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/backend"
