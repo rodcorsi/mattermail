@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -118,13 +119,24 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 			Password: c.MattermostPass,
 		}
 
+		// Filter
+		filter := &Filter{} 
+		fmt.Printf("%v\n",(*c.Filter)[0].Channel)
+		for _, r := range (*c.Filter){
+			fmt.Printf("%+v\n",r)
+			*filter = append(*filter, &Rule{
+				From:     r.From,
+				Subject:  r.Subject,
+				Channels: []string{r.Channel},
+			})
+		}
 		// Profile
 		profile := &Profile{
 			Name:       c.Name,
 			Channels:   []string{c.Channel},
 			Email:      email,
 			Mattermost: mattermost,
-			Filter:     c.Filter,
+			Filter:     filter,
 		}
 
 		mailtemplate := strings.Replace(c.MailTemplate, "%v", "{{.From}}", 1)
