@@ -214,7 +214,7 @@ func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelI
 	// check filters
 	if cfg.Filter != nil {
 		log.Debug("Did not find channel/user from Email Subject. Look for filter")
-		if chMap = validateChannelNames([]string{cfg.Filter.GetChannel(msg.From, msg.Subject)}, getChannelID); chMap != nil {
+		if chMap = validateChannelNames(cfg.Filter.GetChannels(msg.From, msg.Subject), getChannelID); chMap != nil {
 			return chMap
 		}
 	}
