@@ -73,10 +73,14 @@ func TestCreateMattermostPost(t *testing.T) {
 	msg.Subject = "Subject"
 	msg.EmailType = EmailTypeHTML
 
-	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channel: "#channel2"}}
+	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channels: []string{"#channel1","#channel2"}}}
 	mP, err = createMattermostPost(msg, cfg, log, getChannelID)
 	if err != nil {
 		t.Fatalf("error on create mattermostPost %v", err)
+	}
+
+	if _, ok := mP.channelMap["#channel1"]; !ok {
+		t.Fatalf("expected #channel1 result:'%v'", mP.channelMap)
 	}
 
 	if _, ok := mP.channelMap["#channel2"]; !ok {
