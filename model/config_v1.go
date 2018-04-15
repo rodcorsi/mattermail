@@ -6,13 +6,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-
+// RuleV1 for filter
 type RuleV1 struct {
 	From    string
 	Subject string
 	Channel string
 }
 
+// FilterV1 has an array of rules
 type FilterV1 []*RuleV1
 
 // ConfigV1 depracated

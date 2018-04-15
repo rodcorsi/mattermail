@@ -119,8 +119,8 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 		}
 
 		// Filter
-		filter := &Filter{} 
-		for _, r := range (*c.Filter){
+		filter := &Filter{}
+		for _, r := range *c.Filter {
 			*filter = append(*filter, &Rule{
 				From:     r.From,
 				Subject:  r.Subject,
