@@ -74,7 +74,7 @@ func TestCreateMattermostPost(t *testing.T) {
 	msg.Subject = "Subject"
 	msg.EmailType = EmailTypeHTML
 
-	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channels: []string{"#channel1","#channel2"}}}
+	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channels: []string{"#channel1", "#channel2"}}}
 	mP, err = createMattermostPost(msg, cfg, log, getChannelID)
 	if err != nil {
 		t.Fatalf("error on create mattermostPost %v", err)

@@ -95,12 +95,12 @@ func TestMigrateFromV1(t *testing.T) {
 			},
 			Filter: &Filter{
 				&Rule{
-					Subject: "Feature",
+					Subject:  "Feature",
 					Channels: []string{"#feature"},
 				},
 				&Rule{
-					From:    "test@gmail.com",
-					Subject: "To Me",
+					From:     "test@gmail.com",
+					Subject:  "To Me",
 					Channels: []string{"@test2"},
 				},
 			},

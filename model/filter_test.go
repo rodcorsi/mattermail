@@ -99,8 +99,8 @@ func TestFilter_Fix(t *testing.T) {
 	filter := &Filter{
 		&Rule{
 			Channels: []string{"  Channel "},
-			Subject: " Subject  ",
-			From:    " Test@test.com ",
+			Subject:  " Subject  ",
+			From:     " Test@test.com ",
 		},
 	}
 

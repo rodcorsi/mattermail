@@ -7,8 +7,8 @@ import (
 
 // Rule for filter
 type Rule struct {
-	From    string
-	Subject string
+	From     string
+	Subject  string
 	Channels []string
 }
 
@@ -19,7 +19,7 @@ type Filter []*Rule
 func (r *Rule) Fix() {
 	r.From = strings.TrimSpace(strings.ToLower(r.From))
 	r.Subject = strings.TrimSpace(strings.ToLower(r.Subject))
-	
+
 	for i, channel := range r.Channels {
 		channel = strings.TrimSpace(channel)
 		channel = strings.ToLower(channel)
