@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -121,9 +120,7 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 
 		// Filter
 		filter := &Filter{} 
-		fmt.Printf("%v\n",(*c.Filter)[0].Channel)
 		for _, r := range (*c.Filter){
-			fmt.Printf("%+v\n",r)
 			*filter = append(*filter, &Rule{
 				From:     r.From,
 				Subject:  r.Subject,
