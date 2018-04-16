@@ -1,9 +1,9 @@
 package mmail
 
-import "net/mail"
+import "io"
 
 // MailHandler function called to handle mail message
-type MailHandler func(msg *mail.Message) error
+type MailHandler func(mailReader io.Reader) error
 
 // MailProvider interface to abstract email connection
 type MailProvider interface {

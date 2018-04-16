@@ -1,7 +1,6 @@
 package mmail
 
 import (
-	"net/mail"
 	"os"
 	"testing"
 
@@ -106,17 +105,12 @@ func TestMatterMail_PostNetMail(t *testing.T) {
 		t.Fatal("Error on open gmail.eml:", err)
 	}
 
-	msg, err := mail.ReadMessage(gmailbuf)
-	if err != nil {
-		t.Fatalf("Failed parsing email:%v", err)
-	}
-
 	profile := model.NewProfile()
 	profile.Channels = []string{"#town-square"}
 
 	mm := NewMatterMail(profile, NewLog("", false), nil, &mattermostMock{})
 
-	if err := mm.PostNetMail(msg); err != nil {
+	if err := mm.PostNetMail(gmailbuf); err != nil {
 		t.Fatal("Error on PostNetMail err:", err.Error())
 	}
 }

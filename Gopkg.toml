@@ -22,10 +22,6 @@
 
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/jhillyerd/go.enmime"
-
-[[constraint]]
   branch = "release-4.0"
   name = "github.com/mattermost/mattermost-server"
 
@@ -40,3 +36,7 @@
 [[constraint]]
   revision = "2ba078955c8a32885916065eaa984b39ce90ff58"
   name = "github.com/emersion/go-imap-idle"
+
+[[constraint]]
+  name = "github.com/jhillyerd/enmime"
+  version = "0.2.0"

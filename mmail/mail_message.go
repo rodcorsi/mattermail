@@ -2,11 +2,11 @@ package mmail
 
 import (
 	"encoding/base64"
-	"net/mail"
+	"io"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/jhillyerd/go.enmime"
+	"github.com/jhillyerd/enmime"
 	"github.com/pkg/errors"
 )
 
@@ -32,60 +32,58 @@ type MailMessage struct {
 	Attachments []*Attachment
 }
 
-// ParseMailMessage convert net/mail in MailMessage
-func ParseMailMessage(msg *mail.Message) (*MailMessage, error) {
+// ReadMailMessage convert net/mail in MailMessage
+func ReadMailMessage(r io.Reader) (*MailMessage, error) {
 	mm := &MailMessage{}
-
-	mime, err := enmime.ParseMIMEBody(msg) // Parse message body with enmime
-
+	env, err := enmime.ReadEnvelope(r) // read message body with enmime
 	if err != nil {
-		return nil, errors.Wrap(err, "parse mail MIME body")
+		return nil, errors.Wrap(err, "read message body")
 	}
 
-	mm.From = NonASCII(msg.Header.Get("From"))
-	mm.Subject = mime.GetHeader("Subject")
-	mm.EmailText = mime.Text
+	mm.From = env.GetHeader("From")
+	mm.Subject = env.GetHeader("Subject")
+	mm.EmailText = env.Text
 
 	var emailbody string
-	if len(mime.HTML) > 0 {
+	if len(env.HTML) > 0 {
 		mm.EmailType = EmailTypeHTML
-		emailbody = mime.HTML
-		for _, p := range mime.Inlines {
+		emailbody = env.HTML
+		for _, p := range env.Inlines {
 			emailbody = replaceCID(emailbody, p)
 		}
 
-		for _, p := range mime.OtherParts {
+		for _, p := range env.OtherParts {
 			emailbody = replaceCID(emailbody, p)
 		}
 
 	} else {
 		mm.EmailType = EmailTypeText
-		emailbody = mime.Text
+		emailbody = env.Text
 	}
 
 	mm.EmailBody = emailbody
 
-	mm.Attachments = make([]*Attachment, len(mime.Attachments))
+	mm.Attachments = make([]*Attachment, len(env.Attachments))
 
-	for i, a := range mime.Attachments {
+	for i, a := range env.Attachments {
 		mm.Attachments[i] = &Attachment{
-			Filename: removeNonUTF8(a.FileName()),
-			Content:  a.Content(),
+			Filename: removeNonUTF8(a.FileName),
+			Content:  a.Content,
 		}
 	}
 	return mm, nil
 }
 
 //Replace cid:**** by embedded base64 image
-func replaceCID(html string, part enmime.MIMEPart) string {
-	cid := strings.Replace(part.Header().Get("Content-ID"), "<", "", -1)
+func replaceCID(html string, part *enmime.Part) string {
+	cid := strings.Replace(part.Header.Get("Content-ID"), "<", "", -1)
 	cid = strings.Replace(cid, ">", "", -1)
 
 	if len(cid) == 0 {
 		return html
 	}
 
-	b64 := "data:" + part.ContentType() + ";base64," + base64.StdEncoding.EncodeToString(part.Content())
+	b64 := "data:" + part.ContentType + ";base64," + base64.StdEncoding.EncodeToString(part.Content)
 
 	return strings.Replace(html, "cid:"+cid, b64, -1)
 }
