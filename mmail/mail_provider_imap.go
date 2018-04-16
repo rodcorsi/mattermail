@@ -2,7 +2,6 @@ package mmail
 
 import (
 	"crypto/tls"
-	"net/mail"
 	"strings"
 	"time"
 
@@ -106,13 +105,7 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
 			continue
 		}
 
-		msg, err := mail.ReadMessage(r)
-		if err != nil {
-			m.log.Error("MailProviderImap.CheckNewMessage: Error on parse imap/message to mail/message")
-			return errors.Wrap(err, "parse imap/message to mail/message")
-		}
-
-		if err := handler(msg); err != nil {
+		if err := handler(r); err != nil {
 			m.log.Error("MailProviderImap.CheckNewMessage: Error handler")
 			return errors.Wrap(err, "execute MailHandler")
 		}

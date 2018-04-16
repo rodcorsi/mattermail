@@ -1,7 +1,7 @@
 package mmail
 
 import (
-	"net/mail"
+	"io"
 	"time"
 	"unicode/utf8"
 
@@ -24,9 +24,9 @@ type MatterMail struct {
 	mailProvider MailProvider
 }
 
-// PostNetMail parse net/mail.Message and post in Mattermost
-func (m *MatterMail) PostNetMail(msg *mail.Message) error {
-	mMsg, err := ParseMailMessage(msg)
+// PostNetMail read net/mail.Message and post in Mattermost
+func (m *MatterMail) PostNetMail(mailReader io.Reader) error {
+	mMsg, err := ReadMailMessage(mailReader)
 	if err != nil {
 		return errors.Wrap(err, "parse mail message")
 	}

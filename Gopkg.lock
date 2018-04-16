@@ -9,7 +9,17 @@
 
 [[projects]]
   name = "github.com/emersion/go-imap"
-  packages = [".","backend","backend/backendutil","backend/memory","client","commands","responses","server","utf7"]
+  packages = [
+    ".",
+    "backend",
+    "backend/backendutil",
+    "backend/memory",
+    "client",
+    "commands",
+    "responses",
+    "server",
+    "utf7"
+  ]
   revision = "dc58f306f9a760d70f4eb628b3c1b5fa8a490b97"
 
 [[projects]]
@@ -19,7 +29,11 @@
 
 [[projects]]
   name = "github.com/emersion/go-message"
-  packages = [".","charset","mail"]
+  packages = [
+    ".",
+    "charset",
+    "mail"
+  ]
   revision = "1716e3f473f914d0f63389271fbe851c749e0ab4"
   version = "v0.9"
 
@@ -48,10 +62,14 @@
   revision = "4b9124c9b0a2279e2092c4a9aaf1c83bbd2dcffc"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/jhillyerd/go.enmime"
-  packages = ["."]
-  revision = "1b38e76723aa41be23ca88adbb21df1972c10b7f"
+  name = "github.com/jhillyerd/enmime"
+  packages = [
+    ".",
+    "internal/coding",
+    "internal/stringutil"
+  ]
+  revision = "bed8d3f5e62dd8aca071dfe08f775f17e3647dd7"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "release-4.0"
@@ -61,14 +79,22 @@
 
 [[projects]]
   name = "github.com/nicksnyder/go-i18n"
-  packages = ["i18n","i18n/bundle","i18n/language","i18n/translation"]
+  packages = [
+    "i18n",
+    "i18n/bundle",
+    "i18n/language",
+    "i18n/translation"
+  ]
   revision = "ca33e78c8a430e2df435b02f63a3944fa8e9ea11"
   version = "v1.9.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/paulrosania/go-charset"
-  packages = ["charset","data"]
+  packages = [
+    "charset",
+    "data"
+  ]
   revision = "621bb39fcc835dce592e682f5073025d0169587b"
 
 [[projects]]
@@ -92,19 +118,43 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["bcrypt","blowfish"]
+  packages = [
+    "bcrypt",
+    "blowfish"
+  ]
   revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["html","html/atom"]
+  packages = [
+    "html",
+    "html/atom"
+  ]
   revision = "4971afdc2f162e82d185353533d3cf16188a9f4e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["encoding","encoding/charmap","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/utf8internal","runes","transform","unicode/cldr"]
+  packages = [
+    "encoding",
+    "encoding/charmap",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/korean",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
+    "encoding/unicode",
+    "internal/gen",
+    "internal/triegen",
+    "internal/ucd",
+    "internal/utf8internal",
+    "runes",
+    "transform",
+    "unicode/cldr",
+    "unicode/norm"
+  ]
   revision = "a263ba8db058568bb9beba166777d9c9dbe75d68"
 
 [[projects]]
@@ -116,6 +166,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "750f80c84e987097e8049ad1d8c99456e7a977ee6f4724262997bd4fd357389b"
+  inputs-digest = "822c62f47c42d3d6dd1565f97d5cb903595f8343ab38bc8cfaaef2c84b08d80d"
   solver-name = "gps-cdcl"
   solver-version = 1
