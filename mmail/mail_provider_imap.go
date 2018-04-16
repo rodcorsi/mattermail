@@ -300,6 +300,10 @@ func (m *MailProviderImap) checkConnection() error {
 
 // Terminate imap connection
 func (m *MailProviderImap) Terminate() error {
+	defer func() {
+		m.imapClient = nil
+		m.idleClient = nil
+	}()
 	if m.imapClient != nil {
 		m.log.Info("MailProviderImap.Terminate Logout")
 		if err := m.imapClient.Logout(); err != nil {

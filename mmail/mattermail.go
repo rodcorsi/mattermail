@@ -85,6 +85,7 @@ func (m *MatterMail) Listen() {
 func (m *MatterMail) checkAndWait() error {
 	if err := m.mailProvider.CheckNewMessage(m.PostNetMail); err != nil {
 		m.log.Error("MatterMail.InitMatterMail Error on check new messsage:", err.Error())
+		m.mailProvider.Terminate()
 		return errors.Wrap(err, "check new message")
 	}
 
@@ -92,6 +93,7 @@ func (m *MatterMail) checkAndWait() error {
 
 	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout); err != nil {
 		m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
+		m.mailProvider.Terminate()
 		return errors.Wrap(err, "wait new message")
 	}
 	return nil
