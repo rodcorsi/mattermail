@@ -15,7 +15,6 @@ import (
 // MailProviderImap implements MailProvider using imap
 type MailProviderImap struct {
 	imapClient *client.Client
-	idleClient *idle.Client
 	cfg        *model.Email
 	log        Logger
 	cache      UIDCache
@@ -145,9 +144,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 		return errors.Wrap(err, "select mailbox")
 	}
 
-	if m.idleClient == nil {
-		m.idleClient = idle.NewClient(m.imapClient)
-	}
+	idleClient := idle.NewClient(m.imapClient)
 
 	// Create a channel to receive mailbox updates
 	statuses := make(chan *imap.MailboxStatus)
@@ -156,7 +153,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int) error {
 	stop := make(chan struct{})
 	done := make(chan error, 1)
 	go func() {
-		done <- m.idleClient.Idle(stop)
+		done <- idleClient.Idle(stop)
 	}()
 
 	reset := time.After(time.Second * time.Duration(timeout))
@@ -295,7 +292,6 @@ func (m *MailProviderImap) checkConnection() error {
 func (m *MailProviderImap) Terminate() error {
 	defer func() {
 		m.imapClient = nil
-		m.idleClient = nil
 	}()
 	if m.imapClient != nil {
 		m.log.Info("MailProviderImap.Terminate Logout")
