@@ -184,3 +184,40 @@ You need [Go](http://golang.org) to build this project
 ```bash
 go get github.com/rodcorsi/mattermail
 ```
+
+## Mattermail as a service
+
+### Using systemd
+
+Considering your installation under `/opt/mattermail`, add `/etc/systemd/system/mattermail.service` file with the following content:
+
+```
+# mattermail
+[Unit]
+Description=mattermail server
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/mattermail
+ExecStart=/opt/mattermail/mattermail server -c config.json
+Nice=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable service:
+
+`systemctl enable mattermail`
+
+Start service:
+
+`systemctl start mattermail`
+
+View status:
+
+`systemctl status mattermail`
+
+View log:
+
+`journalctl -f -u mattermail.service`
