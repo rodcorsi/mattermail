@@ -105,7 +105,7 @@ Mattermost configuration
 | Team     | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                          |
 | User     | string |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                              |
 | Password | string |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                          |
-| UseAPIv3 | string | true    |                    | Set to use Mattermost Api V3                                                                                               |
+| UseAPIv3 | string | false   |                    | Set to use Mattermost Api V3                                                                                               |
 
 #### MailTemplate
 

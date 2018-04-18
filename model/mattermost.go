@@ -2,7 +2,7 @@ package model
 
 import "github.com/pkg/errors"
 
-const defaultUseAPIv3 = true
+const defaultUseAPIv3 = false
 
 // Mattermost type with Mattermost connection settings
 type Mattermost struct {
