@@ -138,13 +138,13 @@ This option is used to redirect email following the rules.
 ```javascript
 "Filter":            [
     /* if subject contains 'Feature' redirect to #feature */
-    {"Subject":"Feature", "Channel":"#feature"},
+    {"Subject":"Feature", "Channels": ["#feature"]},
 
     /* if from contains 'test@gmail.com' and subject contains 'to me' redirect to @test2*/
-    {"From":"test@gmail.com", "Subject":"To Me", "Channel":"@test2"},
+    {"From":"test@gmail.com", "Subject":"To Me", "Channels": ["@test2"]},
 
-    /* if from contains '@companyb.com' redirect to #companyb */
-    {"From":"@companyb.com", "Channel":"#companyb"} /**/
+    /* if from contains '@companyb.com' redirect to #companyb and @john */
+    {"From":"@companyb.com", "Channels": ["#companyb", "@john"]} /**/
 ]
 ```
 

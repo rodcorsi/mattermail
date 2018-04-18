@@ -1,28 +1,23 @@
 {
 	"Directory": "./data/",
 
-	"Profiles":[
+	"Profiles": [
 		{
-			"Name":     "Orders",
+			"Name": "Orders",
 			"Channels": ["#orders"],
 
-			"Email":{
+			"Email": {
 				"ImapServer": "imap.example.com:143",
-				"Username":   "orders@example.com",
-				"Password":   "password"
-			},
-
-			"Mattermost":{
-				"Server":   "https://mattermost.example.com",
-				"Team":     "team1",
-				"User":     "mattermail@example.com",
+				"Username": "orders@example.com",
 				"Password": "password"
 			},
-			"Filter":[
-				{"Subject":"Feature", "Channels":["#feature","#test1"]},
-				{"From":"test@gmail.com", "Subject":"To Me", "Channels":["#test1","@test2"]},
-				{"From":"@companyb.com", "Channels":["#companyb"]}
-			]
+
+			"Mattermost": {
+				"Server": "https://mattermost.example.com",
+				"Team": "team1",
+				"User": "mattermail@example.com",
+				"Password": "password"
+			}
 		}
 	]
 }
