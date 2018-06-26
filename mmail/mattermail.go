@@ -74,6 +74,8 @@ func (m *MatterMail) Listen() {
 	for {
 		if err := m.checkAndWait(); err != nil {
 			m.log.Debug(err.Error())
+			m.log.Info("Terminate Mail Provider after error")
+			m.mailProvider.Terminate()
 			m.log.Infof("Try again in %vs", tryAgainTime)
 			time.Sleep(time.Second * tryAgainTime)
 		} else {
