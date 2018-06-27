@@ -100,13 +100,13 @@ Email configuration, used to access IMAP server
 
 Mattermost configuration
 
-| Field    |  Type  | Default |     Obrigatory     | Information                                                                                                                |
-| -------- | :----: | ------- | :----------------: | -------------------------------------------------------------------------------------------------------------------------- |
-| Server   | string |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _<https://mattermost.example.com:8065>_ |
-| Team     | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                          |
-| User     | string |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                              |
-| Password | string |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                          |
-| UseAPIv3 | string | false   |                    | Set to use Mattermost Api V3                                                                                               |
+| Field    |  Type   | Default |     Obrigatory     | Information                                                                                                                |
+| -------- | :-----: | ------- | :----------------: | -------------------------------------------------------------------------------------------------------------------------- |
+| Server   | string  |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _<https://mattermost.example.com:8065>_ |
+| Team     | string  |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                          |
+| User     | string  |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                              |
+| Password | string  |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                          |
+| UseAPIv3 | boolean | false   |                    | Set to use Mattermost Api V3                                                                                               |
 
 #### MailTemplate
 
