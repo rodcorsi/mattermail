@@ -25,6 +25,7 @@ func NewEmail() *Email {
 	email := &Email{
 		StartTLS:          new(bool),
 		TLSAcceptAllCerts: new(bool),
+		DisableIdle:       new(bool),
 	}
 	*email.StartTLS = defaultStartTLS
 	*email.TLSAcceptAllCerts = defaultTLSAcceptAllCerts
