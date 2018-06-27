@@ -87,13 +87,14 @@ You can set multiple profiles using different names
 
 Email configuration, used to access IMAP server
 
-| Field             |  Type   | Default |     Obrigatory     | Information                                                        |
-| ----------------- | :-----: | ------- | :----------------: | ------------------------------------------------------------------ |
-| ImapServer        | string  |         | :white_check_mark: | Address of imap server with port number ex: _imap.example.com:143_ |
-| Username          | string  |         | :white_check_mark: | Email address or username used authenticate on email server        |
-| Password          | string  |         | :white_check_mark: | Password used authenticate on email server                         |
-| StartTLS          | boolean | false   |                    | Enable StartTLS connection if server supports                      |
-| TLSAcceptAllCerts | boolean | false   |                    | Accept insecure certificates with TLS connection                   |
+| Field             |  Type   | Default |     Obrigatory     | Information                                                                |
+| ----------------- | :-----: | ------- | :----------------: | -------------------------------------------------------------------------- |
+| ImapServer        | string  |         | :white_check_mark: | Address of imap server with port number ex: _imap.example.com:143_         |
+| Username          | string  |         | :white_check_mark: | Email address or username used authenticate on email server                |
+| Password          | string  |         | :white_check_mark: | Password used authenticate on email server                                 |
+| StartTLS          | boolean | false   |                    | Enable StartTLS connection if server supports                              |
+| TLSAcceptAllCerts | boolean | false   |                    | Accept insecure certificates with TLS connection                           |
+| DisableIdle       | boolean | false   |                    | Disable imap idle and check email after 1 minute. Used in case of problems |
 
 #### Mattermost
 

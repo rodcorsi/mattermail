@@ -7,6 +7,7 @@ import (
 const (
 	defaultStartTLS          = false
 	defaultTLSAcceptAllCerts = false
+	defaultDisableIdle       = false
 )
 
 // Email type with email settings
@@ -16,6 +17,7 @@ type Email struct {
 	Password          string
 	StartTLS          *bool `json:",omitempty"`
 	TLSAcceptAllCerts *bool `json:",omitempty"`
+	DisableIdle       *bool `json:",omitempty"`
 }
 
 // NewEmail creates new Email with default values
@@ -26,7 +28,7 @@ func NewEmail() *Email {
 	}
 	*email.StartTLS = defaultStartTLS
 	*email.TLSAcceptAllCerts = defaultTLSAcceptAllCerts
-
+	*email.DisableIdle = defaultDisableIdle
 	return email
 }
 
@@ -57,9 +59,12 @@ func (c *Email) Fix() {
 		x := defaultStartTLS
 		c.StartTLS = &x
 	}
-
 	if c.TLSAcceptAllCerts == nil {
 		x := defaultTLSAcceptAllCerts
 		c.TLSAcceptAllCerts = &x
+	}
+	if c.DisableIdle == nil {
+		x := defaultDisableIdle
+		c.DisableIdle = &x
 	}
 }

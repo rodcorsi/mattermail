@@ -278,14 +278,18 @@ func (m *MailProviderImap) checkConnection() error {
 		return errors.Wrap(err, "select mailbox on checkConnection")
 	}
 
-	idleClient := idle.NewClient(m.imapClient)
-	m.idle, err = idleClient.SupportIdle()
-	if err != nil {
+	if !*m.cfg.DisableIdle {
+		idleClient := idle.NewClient(m.imapClient)
+		m.idle, err = idleClient.SupportIdle()
+		if err != nil {
+			m.idle = false
+			m.log.Debug("MailProviderImap.CheckConnection: Error on check idle support:", err.Error())
+			m.log.Debug("MailProviderImap.CheckConnection: Idle disabled")
+		}
+	} else {
 		m.idle = false
-		m.log.Error("MailProviderImap.CheckConnection: Error on check idle support")
-		return errors.Wrap(err, "on check idle support")
+		m.log.Debug("MailProviderImap.CheckConnection: Idle disabled")
 	}
-
 	return nil
 }
 
