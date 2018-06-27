@@ -78,7 +78,8 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler) error {
 		return errors.Wrap(err, "GetNextUID")
 	} else {
 		if uidnext > next {
-			seqset.AddNum(next, uidnext)
+			m.log.Debug("MailProviderImap.CheckNewMessage: Add Range UID", uidnext, next)
+			seqset.AddRange(next, uidnext)
 		} else if uidnext < next {
 			// reset cache
 			m.cache.SaveNextUID(0, 0)
