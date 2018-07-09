@@ -31,7 +31,7 @@ func TestCreateMattermostPost(t *testing.T) {
 		}},
 	}
 
-	mP, err := createMattermostPost(msg, cfg, log, getChannelID)
+	mP, err := createMattermostPost(msg, cfg, log, getChannelID, "")
 
 	if err != nil {
 		t.Fatalf("error on create mattermostPost %v", err)
@@ -52,7 +52,7 @@ func TestCreateMattermostPost(t *testing.T) {
 	// Subject
 	*cfg.LinesToPreview = 10
 	msg.Subject = "[@user2] subject 2"
-	mP, err = createMattermostPost(msg, cfg, log, getChannelID)
+	mP, err = createMattermostPost(msg, cfg, log, getChannelID, "")
 	if err != nil {
 		t.Fatalf("error on create mattermostPost %v", err)
 	}
@@ -75,6 +75,7 @@ func TestCreateMattermostPost(t *testing.T) {
 
 	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channels: []string{"#channel1", "#channel2"}}}
 	mP, err = createMattermostPost(msg, cfg, log, getChannelID)
+
 	if err != nil {
 		t.Fatalf("error on create mattermostPost %v", err)
 	}
@@ -114,7 +115,8 @@ func TestMatterMail_PostNetMail(t *testing.T) {
 
 	mm := NewMatterMail(profile, NewLog("", false), nil, &mattermostMock{})
 
-	if err := mm.PostNetMail(gmailbuf); err != nil {
+
+	if err := mm.PostNetMail(msg, ""); err != nil {
 		t.Fatal("Error on PostNetMail err:", err.Error())
 	}
 }

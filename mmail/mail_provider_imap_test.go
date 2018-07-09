@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rodcorsi/mattermail/model"
 	imap "github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/backend"
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
 	"github.com/pkg/errors"
-	"github.com/rodcorsi/mattermail/model"
 )
 
 type testServer struct {
@@ -71,19 +71,24 @@ func TestCheckNewMessage(t *testing.T) {
 	config.Password = "password"
 	config.ImapServer = ts.addr
 
-	mP := NewMailProviderImap(config, NewLog("", debugImap), &uidCacheMem{}, debugImap)
+	var caches []UIDCache
+	caches = append(caches, &uidCacheMem{})
+
+	mP := NewMailProviderImap(config, NewLog("", debugImap), caches, debugImap)
 
 	defer mP.Terminate()
 
 	var count uint32
 
-	err := mP.CheckNewMessage(func(mailReader io.Reader) error {
-		if mailReader == nil {
+
+	err := mP.CheckNewMessage(func(msg *mail.Message, folder string) error {
+		if msg == nil {
+
 			return errors.New("Messsage nil")
 		}
 		atomic.AddUint32(&count, 1)
 		return nil
-	})
+	}, []string{})
 
 	if err != nil {
 		t.Fatal(err.Error())
@@ -102,11 +107,14 @@ func TestWaitNewMessage(t *testing.T) {
 	config.ImapServer = ts.addr
 	*config.StartTLS = true
 
-	mP := NewMailProviderImap(config, NewLog("", debugImap), &uidCacheMem{}, debugImap)
+	var caches []UIDCache
+	caches = append(caches, &uidCacheMem{})
+
+	mP := NewMailProviderImap(config, NewLog("", debugImap), caches, debugImap)
 
 	done := make(chan error, 1)
 	go func() {
-		done <- mP.WaitNewMessage(60)
+		done <- mP.WaitNewMessage(60, []string{})
 	}()
 
 	defer mP.Terminate()

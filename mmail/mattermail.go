@@ -1,7 +1,7 @@
 package mmail
 
 import (
-	"io"
+	"net/mail"
 	"time"
 	"unicode/utf8"
 
@@ -24,18 +24,19 @@ type MatterMail struct {
 	mailProvider MailProvider
 }
 
-// PostNetMail read net/mail.Message and post in Mattermost
-func (m *MatterMail) PostNetMail(mailReader io.Reader) error {
-	mMsg, err := ReadMailMessage(mailReader)
+// PostNetMail parse net/mail.Message and post in Mattermost
+func (m *MatterMail) PostNetMail(msg *mail.Message, folder string) error {
+	mMsg, err := ParseMailMessage(msg)
+
 	if err != nil {
 		return errors.Wrap(err, "parse mail message")
 	}
 
-	return m.PostMailMessage(mMsg)
+	return m.PostMailMessage(mMsg, folder)
 }
 
 // PostMailMessage MailMessage in Mattermost
-func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
+func (m *MatterMail) PostMailMessage(msg *MailMessage, folder string) error {
 	if err := m.mmProvider.Login(); err != nil {
 		return errors.Wrap(err, "login on Mattermost to post mail message")
 	}
@@ -48,7 +49,7 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 
 	m.log.Info("Post new message")
 
-	mP, err := createMattermostPost(msg, m.cfg, m.log, m.mmProvider.GetChannelID)
+	mP, err := createMattermostPost(msg, m.cfg, m.log, m.mmProvider.GetChannelID, folder)
 
 	if err != nil {
 		return errors.Wrap(err, "create mattermost post")
@@ -126,7 +127,7 @@ type mattermostPost struct {
 	attachments []*Attachment
 }
 
-func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getChannelID func(string) string) (*mattermostPost, error) {
+func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getChannelID func(string) string, folder string) (*mattermostPost, error) {
 	mP := &mattermostPost{}
 
 	// read only some lines of text
@@ -154,7 +155,7 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 		log.Info("Email has been cut because is larger than 4000 characters")
 	}
 
-	mP.channelMap = chooseChannel(cfg, msg, log, getChannelID)
+	mP.channelMap = chooseChannel(cfg, msg, log, getChannelID, folder)
 
 	if mP.channelMap == nil {
 		return nil, errors.New("Did not find any channel to post")
@@ -207,7 +208,7 @@ func validateChannelNames(channelNames []string, getChannelID func(string) strin
 	return channels
 }
 
-func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelID func(string) string) channelMap {
+func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelID func(string) string, folder string) channelMap {
 	var chMap channelMap
 
 	// Try to discovery the channel
@@ -222,16 +223,14 @@ func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelI
 	// check filters
 	if cfg.Filter != nil {
 		log.Debug("Did not find channel/user from Email Subject. Look for filter")
-		if chMap = validateChannelNames(cfg.Filter.GetChannels(msg.From, msg.Subject), getChannelID); chMap != nil {
+
+		if chMap = validateChannelNames([]string{cfg.Filter.GetChannel(msg.From, msg.Subject, folder)}, getChannelID); chMap != nil {
+
 			return chMap
 		}
 	}
 
 	// get default Channel config
 	log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channels)
-	if chMap = validateChannelNames(cfg.Channels, getChannelID); chMap != nil {
-		return chMap
-	}
-
-	return nil
+	return validateChannelNames(cfg.Channels, getChannelID)
 }

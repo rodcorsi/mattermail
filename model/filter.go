@@ -10,6 +10,8 @@ type Rule struct {
 	From     string
 	Subject  string
 	Channels []string
+  Folder  string
+
 }
 
 // Filter has an array of rules
@@ -33,8 +35,8 @@ func (r *Rule) Fix() {
 
 // Validate check if this rule is valid
 func (r *Rule) Validate() error {
-	if len(r.From) == 0 && len(r.Subject) == 0 {
-		return errors.New("Need to set From or Subject")
+	if len(r.From) == 0 && len(r.Subject) == 0 && len(r.Folder) == 0 {
+		return errors.New("Need to set From, Subject or Folder")
 	}
 
 	if len(r.Channels) == 0 {
@@ -48,6 +50,17 @@ func (r *Rule) Validate() error {
 	}
 
 	return nil
+}
+
+func (r *Rule) hasNonEmptyFolder() bool {
+	if len(r.Folder) != 0 {
+		return true
+	}
+	return false
+}
+
+func (r *Rule) getFolder() string {
+	return r.Folder
 }
 
 func (r *Rule) matchFrom(from string) bool {
@@ -66,10 +79,18 @@ func (r *Rule) matchSubject(subject string) bool {
 	return strings.Contains(subject, r.Subject)
 }
 
-// Match check if from and subject meets this rule
-func (r *Rule) Match(from, subject string) bool {
-	return r.matchFrom(from) && r.matchSubject(subject)
+func (r *Rule) matchFolder(folder string) bool {
+	if len(r.Folder) == 0 {
+		return true
+	}
+	return strings.Contains(folder, r.Folder)
 }
+
+// Match check if from, subject and folder meets this rule
+func (r *Rule) Match(from, subject, folder string) bool {
+	return r.matchFrom(from) && r.matchSubject(subject) && r.matchFolder(folder)
+}
+
 
 // GetChannels return the first channels with attempt the rules
 func (f *Filter) GetChannels(from, subject string) []string {
@@ -79,6 +100,17 @@ func (f *Filter) GetChannels(from, subject string) []string {
 		}
 	}
 	return []string{""}
+}
+
+// ListFolder return all folders defined in filter rules
+func (f *Filter) ListFolder() []string {
+	var list []string
+	for _, r := range *f {
+		if r.hasNonEmptyFolder() {
+			list = append(list, r.getFolder())
+		}
+	}
+	return dedupStrings(list)
 }
 
 // Validate check if all rules is valid

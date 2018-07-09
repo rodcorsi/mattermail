@@ -17,6 +17,7 @@ func (sc *serverCommand) execute() error {
 	if err != nil {
 		return fmt.Errorf("Error on read '%v' file, make sure if this file is has a valid configuration.\nExecute 'mattermail migrate -c %v' to migrate this file to new version if it is necessary, learn more at https://github.com/rodcorsi/mattermail/#migrate-configuration.\n\nerr:%v", sc.configFile, sc.configFile, err.Error())
 	}
+
 	fmt.Printf("Mattermail Server Version: %v\n", Version)
 	if err := mmail.Start(config); err != nil {
 		return err

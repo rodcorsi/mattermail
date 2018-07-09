@@ -15,11 +15,7 @@ func Execute(args []string) error {
 		return err
 	}
 
-	if err = cmd.execute(); err != nil {
-		return err
-	}
-
-	return nil
+	return cmd.execute()
 }
 
 func parseCommand(args []string) (cmd command, err error) {
