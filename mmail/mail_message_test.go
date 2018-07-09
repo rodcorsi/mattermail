@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net/mail"
 	"os"
 	"testing"
 )
 
-func TestParseMailMessage(t *testing.T) {
+func TestReadMailMessage(t *testing.T) {
 	email := `From: John Doe <jdoe@machine.example>
 To: Mary Smith <mary@example.net>
 Subject: Saying Hello
@@ -93,13 +92,61 @@ This is a message just to say hello.
 	}
 }
 
-func testMailMessage(r io.Reader, expected *MailMessage) error {
-	msg, err := mail.ReadMessage(r)
-	if err != nil {
-		return fmt.Errorf("Failed parsing email:%v", err)
+func TestReadMailMessageRFC2047(t *testing.T) {
+	email := `From: =?ISO-2022-JP?B?GyRCOzNFREJATzobKEI=?= <taro@example.com>
+To: Mary Smith <mary@example.net>
+Subject: Fwd: =?UTF-8?B?Q290YcOnw6NvIGRlIEZlcnJhbWVudGFz?=
+Date: Fri, 21 Nov 1997 09:55:06 -0600
+Message-ID: <1234@local.machine.example>
+
+`
+	expected := &MailMessage{
+		From:      "山田太郎 <taro@example.com>",
+		Subject:   "Fwd: Cotação de Ferramentas",
+		EmailType: EmailTypeText,
 	}
 
-	mm, err := ParseMailMessage(msg)
+	if err := testMailMessage(bytes.NewBuffer([]byte(email)), expected); err != nil {
+		t.Fatal("Error on plain/text:", err.Error())
+	}
+
+	email = `From: =?ISO-8859-1?Q?Keld_J=F8rn_Simonsen?= <keld@dkuug.dk>
+To: Mary Smith <mary@example.net>
+Subject: =?ISO-8859-2?B?dSB1bmRlcnN0YW5kIHRoZSBleGFtcGxlLg==?=
+Date: Fri, 21 Nov 1997 09:55:06 -0600
+Message-ID: <1234@local.machine.example>
+
+`
+	expected = &MailMessage{
+		From:      "Keld Jørn Simonsen <keld@dkuug.dk>",
+		Subject:   "u understand the example.",
+		EmailType: EmailTypeText,
+	}
+
+	if err := testMailMessage(bytes.NewBuffer([]byte(email)), expected); err != nil {
+		t.Fatal("Error on plain/text:", err.Error())
+	}
+
+	email = `From: =?US-ASCII?Q?Keith_Moore?= <moore@cs.utk.edu>
+To: Mary Smith <mary@example.net>
+Subject: =?ISO-8859-1?Q?Patrik_F=E4ltstr=F6m?= <paf@nada.kth.se>
+Date: Fri, 21 Nov 1997 09:55:06 -0600
+Message-ID: <1234@local.machine.example>
+
+`
+	expected = &MailMessage{
+		From:      "Keith Moore <moore@cs.utk.edu>",
+		Subject:   "Patrik Fältström <paf@nada.kth.se>",
+		EmailType: EmailTypeText,
+	}
+
+	if err := testMailMessage(bytes.NewBuffer([]byte(email)), expected); err != nil {
+		t.Fatal("Error on plain/text:", err.Error())
+	}
+}
+
+func testMailMessage(r io.Reader, expected *MailMessage) error {
+	mm, err := ReadMailMessage(r)
 	if err != nil {
 		return fmt.Errorf("Failed to parsing msg:%v", err)
 	}

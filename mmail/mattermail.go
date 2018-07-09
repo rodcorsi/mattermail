@@ -1,7 +1,7 @@
 package mmail
 
 import (
-	"net/mail"
+	"io"
 	"time"
 	"unicode/utf8"
 
@@ -24,9 +24,11 @@ type MatterMail struct {
 	mailProvider MailProvider
 }
 
+
 // PostNetMail parse net/mail.Message and post in Mattermost
 func (m *MatterMail) PostNetMail(msg *mail.Message, folder string) error {
 	mMsg, err := ParseMailMessage(msg)
+
 	if err != nil {
 		return errors.Wrap(err, "parse mail message")
 	}
@@ -74,6 +76,8 @@ func (m *MatterMail) Listen() {
 	for {
 		if err := m.checkAndWait(); err != nil {
 			m.log.Debug(err.Error())
+			m.log.Info("Terminate Mail Provider after error")
+			m.mailProvider.Terminate()
 			m.log.Infof("Try again in %vs", tryAgainTime)
 			time.Sleep(time.Second * tryAgainTime)
 		} else {
@@ -84,6 +88,7 @@ func (m *MatterMail) Listen() {
 
 func (m *MatterMail) checkAndWait() error {
 
+
 	var folders []string
 	if m.cfg.Filter != nil {
 		folders = m.cfg.Filter.ListFolder()
@@ -91,13 +96,16 @@ func (m *MatterMail) checkAndWait() error {
 
 	if err := m.mailProvider.CheckNewMessage(m.PostNetMail, folders); err != nil {
 		m.log.Error("MatterMail.checkAndWait Error on check new messsage:", err.Error())
+
 		return errors.Wrap(err, "check new message")
 	}
 
 	time.Sleep(time.Second * 2)
 
+
 	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout, folders); err != nil {
 		m.log.Error("MatterMail.checkAndWait Error on wait new message:", err.Error())
+
 		return errors.Wrap(err, "wait new message")
 	}
 	return nil
@@ -218,7 +226,9 @@ func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelI
 	// check filters
 	if cfg.Filter != nil {
 		log.Debug("Did not find channel/user from Email Subject. Look for filter")
+
 		if chMap = validateChannelNames([]string{cfg.Filter.GetChannel(msg.From, msg.Subject, folder)}, getChannelID); chMap != nil {
+
 			return chMap
 		}
 	}

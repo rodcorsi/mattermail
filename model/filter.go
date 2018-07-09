@@ -7,10 +7,11 @@ import (
 
 // Rule for filter
 type Rule struct {
-	From    string
-	Subject string
-	Channel string
-	Folder  string
+	From     string
+	Subject  string
+	Channels []string
+  Folder  string
+
 }
 
 // Filter has an array of rules
@@ -20,10 +21,15 @@ type Filter []*Rule
 func (r *Rule) Fix() {
 	r.From = strings.TrimSpace(strings.ToLower(r.From))
 	r.Subject = strings.TrimSpace(strings.ToLower(r.Subject))
-	r.Channel = strings.TrimSpace(strings.ToLower(r.Channel))
 
-	if !strings.HasPrefix(r.Channel, "#") && !strings.HasPrefix(r.Channel, "@") {
-		r.Channel = "#" + r.Channel
+	for i, channel := range r.Channels {
+		channel = strings.TrimSpace(channel)
+		channel = strings.ToLower(channel)
+
+		if !strings.HasPrefix(channel, "#") && !strings.HasPrefix(channel, "@") {
+			channel = "#" + channel
+		}
+		r.Channels[i] = channel
 	}
 }
 
@@ -33,13 +39,16 @@ func (r *Rule) Validate() error {
 		return errors.New("Need to set From, Subject or Folder")
 	}
 
-	if len(r.Channel) == 0 {
-		return errors.New("Need to set a Channel")
+	if len(r.Channels) == 0 {
+		return errors.New("Need to set at least one channel or user for destination")
 	}
 
-	if !strings.HasPrefix(r.Channel, "#") && !strings.HasPrefix(r.Channel, "@") {
-		return errors.New("Need to set a #channel or @user")
+	for _, channel := range r.Channels {
+		if channel != "" && !validateChannel(channel) {
+			return errors.New("Need to set #channel or @user")
+		}
 	}
+
 	return nil
 }
 
@@ -82,14 +91,15 @@ func (r *Rule) Match(from, subject, folder string) bool {
 	return r.matchFrom(from) && r.matchSubject(subject) && r.matchFolder(folder)
 }
 
-// GetChannel return the first channel with attempt the rules
-func (f *Filter) GetChannel(from, subject, folder string) string {
+
+// GetChannels return the first channels with attempt the rules
+func (f *Filter) GetChannels(from, subject string) []string {
 	for _, r := range *f {
-		if r.Match(from, subject, folder) {
-			return r.Channel
+		if r.Match(from, subject) {
+			return r.Channels
 		}
 	}
-	return ""
+	return []string{""}
 }
 
 // ListFolder return all folders defined in filter rules

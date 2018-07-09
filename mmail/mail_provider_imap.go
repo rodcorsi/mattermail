@@ -2,7 +2,6 @@ package mmail
 
 import (
 	"crypto/tls"
-	"net/mail"
 	"strings"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 // MailProviderImap implements MailProvider using imap
 type MailProviderImap struct {
 	imapClient *client.Client
-	idleClient *idle.Client
 	cfg        *model.Email
 	log        Logger
 	caches     []UIDCache
@@ -64,11 +62,13 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 
 		cacheid := 0
 
+
 		// get first matching cache file
 		for id, cache := range m.caches {
 			if cache.GetMailBox() == folder {
 				cacheid = id
 			}
+
 		}
 		next, err := m.caches[cacheid].GetNextUID(validity)
 
@@ -84,6 +84,7 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 				m.log.Debug("MailProviderImap.CheckNewMessage: Error UIDSearch")
 				return errors.Wrapf(err, "imap UIDSearch %v", criteria)
 			}
+
 
 			if len(uid) == 0 {
 				m.log.Debug("MailProviderImap.CheckNewMessage: No new messages for MailBox ", folder)
@@ -134,6 +135,7 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 				m.log.Error("MailProviderImap.CheckNewMessage: Error handler")
 				return errors.Wrap(err, "execute MailHandler")
 			}
+
 		}
 
 		// Check command completion status
@@ -175,9 +177,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int, folders []string) error {
 		}
 	}
 
-	if m.idleClient == nil {
-		m.idleClient = idle.NewClient(m.imapClient)
-	}
+	idleClient := idle.NewClient(m.imapClient)
 
 	// Create a channel to receive mailbox updates
 	statuses := make(chan *imap.MailboxStatus)
@@ -186,7 +186,7 @@ func (m *MailProviderImap) WaitNewMessage(timeout int, folders []string) error {
 	stop := make(chan struct{})
 	done := make(chan error, 1)
 	go func() {
-		done <- m.idleClient.Idle(stop)
+		done <- idleClient.Idle(stop)
 	}()
 
 	reset := time.After(time.Second * time.Duration(timeout))
@@ -239,7 +239,9 @@ func (m *MailProviderImap) selectMailBox(mailbox string) (*imap.MailboxStatus, e
 
 // checkConnection if is connected return nil or try to connect
 func (m *MailProviderImap) checkConnection() error {
+
 	var err error
+
 	if m.imapClient != nil {
 		// ConnectingState 0
 		// NotAuthenticatedState 1
@@ -250,6 +252,7 @@ func (m *MailProviderImap) checkConnection() error {
 		cliState := m.imapClient.State()
 		if cliState == imap.AuthenticatedState || cliState == imap.SelectedState {
 			m.log.Debug("MailProviderImap.CheckConnection: Client state", cliState)
+
 			m.log.Debug("MailProviderImap.CheckConnection: Connection state", m.imapClient.State())
 			m.log.Debug("MailProviderImap.CheckConnection: IsTLS", m.imapClient.IsTLS())
 			if err = m.imapClient.Check(); err != nil {
@@ -315,6 +318,9 @@ func (m *MailProviderImap) Connect() error {
 			var tconfig tls.Config
 			if *m.cfg.TLSAcceptAllCerts {
 				tconfig.InsecureSkipVerify = true
+			} else {
+				addr := strings.Split(m.cfg.ImapServer, ":")
+				tconfig.ServerName = addr[0]
 			}
 			err = m.imapClient.StartTLS(&tconfig)
 			if err != nil {
@@ -331,19 +337,31 @@ func (m *MailProviderImap) Connect() error {
 		return errors.Wrapf(err, "unable to login username:'%v'", m.cfg.Username)
 	}
 
-	idleClient := idle.NewClient(m.imapClient)
-	m.idle, err = idleClient.SupportIdle()
 
-	if err != nil {
+	if _, err = m.selectMailBox(); err != nil {
+		return errors.Wrap(err, "select mailbox on checkConnection")
+	}
+
+	if !*m.cfg.DisableIdle {
+		idleClient := idle.NewClient(m.imapClient)
+		m.idle, err = idleClient.SupportIdle()
+		if err != nil {
+			m.idle = false
+			m.log.Debug("MailProviderImap.CheckConnection: Error on check idle support:", err.Error())
+			m.log.Debug("MailProviderImap.CheckConnection: Idle disabled")
+		}
+	} else {
 		m.idle = false
-		m.log.Error("MailProviderImap.CheckConnection: Error on check idle support")
-		return errors.Wrap(err, "on check idle support")
+		m.log.Debug("MailProviderImap.CheckConnection: Idle disabled")
 	}
 	return nil
 }
 
 // Terminate imap connection
 func (m *MailProviderImap) Terminate() error {
+	defer func() {
+		m.imapClient = nil
+	}()
 	if m.imapClient != nil {
 		m.log.Info("MailProviderImap.Terminate")
 		if err := m.imapClient.Logout(); err != nil {

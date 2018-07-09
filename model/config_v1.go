@@ -6,6 +6,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+// RuleV1 for filter
+type RuleV1 struct {
+	From    string
+	Subject string
+	Channel string
+}
+
+// FilterV1 has an array of rules
+type FilterV1 []*RuleV1
+
 // ConfigV1 depracated
 type ConfigV1 []struct {
 	Name              string
@@ -20,7 +30,7 @@ type ConfigV1 []struct {
 	LinesToPreview    int
 	NoRedirectChannel bool
 	NoAttachment      bool
-	Filter            *Filter
+	Filter            *FilterV1
 	ImapServer        string
 	StartTLS          bool
 	TLSAcceptAllCerts bool

@@ -1,7 +1,6 @@
 package mmail
 
 import (
-	"net/mail"
 	"os"
 	"testing"
 
@@ -74,10 +73,15 @@ func TestCreateMattermostPost(t *testing.T) {
 	msg.Subject = "Subject"
 	msg.EmailType = EmailTypeHTML
 
-	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channel: "#channel2"}}
-	mP, err = createMattermostPost(msg, cfg, log, getChannelID, "")
+	cfg.Filter = &model.Filter{&model.Rule{From: "jdoe@example.com", Channels: []string{"#channel1", "#channel2"}}}
+	mP, err = createMattermostPost(msg, cfg, log, getChannelID)
+
 	if err != nil {
 		t.Fatalf("error on create mattermostPost %v", err)
+	}
+
+	if _, ok := mP.channelMap["#channel1"]; !ok {
+		t.Fatalf("expected #channel1 result:'%v'", mP.channelMap)
 	}
 
 	if _, ok := mP.channelMap["#channel2"]; !ok {
@@ -106,15 +110,11 @@ func TestMatterMail_PostNetMail(t *testing.T) {
 		t.Fatal("Error on open gmail.eml:", err)
 	}
 
-	msg, err := mail.ReadMessage(gmailbuf)
-	if err != nil {
-		t.Fatalf("Failed parsing email:%v", err)
-	}
-
 	profile := model.NewProfile()
 	profile.Channels = []string{"#town-square"}
 
 	mm := NewMatterMail(profile, NewLog("", false), nil, &mattermostMock{})
+
 
 	if err := mm.PostNetMail(msg, ""); err != nil {
 		t.Fatal("Error on PostNetMail err:", err.Error())

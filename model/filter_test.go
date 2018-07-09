@@ -20,7 +20,7 @@ func TestRule_Validate(t *testing.T) {
 	rule.Subject = "subject"
 	valid()
 
-	rule.Channel = "#hey"
+	rule.Channels = []string{"#hey"}
 	if err := rule.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestRule_Validate(t *testing.T) {
 func TestRule_Match(t *testing.T) {
 	rule := &Rule{}
 
-	rule.Channel = "#test"
+	rule.Channels = []string{"#test"}
 	rule.From = "test@test.com"
 
 	if rule.Match("", "", "") {
@@ -116,9 +116,9 @@ func TestRule_Match(t *testing.T) {
 func TestFilter_Fix(t *testing.T) {
 	filter := &Filter{
 		&Rule{
-			Channel: "  Channel ",
-			Subject: " Subject  ",
-			From:    " Test@test.com ",
+			Channels: []string{"  Channel "},
+			Subject:  " Subject  ",
+			From:     " Test@test.com ",
 		},
 	}
 
@@ -126,8 +126,8 @@ func TestFilter_Fix(t *testing.T) {
 
 	rule := (*filter)[0]
 
-	if rule.Channel != "#channel" {
-		t.Fatal("Expected Channel: #channel result:", rule.Channel)
+	if rule.Channels[0] != "#channel" {
+		t.Fatal("Expected Channel: #channel result:", rule.Channels)
 	}
 
 	if rule.Subject != "subject" {
@@ -152,7 +152,7 @@ func TestFilter_Validate(t *testing.T) {
 		t.Fatal("Expected error not nil for filter with invalid rule")
 	}
 
-	*filter = append(Filter{}, &Rule{Subject: "X", Channel: "#channel"})
+	*filter = append(Filter{}, &Rule{Subject: "X", Channels: []string{"#channel"}})
 	if err := filter.Validate(); err != nil {
 		t.Fatal("Expected error nil for valid filter err:", err.Error())
 	}

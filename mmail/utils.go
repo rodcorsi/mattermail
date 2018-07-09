@@ -1,35 +1,13 @@
 package mmail
 
 import (
-	"log"
-	"mime"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/paulrosania/go-charset/charset"
 	_ "github.com/paulrosania/go-charset/data" //initiate go-charset data
 )
-
-// NonASCII Decode non ASCII header string RFC 1342
-func NonASCII(encoded string) string {
-
-	regexRFC1342, _ := regexp.Compile(`=\?.*?\?=`)
-	dec := new(mime.WordDecoder)
-	dec.CharsetReader = charset.NewReader
-
-	result := regexRFC1342.ReplaceAllStringFunc(encoded, func(encoded string) string {
-		decoded, err := dec.Decode(encoded)
-		if err != nil {
-			log.Println("Error decode NonASCII", encoded, err)
-			return encoded
-		}
-		return decoded
-	})
-
-	return result
-}
 
 var channelRegex = regexp.MustCompile(`[#@][A-Za-z0-9.\-_]+`)
 var bracketsRegex = regexp.MustCompile(`\[[^\]]*\]`)

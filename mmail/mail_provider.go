@@ -1,6 +1,6 @@
 package mmail
 
-import "net/mail"
+import "io"
 
 // MailHandler function called to handle mail message
 type MailHandler func(msg *mail.Message, folder string) error

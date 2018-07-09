@@ -118,13 +118,22 @@ func MigrateFromV1(v1 ConfigV1) *Config {
 			Password: c.MattermostPass,
 		}
 
+		// Filter
+		filter := &Filter{}
+		for _, r := range *c.Filter {
+			*filter = append(*filter, &Rule{
+				From:     r.From,
+				Subject:  r.Subject,
+				Channels: []string{r.Channel},
+			})
+		}
 		// Profile
 		profile := &Profile{
 			Name:       c.Name,
 			Channels:   []string{c.Channel},
 			Email:      email,
 			Mattermost: mattermost,
-			Filter:     c.Filter,
+			Filter:     filter,
 		}
 
 		mailtemplate := strings.Replace(c.MailTemplate, "%v", "{{.From}}", 1)

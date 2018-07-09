@@ -2,9 +2,9 @@ package mmail
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net"
-	"net/mail"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -80,8 +80,10 @@ func TestCheckNewMessage(t *testing.T) {
 
 	var count uint32
 
+
 	err := mP.CheckNewMessage(func(msg *mail.Message, folder string) error {
 		if msg == nil {
+
 			return errors.New("Messsage nil")
 		}
 		atomic.AddUint32(&count, 1)
