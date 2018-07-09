@@ -10,8 +10,7 @@ type Rule struct {
 	From     string
 	Subject  string
 	Channels []string
-  Folder  string
-
+	Folder   string
 }
 
 // Filter has an array of rules
@@ -91,11 +90,10 @@ func (r *Rule) Match(from, subject, folder string) bool {
 	return r.matchFrom(from) && r.matchSubject(subject) && r.matchFolder(folder)
 }
 
-
 // GetChannels return the first channels with attempt the rules
-func (f *Filter) GetChannels(from, subject string) []string {
+func (f *Filter) GetChannels(from, subject, folder string) []string {
 	for _, r := range *f {
-		if r.Match(from, subject) {
+		if r.Match(from, subject, folder) {
 			return r.Channels
 		}
 	}
