@@ -1,7 +1,7 @@
 package mmail
 
 import (
-	"net/mail"
+	"io"
 	"time"
 	"unicode/utf8"
 
@@ -25,8 +25,8 @@ type MatterMail struct {
 }
 
 // PostNetMail parse net/mail.Message and post in Mattermost
-func (m *MatterMail) PostNetMail(msg *mail.Message, folder string) error {
-	mMsg, err := ParseMailMessage(msg)
+func (m *MatterMail) PostNetMail(mailReader io.Reader, folder string) error {
+	mMsg, err := ReadMailMessage(mailReader)
 
 	if err != nil {
 		return errors.Wrap(err, "parse mail message")
@@ -224,7 +224,7 @@ func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelI
 	if cfg.Filter != nil {
 		log.Debug("Did not find channel/user from Email Subject. Look for filter")
 
-		if chMap = validateChannelNames([]string{cfg.Filter.GetChannel(msg.From, msg.Subject, folder)}, getChannelID); chMap != nil {
+		if chMap = validateChannelNames(cfg.Filter.GetChannels(msg.From, msg.Subject, folder), getChannelID); chMap != nil {
 
 			return chMap
 		}

@@ -83,7 +83,7 @@ func (u *UIDCacheFile) SaveNextUID(uidvalidity, uid uint32) error {
 	return ioutil.WriteFile(u.filename, b, 0640)
 }
 
-// Get MailBox returns mailbox for cachefile
+// GetMailBox returns mailbox for cachefile
 func (u *UIDCacheFile) GetMailBox() string {
 	return u.mailbox
 }

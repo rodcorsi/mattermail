@@ -2,7 +2,6 @@ package mmail
 
 import (
 	"crypto/tls"
-	"net/mail"
 	"strings"
 	"time"
 
@@ -124,13 +123,7 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 				continue
 			}
 
-			msg, err := mail.ReadMessage(r)
-			if err != nil {
-				m.log.Error("MailProviderImap.CheckNewMessage: Error on parse imap/message to mail/message")
-				return errors.Wrap(err, "parse imap/message to mail/message")
-			}
-
-			if err := handler(msg, folder); err != nil {
+			if err := handler(r, folder); err != nil {
 				m.log.Error("MailProviderImap.CheckNewMessage: Error handler")
 				return errors.Wrap(err, "execute MailHandler")
 			}
@@ -280,6 +273,7 @@ func (m *MailProviderImap) checkConnection() error {
 	return nil
 }
 
+// Connect opens an imap connection to MailProviderImap
 func (m *MailProviderImap) Connect() error {
 
 	var err error
@@ -335,7 +329,7 @@ func (m *MailProviderImap) Connect() error {
 		return errors.Wrapf(err, "unable to login username:'%v'", m.cfg.Username)
 	}
 
-	if _, err = m.selectMailBox(); err != nil {
+	if _, err = m.selectMailBox("INBOX"); err != nil {
 		return errors.Wrap(err, "select mailbox on checkConnection")
 	}
 
@@ -373,7 +367,6 @@ func (m *MailProviderImap) Terminate() error {
 		}
 		// clean up clients
 		m.imapClient = nil
-		m.idleClient = nil
 	}
 
 	return nil

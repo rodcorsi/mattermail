@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rodcorsi/mattermail/model"
 	imap "github.com/emersion/go-imap"
 	idle "github.com/emersion/go-imap-idle"
 	"github.com/emersion/go-imap/backend"
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
 	"github.com/pkg/errors"
+	"github.com/rodcorsi/mattermail/model"
 )
 
 type testServer struct {
@@ -80,9 +80,8 @@ func TestCheckNewMessage(t *testing.T) {
 
 	var count uint32
 
-
-	err := mP.CheckNewMessage(func(msg *mail.Message, folder string) error {
-		if msg == nil {
+	err := mP.CheckNewMessage(func(mailReader io.Reader, folder string) error {
+		if mailReader == nil {
 
 			return errors.New("Messsage nil")
 		}

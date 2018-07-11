@@ -3,7 +3,7 @@ package mmail
 import "io"
 
 // MailHandler function called to handle mail message
-type MailHandler func(msg *mail.Message, folder string) error
+type MailHandler func(mailReader io.Reader, folder string) error
 
 // MailProvider interface to abstract email connection
 type MailProvider interface {
