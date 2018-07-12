@@ -115,6 +115,7 @@ func TestMatterMail_PostNetMail(t *testing.T) {
 
 	mm := NewMatterMail(profile, NewLog("", false), nil, &mattermostMock{})
 
+
 	if err := mm.PostNetMail(gmailbuf, ""); err != nil {
 		t.Fatal("Error on PostNetMail err:", err.Error())
 	}

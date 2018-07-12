@@ -106,6 +106,18 @@ func (f *Filter) ListFolder() []string {
 	for _, r := range *f {
 		if r.hasNonEmptyFolder() {
 			list = append(list, r.getFolder())
+
+		}
+	}
+	return dedupStrings(list)
+}
+
+// ListFolder return all folders defined in filter rules
+func (f *Filter) ListFolder() []string {
+	var list []string
+	for _, r := range *f {
+		if r.hasNonEmptyFolder() {
+			list = append(list, r.getFolder())
 		}
 	}
 	return dedupStrings(list)

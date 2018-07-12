@@ -70,7 +70,7 @@ Location where the cache is stored, default value is `./data/`
 
 You can set multiple profiles using different names
 
-<<<<<<< HEAD
+
 | Field             |  Type   | Default |     Obrigatory     | Information                                                                                               |
 | ----------------- | :-----: | ------- | :----------------: | --------------------------------------------------------------------------------------------------------- |
 | Name              | string  |         | :white_check_mark: | Name of profile, used to log                                                                              |
@@ -83,20 +83,7 @@ You can set multiple profiles using different names
 | Disabled          | boolean | false   |                    | Disable this profile                                                                                      |
 | RedirectBySubject | boolean | true    |                    | Inform if redirect email by subject [(details)](https://github.com/rodcorsi/mattermail#redirectbysubject) |
 | Filter            | object  |         |                    | Filter used to redirect email [(details)](https://github.com/rodcorsi/mattermail#filter)                  |
-=======
-| Field             | Type    | Default | Obrigatory         | Information                                                                                              |
-|-------------------|:-------:|---------|:------------------:|----------------------------------------------------------------------------------------------------------|
-| Name              | string  |         | :white_check_mark: | Name of profile, used to log                                                                             |
-| Channels          | array   |         | :white_check_mark: | List of channels where the email will be posted. You can use `#channel` or `@username`                   |
-| Email             | object  |         | :white_check_mark: | Configuration of Email [(details)](https://github.com/rodcorsi/mattermail#email)                         |
-| Mattermost        | object  |         | :white_check_mark: | Configuration of Mattermost [(details)](https://github.com/rodcorsi/mattermail#mattermost)               |
-| MailTemplate      | string  |         |                    | Template used to format message to post [(details)](https://github.com/rodcorsi/mattermail#mailtemplate) |
-| LinesToPreview    | int     | 10      |                    | Number of email lines that will be posted                                                                |
-| Attachment        | boolean | true    |                    | Inform if attachments will be posted in Mattermost                                                       |
-| Disabled          | boolean | false   |                    | Disable this profile                                                                                     |
-| RedirectBySubject | boolean | true    |                    | Inform if redirect email by subject [(details)](https://github.com/rodcorsi/mattermail#redirectbysubject)|
-| Filter            | object  |         |                    | Filter used to redirect email [(details)](https://github.com/rodcorsi/mattermail#filter)                 |
->>>>>>> b766d77... fixed imports to original repo
+
 
 #### Email
 
@@ -115,7 +102,6 @@ Email configuration, used to access IMAP server
 
 Mattermost configuration
 
-<<<<<<< HEAD
 | Field    |  Type   | Default |     Obrigatory     | Information                                                                                                                |
 | -------- | :-----: | ------- | :----------------: | -------------------------------------------------------------------------------------------------------------------------- |
 | Server   | string  |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _<https://mattermost.example.com:8065>_ |
@@ -123,15 +109,6 @@ Mattermost configuration
 | User     | string  |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                              |
 | Password | string  |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                          |
 | UseAPIv3 | boolean | false   |                    | Set to use Mattermost Api V3                                                                                               |
-=======
-| Field     | Type   | Default | Obrigatory         | Information                                                                                                                |
-|-----------|:------:|---------|:------------------:|----------------------------------------------------------------------------------------------------------------------------|
-| Server    | string |         | :white_check_mark: | Address of mattermost server. Please inform protocol and port if its necessary ex: _<https://mattermost.example.com:8065>_ |
-| Team      | string |         | :white_check_mark: | Team name. You can find teams name by [(URL)](https://github.com/rodcorsi/mattermail#teamchannel)                          |
-| User      | string |         | :white_check_mark: | User used to authenticate on Mattermos server                                                                              |
-| Password  | string |         | :white_check_mark: | Password used to authenticate on Mattermos server                                                                          |
-| UseAPIv3  | string | true    |                    | Set to use Mattermost Api V3                                                                                               |
->>>>>>> b766d77... fixed imports to original repo
 
 #### MailTemplate
 
@@ -183,7 +160,6 @@ This option is used to redirect email following the rules.
 
     /* if from contains '@companyb.com' redirect to #companyb and @john */
     {"From":"@companyb.com", "Channels": ["#companyb", "@john"]} /**/
-
 ]
 ```
 

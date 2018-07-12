@@ -80,9 +80,9 @@ func TestCheckNewMessage(t *testing.T) {
 
 	var count uint32
 
+
 	err := mP.CheckNewMessage(func(mailReader io.Reader, folder string) error {
 		if mailReader == nil {
-
 			return errors.New("Messsage nil")
 		}
 		atomic.AddUint32(&count, 1)

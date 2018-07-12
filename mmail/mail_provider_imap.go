@@ -48,7 +48,6 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 	folders = append(folders, MailBox)
 
 	for _, folder := range folders {
-
 		mbox, err := m.selectMailBox(folder)
 		m.log.Debug("MailProviderImap.CheckNewMessage: select MailBox: ", folder)
 
@@ -67,7 +66,6 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 			if cache.GetMailBox() == folder {
 				cacheid = id
 			}
-
 		}
 		next, err := m.caches[cacheid].GetNextUID(validity)
 
@@ -123,11 +121,16 @@ func (m *MailProviderImap) CheckNewMessage(handler MailHandler, folders []string
 				continue
 			}
 
-			if err := handler(r, folder); err != nil {
+			msg, err := mail.ReadMessage(r)
+			if err != nil {
+				m.log.Error("MailProviderImap.CheckNewMessage: Error on parse imap/message to mail/message")
+				return errors.Wrap(err, "parse imap/message to mail/message")
+			}
+
+			if err := handler(msg, folder); err != nil {
 				m.log.Error("MailProviderImap.CheckNewMessage: Error handler")
 				return errors.Wrap(err, "execute MailHandler")
 			}
-
 		}
 
 		// Check command completion status
@@ -162,6 +165,13 @@ func (m *MailProviderImap) WaitNewMessage(timeout int, folders []string) error {
 
 	// add INBOX
 	folders = append(folders, MailBox)
+
+
+	for _, folder := range folders {
+		if _, err := m.selectMailBox(folder); err != nil {
+			return errors.Wrap(err, "select mailbox")
+		}
+	}
 
 	for _, folder := range folders {
 		if _, err := m.selectMailBox(folder); err != nil {
@@ -329,7 +339,8 @@ func (m *MailProviderImap) Connect() error {
 		return errors.Wrapf(err, "unable to login username:'%v'", m.cfg.Username)
 	}
 
-	if _, err = m.selectMailBox("INBOX"); err != nil {
+
+	if _, err = m.selectMailBox(MailBox); err != nil {
 		return errors.Wrap(err, "select mailbox on checkConnection")
 	}
 

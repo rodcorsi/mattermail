@@ -19,6 +19,7 @@ func (sc *serverCommand) execute() error {
 	}
 
 	fmt.Printf("Mattermail Server Version: %v\n", Version)
+
 	return mmail.Start(config)
 }
 
