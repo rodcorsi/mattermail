@@ -70,6 +70,7 @@ Location where the cache is stored, default value is `./data/`
 
 You can set multiple profiles using different names
 
+
 | Field             |  Type   | Default |     Obrigatory     | Information                                                                                               |
 | ----------------- | :-----: | ------- | :----------------: | --------------------------------------------------------------------------------------------------------- |
 | Name              | string  |         | :white_check_mark: | Name of profile, used to log                                                                              |
@@ -82,6 +83,7 @@ You can set multiple profiles using different names
 | Disabled          | boolean | false   |                    | Disable this profile                                                                                      |
 | RedirectBySubject | boolean | true    |                    | Inform if redirect email by subject [(details)](https://github.com/rodcorsi/mattermail#redirectbysubject) |
 | Filter            | object  |         |                    | Filter used to redirect email [(details)](https://github.com/rodcorsi/mattermail#filter)                  |
+
 
 #### Email
 
@@ -143,6 +145,18 @@ This option is used to redirect email following the rules.
 
     /* if from contains 'test@gmail.com' and subject contains 'to me' redirect to @test2*/
     {"From":"test@gmail.com", "Subject":"To Me", "Channels": ["@test2"]},
+
+    /* if from contains '@companyb.com' redirect to #companyb */
+    {"From":"@companyb.com", "Channel":"#companyb"} /**/
+
+    /* if email belongs to the specific folder 'somefolder' redirect to #somechannel
+    {"Folder":"somefolder", "Channel":"#somechannel"} /**/
+
+    /* if email belongs to the specific folder 'somefolder' and Subject contains 'Test' redirect to #somechannel
+    {"Folder":"anotherfolder", "Subject": "Test" ,"Channel":"#somechannel"} /**/
+
+    /* if email belongs to the specific folder 'somefolder' and from contains 'bla@blah.blah' redirect to #somechannel
+    {"Folder":"anotherfolder", "From": "blah@blah.blah" ,"Channel":"#somechannel"} /**/
 
     /* if from contains '@companyb.com' redirect to #companyb and @john */
     {"From":"@companyb.com", "Channels": ["#companyb", "@john"]} /**/

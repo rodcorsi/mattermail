@@ -24,18 +24,19 @@ type MatterMail struct {
 	mailProvider MailProvider
 }
 
-// PostNetMail read net/mail.Message and post in Mattermost
-func (m *MatterMail) PostNetMail(mailReader io.Reader) error {
+// PostNetMail parse net/mail.Message and post in Mattermost
+
+func (m *MatterMail) PostNetMail(mailReader io.Reader, folder string) error {
 	mMsg, err := ReadMailMessage(mailReader)
 	if err != nil {
 		return errors.Wrap(err, "parse mail message")
 	}
 
-	return m.PostMailMessage(mMsg)
+	return m.PostMailMessage(mMsg, folder)
 }
 
 // PostMailMessage MailMessage in Mattermost
-func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
+func (m *MatterMail) PostMailMessage(msg *MailMessage, folder string) error {
 	if err := m.mmProvider.Login(); err != nil {
 		return errors.Wrap(err, "login on Mattermost to post mail message")
 	}
@@ -48,7 +49,7 @@ func (m *MatterMail) PostMailMessage(msg *MailMessage) error {
 
 	m.log.Info("Post new message")
 
-	mP, err := createMattermostPost(msg, m.cfg, m.log, m.mmProvider.GetChannelID)
+	mP, err := createMattermostPost(msg, m.cfg, m.log, m.mmProvider.GetChannelID, folder)
 
 	if err != nil {
 		return errors.Wrap(err, "create mattermost post")
@@ -85,16 +86,22 @@ func (m *MatterMail) Listen() {
 }
 
 func (m *MatterMail) checkAndWait() error {
-	if err := m.mailProvider.CheckNewMessage(m.PostNetMail); err != nil {
-		m.log.Error("MatterMail.InitMatterMail Error on check new messsage:", err.Error())
+
+	var folders []string
+	if m.cfg.Filter != nil {
+		folders = m.cfg.Filter.ListFolder()
+	}
+
+	if err := m.mailProvider.CheckNewMessage(m.PostNetMail, folders); err != nil {
+		m.log.Error("MatterMail.checkAndWait Error on check new messsage:", err.Error())
 		m.mailProvider.Terminate()
 		return errors.Wrap(err, "check new message")
 	}
 
 	time.Sleep(time.Second * 2)
 
-	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout); err != nil {
-		m.log.Error("MatterMail.InitMatterMail Error on wait new message:", err.Error())
+	if err := m.mailProvider.WaitNewMessage(waitMessageTimeout, folders); err != nil {
+		m.log.Error("MatterMail.checkAndWait Error on wait new message:", err.Error())
 		m.mailProvider.Terminate()
 		return errors.Wrap(err, "wait new message")
 	}
@@ -120,7 +127,7 @@ type mattermostPost struct {
 	attachments []*Attachment
 }
 
-func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getChannelID func(string) string) (*mattermostPost, error) {
+func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getChannelID func(string) string, folder string) (*mattermostPost, error) {
 	mP := &mattermostPost{}
 
 	// read only some lines of text
@@ -148,7 +155,7 @@ func createMattermostPost(msg *MailMessage, cfg *model.Profile, log Logger, getC
 		log.Info("Email has been cut because is larger than 4000 characters")
 	}
 
-	mP.channelMap = chooseChannel(cfg, msg, log, getChannelID)
+	mP.channelMap = chooseChannel(cfg, msg, log, getChannelID, folder)
 
 	if mP.channelMap == nil {
 		return nil, errors.New("Did not find any channel to post")
@@ -201,7 +208,7 @@ func validateChannelNames(channelNames []string, getChannelID func(string) strin
 	return channels
 }
 
-func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelID func(string) string) channelMap {
+func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelID func(string) string, folder string) channelMap {
 	var chMap channelMap
 
 	// Try to discovery the channel
@@ -216,16 +223,13 @@ func chooseChannel(cfg *model.Profile, msg *MailMessage, log Logger, getChannelI
 	// check filters
 	if cfg.Filter != nil {
 		log.Debug("Did not find channel/user from Email Subject. Look for filter")
-		if chMap = validateChannelNames(cfg.Filter.GetChannels(msg.From, msg.Subject), getChannelID); chMap != nil {
+
+		if chMap = validateChannelNames(cfg.Filter.GetChannels(msg.From, msg.Subject, folder), getChannelID); chMap != nil {
 			return chMap
 		}
 	}
 
 	// get default Channel config
 	log.Debugf("Did not find channel/user in filters. Look for channel '%v'\n", cfg.Channels)
-	if chMap = validateChannelNames(cfg.Channels, getChannelID); chMap != nil {
-		return chMap
-	}
-
-	return nil
+	return validateChannelNames(cfg.Channels, getChannelID)
 }
